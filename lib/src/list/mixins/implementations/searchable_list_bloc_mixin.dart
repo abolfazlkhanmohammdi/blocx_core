@@ -29,7 +29,7 @@ mixin SearchableListBlocMixin<T extends ListEntity<T>, P> on ListBloc<T, P>
     emitState(emit);
     try {
       var result = await (event.searchText.isEmpty
-          ? loadUseCase!.execute(
+          ? loadInitialPageUseCase!.execute(
               query: PaginationQuery(payload: payload, loadCount: loadCount, offset: 0),
             )
           : searchUseCase!.execute(
@@ -45,7 +45,7 @@ mixin SearchableListBlocMixin<T extends ListEntity<T>, P> on ListBloc<T, P>
         return;
       }
       list.clear();
-      await insertToList(result.data!);
+      await insertToList(result.data!.items, !result.data!.hasNext);
       emitState(emit);
     } finally {
       isSearching = false;

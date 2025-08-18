@@ -1,11 +1,12 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:blocx/src/core/base_bloc/base_bloc.dart';
 import 'package:blocx/src/list/bloc/list_bloc.dart';
 import 'package:blocx/src/list/mixins/contracts/list_bloc_data_contract.dart';
 import 'package:blocx/src/list/models/list_entity.dart';
 import 'package:blocx/src/list/models/page.dart';
-import 'package:blocx/src/core/base_bloc/base_bloc.dart';
+import 'package:blocx/src/list/use_cases/pagination_use_case.dart';
 
 mixin ListBlocDataMixin<T extends ListEntity<T>, P> on BaseBloc<ListBlocEvent<T>, ListBlocState<T>>
     implements ListBlocDataContract<T, P> {
@@ -19,20 +20,20 @@ mixin ListBlocDataMixin<T extends ListEntity<T>, P> on BaseBloc<ListBlocEvent<T>
   @override
   Future loadInitialPage(ListBlocEventLoadData<T, P> event, Emitter<ListBlocState<T>> emit) async {
     payload = event.payload;
-    if (loadUseCase != null) return await _fetchInitialPage(event, emit);
+    if (loadInitialPageUseCase != null) return await _fetchInitialPage(event, emit);
     throw UnimplementedError("You must either override loadUseCase getter or loadData method");
   }
 
   Future<void> _fetchInitialPage(ListBlocEventLoadData<T, P> event, Emitter<ListBlocState<T>> emit) async {
     emit(ListBlocStateLoading<T>());
-    var result = await loadUseCase!.execute(
+    var result = await loadInitialPageUseCase!.execute(
       query: PaginationQuery(payload: payload, loadCount: loadCount, offset: 0),
     );
     if (result.isFailure) {
       await handleDataError(result.error!, emit, stacktrace: result.stackTrace);
       return;
     }
-    await insertToList(result.data!);
+    await insertToList(result.data!.items, !result.data!.hasNext);
     emitState(emit);
   }
 
@@ -40,13 +41,13 @@ mixin ListBlocDataMixin<T extends ListEntity<T>, P> on BaseBloc<ListBlocEvent<T>
   Future loadNextPage(ListBlocEventLoadMoreData<T> event, Emitter<ListBlocState<T>> emit) async {
     if (hasReachedEnd || isLoadingNextPage) return;
     isLoadingNextPage = true;
-    var useCase = loadMoreUseCase;
+    var useCase = loadNextPageUseCase;
     if (useCase != null) return await _fetchNextPage(event, emit);
     throw UnimplementedError("You must either override loadMoreUseCase getter or loadNextPage method");
   }
 
   Future<void> _fetchNextPage(ListBlocEventLoadMoreData<T> event, Emitter<ListBlocState<T>> emit) async {
-    var result = await loadMoreUseCase!.execute(
+    var result = await loadNextPageUseCase!.execute(
       query: PaginationQuery(payload: payload, loadCount: loadCount, offset: offset),
     );
     isLoadingNextPage = false;
@@ -54,14 +55,14 @@ mixin ListBlocDataMixin<T extends ListEntity<T>, P> on BaseBloc<ListBlocEvent<T>
       await handleDataError(result.error!, emit, stacktrace: result.stackTrace);
       return;
     }
-    await insertToList(result.data!, index: list.length);
+    await insertToList(result.data!.items, !result.data!.hasNext, index: list.length);
     emitState(emit);
   }
 
   @override
   Future refreshPage(ListBlocEventRefreshData<T> event, Emitter<ListBlocState<T>> emit) async {
     if (isRefreshing) return;
-    if (refreshUseCase != null) return await _fetchRefreshPage(event, emit);
+    if (refreshPageUseCase != null) return await _fetchRefreshPage(event, emit);
     throw UnimplementedError("You must either override refreshUseCase getter or refreshPage method");
   }
 
@@ -70,18 +71,18 @@ mixin ListBlocDataMixin<T extends ListEntity<T>, P> on BaseBloc<ListBlocEvent<T>
 
   FutureOr<void> handleDataError(Object error, Emitter<ListBlocState<T>> emit, {StackTrace? stacktrace});
 
-  Future<void> insertToList(Page<T> data, {int index = 0}) async {
+  Future<void> insertToList(List<T> data, bool hasReachedEnd, {int index = 0}) async {
     await doBeforeInsert(data);
-    list.insertAll(index, data.items);
-    hasReachedEnd = !data.hasNext;
+    list.insertAll(index, data);
+    this.hasReachedEnd = hasReachedEnd;
   }
 
-  Future<void> doBeforeInsert(Page<T> data) async {}
+  Future<void> doBeforeInsert(List<T> data) async {}
 
   Future<void> _fetchRefreshPage(ListBlocEventRefreshData<T> event, Emitter<ListBlocState<T>> emit) async {
     isRefreshing = true;
     emitState(emit);
-    var result = await refreshUseCase!.execute(
+    var result = await refreshPageUseCase!.execute(
       query: PaginationQuery(payload: payload, loadCount: loadCount, offset: 0),
     );
     isRefreshing = false;
@@ -90,7 +91,7 @@ mixin ListBlocDataMixin<T extends ListEntity<T>, P> on BaseBloc<ListBlocEvent<T>
       return;
     }
     list.clear();
-    await insertToList(result.data!);
+    await insertToList(result.data!.items, !result.data!.hasNext);
     emitState(emit);
   }
 
@@ -110,4 +111,11 @@ mixin ListBlocDataMixin<T extends ListEntity<T>, P> on BaseBloc<ListBlocEvent<T>
       ),
     );
   }
+
+  @override
+  PaginationUseCase<T, P>? get loadInitialPageUseCase => null;
+  @override
+  PaginationUseCase<T, P>? get loadNextPageUseCase => null;
+  @override
+  PaginationUseCase<T, P>? get refreshPageUseCase => null;
 }

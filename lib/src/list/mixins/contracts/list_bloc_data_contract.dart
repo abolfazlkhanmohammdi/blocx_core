@@ -14,7 +14,7 @@ abstract class ListBlocDataContract<T extends ListEntity<T>, P> {
   @protected
   FutureOr loadNextPage(ListBlocEventLoadMoreData<T> event, Emitter<ListBlocState<T>> emit);
 
-  PaginationUseCase<T, P>? get loadUseCase;
-  PaginationUseCase<T, P>? get loadMoreUseCase => loadUseCase;
-  PaginationUseCase<T, P>? get refreshUseCase;
+  PaginationUseCase<T, P>? get loadInitialPageUseCase;
+  PaginationUseCase<T, P>? get loadNextPageUseCase => loadInitialPageUseCase;
+  PaginationUseCase<T, P>? get refreshPageUseCase;
 }
