@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
-import 'package:blocx/src/blocs/list/list_bloc.dart';
-import 'package:blocx/src/core/models/list_entity.dart';
-import 'package:blocx/src/core/use_cases/pagination_use_case.dart';
+import 'package:blocx/src/list/bloc/list_bloc.dart';
+import 'package:blocx/src/list/models/list_entity.dart';
+import 'package:blocx/src/list/use_cases/pagination_use_case.dart';
 import 'package:meta/meta.dart';
 
 abstract class ListBlocDataContract<T extends ListEntity<T>, P> {

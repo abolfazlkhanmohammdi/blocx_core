@@ -1,15 +1,21 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
-import 'package:blocx/src/blocs/list/list_bloc.dart';
-import 'package:blocx/src/blocs/list/list_bloc_base.dart';
-import 'package:blocx/src/core/models/list_entity.dart';
-import 'package:blocx/src/core/models/page.dart';
-import 'package:blocx/src/mixins/contracts/list_bloc_data_contract.dart';
+import 'package:blocx/src/list/bloc/list_bloc.dart';
+import 'package:blocx/src/list/mixins/contracts/list_bloc_data_contract.dart';
+import 'package:blocx/src/list/models/list_entity.dart';
+import 'package:blocx/src/list/models/page.dart';
+import 'package:blocx/src/core/base_bloc/base_bloc.dart';
 
-mixin ListBlocDataMixin<T extends ListEntity<T>, P> on ListBlocBase<T> implements ListBlocDataContract<T, P> {
+mixin ListBlocDataMixin<T extends ListEntity<T>, P> on BaseBloc<ListBlocEvent<T>, ListBlocState<T>>
+    implements ListBlocDataContract<T, P> {
   P? payload;
-
+  final List<T> _list = [];
+  List<T> get list => _list;
+  bool isLoadingNextPage = false;
+  bool isRefreshing = false;
+  bool hasReachedEnd = false;
+  bool isSearching = false;
   @override
   Future loadInitialPage(ListBlocEventLoadData<T, P> event, Emitter<ListBlocState<T>> emit) async {
     payload = event.payload;
@@ -32,17 +38,18 @@ mixin ListBlocDataMixin<T extends ListEntity<T>, P> on ListBlocBase<T> implement
 
   @override
   Future loadNextPage(ListBlocEventLoadMoreData<T> event, Emitter<ListBlocState<T>> emit) async {
-    if (hasReachedEnd || state.isLoadingMore) return;
-    emitState(emit, isLoadingMore: true);
+    if (hasReachedEnd || isLoadingNextPage) return;
+    isLoadingNextPage = true;
     var useCase = loadMoreUseCase;
     if (useCase != null) return await _fetchNextPage(event, emit);
-    throw UnimplementedError("You must either override loadMoreUseCase getter or loadMoreData method");
+    throw UnimplementedError("You must either override loadMoreUseCase getter or loadNextPage method");
   }
 
   Future<void> _fetchNextPage(ListBlocEventLoadMoreData<T> event, Emitter<ListBlocState<T>> emit) async {
     var result = await loadMoreUseCase!.execute(
       query: PaginationQuery(payload: payload, loadCount: loadCount, offset: offset),
     );
+    isLoadingNextPage = false;
     if (result.isFailure) {
       await handleDataError(result.error!, emit, stacktrace: result.stackTrace);
       return;
@@ -53,9 +60,9 @@ mixin ListBlocDataMixin<T extends ListEntity<T>, P> on ListBlocBase<T> implement
 
   @override
   Future refreshPage(ListBlocEventRefreshData<T> event, Emitter<ListBlocState<T>> emit) async {
-    if (state.isRefreshing) return;
+    if (isRefreshing) return;
     if (refreshUseCase != null) return await _fetchRefreshPage(event, emit);
-    throw UnimplementedError("You must either override refreshUseCase getter or refreshData method");
+    throw UnimplementedError("You must either override refreshUseCase getter or refreshPage method");
   }
 
   int get loadCount => 20;
@@ -72,10 +79,12 @@ mixin ListBlocDataMixin<T extends ListEntity<T>, P> on ListBlocBase<T> implement
   Future<void> doBeforeInsert(Page<T> data) async {}
 
   Future<void> _fetchRefreshPage(ListBlocEventRefreshData<T> event, Emitter<ListBlocState<T>> emit) async {
-    emitState(emit, isRefreshing: true);
+    isRefreshing = true;
+    emitState(emit);
     var result = await refreshUseCase!.execute(
       query: PaginationQuery(payload: payload, loadCount: loadCount, offset: 0),
     );
+    isRefreshing = false;
     if (result.isFailure) {
       await handleDataError(result.error!, emit, stacktrace: result.stackTrace);
       return;
@@ -85,9 +94,20 @@ mixin ListBlocDataMixin<T extends ListEntity<T>, P> on ListBlocBase<T> implement
     emitState(emit);
   }
 
-  void init() {
+  void initDataMixin() {
     on<ListBlocEventLoadData<T, P>>(loadInitialPage);
     on<ListBlocEventLoadMoreData<T>>(loadNextPage);
     on<ListBlocEventRefreshData<T>>(refreshPage);
+  }
+
+  emitState(Emitter<ListBlocState<T>> emit) {
+    emit(
+      ListBlocStateLoaded(
+        list: list,
+        hasReachedEnd: hasReachedEnd,
+        isLoadingNextPage: this.isLoadingNextPage,
+        isRefreshing: this.isRefreshing,
+      ),
+    );
   }
 }

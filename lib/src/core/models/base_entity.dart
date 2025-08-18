@@ -1,7 +1,7 @@
 import 'package:uuid/uuid.dart';
 
-class BaseEntity {
-  final String identifier = Uuid().v4();
+abstract class BaseEntity {
+  String get identifier;
   BaseEntity();
 
   @override

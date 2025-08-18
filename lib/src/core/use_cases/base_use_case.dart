@@ -1,6 +1,6 @@
 // core/use_cases/base_use_case.dart
 import 'package:meta/meta.dart';
-import 'package:blocx/src/core/models/use_case_result.dart';
+import 'package:blocx/src/list/models/use_case_result.dart';
 
 abstract class BaseUseCase<T, S> {
   @nonVirtual

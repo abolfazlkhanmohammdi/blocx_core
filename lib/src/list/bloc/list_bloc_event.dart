@@ -31,3 +31,10 @@ class ListBlocEventLoadData<T extends ListEntity<T>, P> extends ListBlocEvent<T>
 class ListBlocEventRefreshData<T extends ListEntity<T>> extends ListBlocEvent<T> {}
 
 class ListBlocEventLoadMoreData<T extends ListEntity<T>> extends ListBlocEvent<T> {}
+
+class ListBlocEventSearch<T extends ListEntity<T>> extends ListBlocEvent<T> {
+  final String searchText;
+  ListBlocEventSearch({required this.searchText});
+}
+
+class ListBlocEventClearSearch<T extends ListEntity<T>> extends ListBlocEvent<T> {}

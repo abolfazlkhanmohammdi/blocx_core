@@ -1,4 +1,4 @@
-import 'package:blocx/src/core/models/list_entity.dart';
+import 'package:blocx/src/list/models/list_entity.dart';
 
 extension ListEntityExtension<T extends ListEntity<T>> on List<T> {
   List<T> get selectedItems => where((e) => e.isSelected).toList();
