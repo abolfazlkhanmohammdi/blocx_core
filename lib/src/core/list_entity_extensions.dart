@@ -18,4 +18,10 @@ extension ListEntityExtension<T extends ListEntity<T>> on List<T> {
   void highlightItem(T item) => replaceItem(item.copyWith(isHighlighted: true));
 
   void clearHighlightedItem(T item) => replaceItem(item.copyWith(isHighlighted: false));
+
+  void clearSelection() {
+    for (int i = 0; i < length; i++) {
+      this[i] = this[i].copyWith(isSelected: false);
+    }
+  }
 }

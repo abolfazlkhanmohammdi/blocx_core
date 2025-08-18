@@ -15,7 +15,11 @@ mixin SelectableListBlocMixin<T extends ListEntity<T>> on ListBloc<T> implements
 
   @override
   FutureOr<void> selectItem(ListBlocEventSelectItem<T> event, Emitter<ListBlocState<T>> emit) {
+    if (isSingleSelect) list.clearSelection();
     list.selectItem(event.item);
     emitState(emit);
   }
+
+  @override
+  bool get isSingleSelect => true;
 }

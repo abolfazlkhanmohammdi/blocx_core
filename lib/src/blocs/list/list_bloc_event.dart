@@ -21,3 +21,13 @@ class ListBlocEventClearHighlightedItem<T extends ListEntity<T>> extends ListBlo
   final T item;
   ListBlocEventClearHighlightedItem({required this.item});
 }
+
+// Data
+class ListBlocEventLoadData<T extends ListEntity<T>, P> extends ListBlocEvent<T> {
+  final P? payload;
+  ListBlocEventLoadData({required this.payload});
+}
+
+class ListBlocEventRefreshData<T extends ListEntity<T>> extends ListBlocEvent<T> {}
+
+class ListBlocEventLoadMoreData<T extends ListEntity<T>> extends ListBlocEvent<T> {}

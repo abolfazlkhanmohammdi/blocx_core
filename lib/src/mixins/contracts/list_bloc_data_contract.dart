@@ -1,0 +1,20 @@
+import 'dart:async';
+
+import 'package:bloc/bloc.dart';
+import 'package:blocx/src/blocs/list/list_bloc.dart';
+import 'package:blocx/src/core/models/list_entity.dart';
+import 'package:blocx/src/core/use_cases/pagination_use_case.dart';
+import 'package:meta/meta.dart';
+
+abstract class ListBlocDataContract<T extends ListEntity<T>, P> {
+  @protected
+  FutureOr loadInitialPage(ListBlocEventLoadData<T, P> event, Emitter<ListBlocState<T>> emit);
+  @protected
+  FutureOr refreshPage(ListBlocEventRefreshData<T> event, Emitter<ListBlocState<T>> emit);
+  @protected
+  FutureOr loadNextPage(ListBlocEventLoadMoreData<T> event, Emitter<ListBlocState<T>> emit);
+
+  PaginationUseCase<T, P>? get loadUseCase;
+  PaginationUseCase<T, P>? get loadMoreUseCase => loadUseCase;
+  PaginationUseCase<T, P>? get refreshUseCase;
+}
