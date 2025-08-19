@@ -5,6 +5,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:blocx/src/list/bloc/list_bloc.dart';
 import 'package:blocx/src/list/misc/event_transformers.dart';
 import 'package:blocx/src/list/mixins/contracts/searchable_list_bloc_contract.dart';
+import 'package:blocx/src/list/mixins/implementations/list_bloc_data_mixin.dart';
 import 'package:blocx/src/list/models/list_entity.dart';
 import 'package:blocx/src/list/models/page.dart';
 import 'package:blocx/src/list/models/search_query.dart';
@@ -45,7 +46,7 @@ mixin SearchableListBlocMixin<T extends ListEntity<T>, P> on ListBloc<T, P>
         return;
       }
       list.clear();
-      await insertToList(result.data!.items, !result.data!.hasNext);
+      await insertToList(result.data!.items, !result.data!.hasNext, DataInsertSource.search);
       emitState(emit);
     } finally {
       isSearching = false;
@@ -56,7 +57,7 @@ mixin SearchableListBlocMixin<T extends ListEntity<T>, P> on ListBloc<T, P>
   @override
   FutureOr clearSearch(ListBlocEventClearSearch<T> event, Emitter<ListBlocState<T>> emit) {
     list.clear();
-    add(ListBlocEventLoadData(payload: payload));
+    add(ListBlocEventLoadInitialPage(payload: payload));
   }
 
   SearchUseCase<T, P>? get searchUseCase;

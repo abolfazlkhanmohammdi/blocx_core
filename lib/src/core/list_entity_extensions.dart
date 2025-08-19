@@ -19,6 +19,8 @@ extension ListEntityExtension<T extends ListEntity<T>> on List<T> {
 
   void clearHighlightedItem(T item) => replaceItem(item.copyWith(isHighlighted: false));
 
+  void removeById(T item) => removeWhere((e) => e.identifier == item.identifier);
+
   void clearSelection() {
     for (int i = 0; i < length; i++) {
       this[i] = this[i].copyWith(isSelected: false);

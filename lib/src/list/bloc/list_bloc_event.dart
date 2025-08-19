@@ -23,14 +23,14 @@ class ListBlocEventClearHighlightedItem<T extends ListEntity<T>> extends ListBlo
 }
 
 // Data
-class ListBlocEventLoadData<T extends ListEntity<T>, P> extends ListBlocEvent<T> {
+class ListBlocEventLoadInitialPage<T extends ListEntity<T>, P> extends ListBlocEvent<T> {
   final P? payload;
-  ListBlocEventLoadData({required this.payload});
+  ListBlocEventLoadInitialPage({required this.payload});
 }
 
 class ListBlocEventRefreshData<T extends ListEntity<T>> extends ListBlocEvent<T> {}
 
-class ListBlocEventLoadMoreData<T extends ListEntity<T>> extends ListBlocEvent<T> {}
+class ListBlocEventLoadNextPage<T extends ListEntity<T>> extends ListBlocEvent<T> {}
 
 class ListBlocEventSearch<T extends ListEntity<T>> extends ListBlocEvent<T> {
   final String searchText;

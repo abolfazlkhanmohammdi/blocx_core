@@ -1,10 +1,11 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:bloc/bloc.dart';
+import 'package:blocx/blocx.dart';
 import 'package:blocx/src/core/base_bloc/base_bloc.dart';
-import 'package:blocx/src/list/bloc/list_bloc.dart';
+import 'package:blocx/src/core/list_entity_extensions.dart';
 import 'package:blocx/src/list/mixins/contracts/list_bloc_data_contract.dart';
-import 'package:blocx/src/list/models/list_entity.dart';
 import 'package:blocx/src/list/models/page.dart';
 import 'package:blocx/src/list/use_cases/pagination_use_case.dart';
 
@@ -12,19 +13,22 @@ mixin ListBlocDataMixin<T extends ListEntity<T>, P> on BaseBloc<ListBlocEvent<T>
     implements ListBlocDataContract<T, P> {
   P? payload;
   final List<T> _list = [];
-  List<T> get list => _list;
+  UnmodifiableListView<T> get list => UnmodifiableListView(_list);
   bool isLoadingNextPage = false;
-  bool isRefreshing = false;
   bool hasReachedEnd = false;
   bool isSearching = false;
+  bool isRefreshing = false;
   @override
-  Future loadInitialPage(ListBlocEventLoadData<T, P> event, Emitter<ListBlocState<T>> emit) async {
+  Future loadInitialPage(ListBlocEventLoadInitialPage<T, P> event, Emitter<ListBlocState<T>> emit) async {
     payload = event.payload;
     if (loadInitialPageUseCase != null) return await _fetchInitialPage(event, emit);
     throw UnimplementedError("You must either override loadUseCase getter or loadData method");
   }
 
-  Future<void> _fetchInitialPage(ListBlocEventLoadData<T, P> event, Emitter<ListBlocState<T>> emit) async {
+  Future<void> _fetchInitialPage(
+    ListBlocEventLoadInitialPage<T, P> event,
+    Emitter<ListBlocState<T>> emit,
+  ) async {
     emit(ListBlocStateLoading<T>());
     var result = await loadInitialPageUseCase!.execute(
       query: PaginationQuery(payload: payload, loadCount: loadCount, offset: 0),
@@ -33,72 +37,26 @@ mixin ListBlocDataMixin<T extends ListEntity<T>, P> on BaseBloc<ListBlocEvent<T>
       await handleDataError(result.error!, emit, stacktrace: result.stackTrace);
       return;
     }
-    await insertToList(result.data!.items, !result.data!.hasNext);
+    await insertToList(result.data!.items, !result.data!.hasNext, DataInsertSource.init);
     emitState(emit);
-  }
-
-  @override
-  Future loadNextPage(ListBlocEventLoadMoreData<T> event, Emitter<ListBlocState<T>> emit) async {
-    if (hasReachedEnd || isLoadingNextPage) return;
-    isLoadingNextPage = true;
-    var useCase = loadNextPageUseCase;
-    if (useCase != null) return await _fetchNextPage(event, emit);
-    throw UnimplementedError("You must either override loadMoreUseCase getter or loadNextPage method");
-  }
-
-  Future<void> _fetchNextPage(ListBlocEventLoadMoreData<T> event, Emitter<ListBlocState<T>> emit) async {
-    var result = await loadNextPageUseCase!.execute(
-      query: PaginationQuery(payload: payload, loadCount: loadCount, offset: offset),
-    );
-    isLoadingNextPage = false;
-    if (result.isFailure) {
-      await handleDataError(result.error!, emit, stacktrace: result.stackTrace);
-      return;
-    }
-    await insertToList(result.data!.items, !result.data!.hasNext, index: list.length);
-    emitState(emit);
-  }
-
-  @override
-  Future refreshPage(ListBlocEventRefreshData<T> event, Emitter<ListBlocState<T>> emit) async {
-    if (isRefreshing) return;
-    if (refreshPageUseCase != null) return await _fetchRefreshPage(event, emit);
-    throw UnimplementedError("You must either override refreshUseCase getter or refreshPage method");
   }
 
   int get loadCount => 20;
   int get offset => list.length;
 
-  FutureOr<void> handleDataError(Object error, Emitter<ListBlocState<T>> emit, {StackTrace? stacktrace});
-
-  Future<void> insertToList(List<T> data, bool hasReachedEnd, {int index = 0}) async {
-    await doBeforeInsert(data);
-    list.insertAll(index, data);
-    this.hasReachedEnd = hasReachedEnd;
+  FutureOr<void> handleDataError(Object error, Emitter<ListBlocState<T>> emit, {StackTrace? stacktrace}) {
+    (String message, String? title) converted = convertErrorToMessageAndTitle(error);
+    if (errorDisplayPolicy == ErrorDisplayPolicy.snackBar) {
+      displayErrorSnackbar(converted.$1, title: converted.$2);
+    } else {
+      displayErrorWidget(error, stackTrace: stacktrace);
+    }
   }
 
   Future<void> doBeforeInsert(List<T> data) async {}
 
-  Future<void> _fetchRefreshPage(ListBlocEventRefreshData<T> event, Emitter<ListBlocState<T>> emit) async {
-    isRefreshing = true;
-    emitState(emit);
-    var result = await refreshPageUseCase!.execute(
-      query: PaginationQuery(payload: payload, loadCount: loadCount, offset: 0),
-    );
-    isRefreshing = false;
-    if (result.isFailure) {
-      await handleDataError(result.error!, emit, stacktrace: result.stackTrace);
-      return;
-    }
-    list.clear();
-    await insertToList(result.data!.items, !result.data!.hasNext);
-    emitState(emit);
-  }
-
   void initDataMixin() {
-    on<ListBlocEventLoadData<T, P>>(loadInitialPage);
-    on<ListBlocEventLoadMoreData<T>>(loadNextPage);
-    on<ListBlocEventRefreshData<T>>(refreshPage);
+    on<ListBlocEventLoadInitialPage<T, P>>(loadInitialPage);
   }
 
   emitState(Emitter<ListBlocState<T>> emit) {
@@ -114,8 +72,57 @@ mixin ListBlocDataMixin<T extends ListEntity<T>, P> on BaseBloc<ListBlocEvent<T>
 
   @override
   PaginationUseCase<T, P>? get loadInitialPageUseCase => null;
-  @override
-  PaginationUseCase<T, P>? get loadNextPageUseCase => null;
-  @override
-  PaginationUseCase<T, P>? get refreshPageUseCase => null;
+
+  (String, String?) convertErrorToMessageAndTitle(Object error);
+  ErrorDisplayPolicy get errorDisplayPolicy => ErrorDisplayPolicy.snackBar;
+
+  Future<void> insertToList(List<T> data, bool hasReachedEnd, DataInsertSource insertSource) async {
+    await doBeforeInsert(data);
+    int index = insertSource.insertIndex(list);
+    _addInfiniteListEvent(insertSource);
+    _list.insertAll(index, data);
+    this.hasReachedEnd = hasReachedEnd;
+  }
+
+  void clearList() {
+    _list.clear();
+  }
+
+  void replaceList(List<T> newList) {
+    _list.clear();
+    _list.addAll(newList);
+  }
+
+  void replaceItemInList(T item) {
+    _list.replaceItem(item);
+  }
+
+  void removeItemFromList(T item) {
+    _list.removeById(item);
+  }
+
+  void _addInfiniteListEvent(DataInsertSource insertSource) {
+    switch (insertSource) {
+      case DataInsertSource.search:
+      case DataInsertSource.init:
+        break;
+      case DataInsertSource.nextPage:
+        infiniteListBloc.add(InfiniteListBlocEventChangeLoadBottomDataStatus(false, hasReachedEnd));
+        break;
+      case DataInsertSource.refresh:
+        infiniteListBloc.add(InfiniteListBlocEventCloseRefresh());
+        break;
+    }
+  }
+}
+
+extension on DataInsertSource {
+  int insertIndex(List list) {
+    return switch (this) {
+      DataInsertSource.init => 0,
+      DataInsertSource.nextPage => list.length,
+      DataInsertSource.refresh => 0,
+      DataInsertSource.search => 0,
+    };
+  }
 }

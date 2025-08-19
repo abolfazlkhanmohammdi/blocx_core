@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:blocx/src/screen_manager/screen_manager_cubit.dart';
+import 'package:meta/meta.dart';
 
 part 'base_bloc_event.dart';
 part 'base_bloc_state.dart';
@@ -9,8 +10,8 @@ class BaseBloc<E extends BaseBlocEvent, S extends BaseBlocState> extends Bloc<E,
   BaseBloc(super.initialState, this._screenManagerCubit);
 
   void pop() => _screenManagerCubit.pop();
-  void displayError(Object error, {StackTrace? stackTrace}) =>
-      _screenManagerCubit.displayErrorPage(error, stackTrace);
+  void displayErrorWidget(Object error, {StackTrace? stackTrace}) =>
+      _screenManagerCubit.displayErrorWidget(error, stackTrace);
 
   void displayWarningSnackbar(String message, {String? title}) =>
       _screenManagerCubit.displaySnackbar(message, BlocXSnackbarType.warning, title: title);
@@ -26,4 +27,8 @@ class BaseBloc<E extends BaseBlocEvent, S extends BaseBlocState> extends Bloc<E,
     await _screenManagerCubit.close();
     return super.close();
   }
+
+  ScreenManagerCubit get screenManagerCubit => _screenManagerCubit;
 }
+
+enum ErrorDisplayPolicy { snackBar, page }
