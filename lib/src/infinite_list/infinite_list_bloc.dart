@@ -8,7 +8,7 @@ import 'package:blocx/src/core/logger.dart';
 part './infinite_list_bloc_event.dart';
 part './infinite_list_bloc_state.dart';
 
-class InfiniteListBloc extends Bloc<InfiniteListBlocEvent, InfiniteListBlocState> {
+class InfiniteListBloc extends Bloc<InfiniteListEvent, InfiniteListState> {
   /// --- Tunables -------------------------------------------------------------
 
   /// Pixel distance required to trigger a refresh.
@@ -48,19 +48,19 @@ class InfiniteListBloc extends Bloc<InfiniteListBlocEvent, InfiniteListBlocState
   double get swipeRefreshHeight => _swipeRefreshHeight;
   bool get hasReachedEnd => _hasReachedEnd;
 
-  InfiniteListBloc({this.refreshThreshold = 64.0}) : super(InfiniteListBlocStateInitial()) {
-    on<InfiniteListBlocEventChangeLoadTopDataStatus>(_changeLoadTopDataStatus);
-    on<InfiniteListBlocEventChangeLoadBottomDataStatus>(_changeLoadBottomDataStatus);
-    on<InfiniteListBlocEventVerticalDragStarted>(_onDragStarted);
-    on<InfiniteListBlocEventVerticalDragUpdated>(_onDragUpdated, transformer: restartable());
-    on<InfiniteListBlocEventVerticalDragEnded>(_onDragEnded, transformer: restartable());
-    on<InfiniteListBlocEventOnScroll>(_onScroll);
-    on<InfiniteListBlocEventCloseRefresh>(_closeRefresh);
+  InfiniteListBloc({this.refreshThreshold = 64.0}) : super(InfiniteListStateInitial()) {
+    on<InfiniteListEventChangeLoadTopDataStatus>(_changeLoadTopDataStatus);
+    on<InfiniteListEventChangeLoadBottomDataStatus>(_changeLoadBottomDataStatus);
+    on<InfiniteListEventVerticalDragStarted>(_onDragStarted);
+    on<InfiniteListEventVerticalDragUpdated>(_onDragUpdated, transformer: restartable());
+    on<InfiniteListEventVerticalDragEnded>(_onDragEnded, transformer: restartable());
+    on<InfiniteListEventOnScroll>(_onScroll);
+    on<InfiniteListEventCloseRefresh>(_closeRefresh);
   }
 
-  void _emitLoaded(Emitter<InfiniteListBlocState> emit) {
+  void _emitLoaded(Emitter<InfiniteListState> emit) {
     emit(
-      InfiniteListBlocStateLoaded(
+      InfiniteListStateLoaded(
         isAtTop: _isAtTop,
         isScrollingUp: _isScrollingUp,
         isLoadingTop: _isLoadingTopData,
@@ -79,23 +79,23 @@ class InfiniteListBloc extends Bloc<InfiniteListBlocEvent, InfiniteListBlocState
   // --------------------------------------------------------------------------
 
   void _changeLoadTopDataStatus(
-    InfiniteListBlocEventChangeLoadTopDataStatus event,
-    Emitter<InfiniteListBlocState> emit,
+    InfiniteListEventChangeLoadTopDataStatus event,
+    Emitter<InfiniteListState> emit,
   ) {
     _isLoadingTopData = event.isLoading;
     _emitLoaded(emit);
   }
 
   void _changeLoadBottomDataStatus(
-    InfiniteListBlocEventChangeLoadBottomDataStatus event,
-    Emitter<InfiniteListBlocState> emit,
+    InfiniteListEventChangeLoadBottomDataStatus event,
+    Emitter<InfiniteListState> emit,
   ) {
     _isLoadingBottomData = event.isLoading;
     _hasReachedEnd = event.hasReachedEnd;
     _emitLoaded(emit);
   }
 
-  void _onScroll(InfiniteListBlocEventOnScroll event, Emitter<InfiniteListBlocState> emit) {
+  void _onScroll(InfiniteListEventOnScroll event, Emitter<InfiniteListState> emit) {
     _isIdle = event.isIdle;
     if (!_isIdle) {
       _isAtTop = event.isAtTop;
@@ -109,12 +109,12 @@ class InfiniteListBloc extends Bloc<InfiniteListBlocEvent, InfiniteListBlocState
     _emitLoaded(emit);
   }
 
-  void _onDragStarted(InfiniteListBlocEventVerticalDragStarted event, Emitter<InfiniteListBlocState> emit) {
+  void _onDragStarted(InfiniteListEventVerticalDragStarted event, Emitter<InfiniteListState> emit) {
     _dragStartY = event.globalY;
     _lastDragUpdateAt = null;
   }
 
-  void _onDragUpdated(InfiniteListBlocEventVerticalDragUpdated event, Emitter<InfiniteListBlocState> emit) {
+  void _onDragUpdated(InfiniteListEventVerticalDragUpdated event, Emitter<InfiniteListState> emit) {
     // Lightweight throttle to avoid excessive rebuilds
     final now = DateTime.now();
     if (_lastDragUpdateAt != null && now.difference(_lastDragUpdateAt!) < _dragUpdateMinInterval) {
@@ -138,14 +138,14 @@ class InfiniteListBloc extends Bloc<InfiniteListBlocEvent, InfiniteListBlocState
     _emitLoaded(emit);
   }
 
-  void _onDragEnded(InfiniteListBlocEventVerticalDragEnded event, Emitter<InfiniteListBlocState> emit) {
+  void _onDragEnded(InfiniteListEventVerticalDragEnded event, Emitter<InfiniteListState> emit) {
     if (_isRefreshing) return;
 
     if (_swipeRefreshHeight >= refreshThreshold) {
       _isRefreshing = true;
 
       emit(
-        InfiniteListBlocStateRefresh(
+        InfiniteListStateRefresh(
           isAtTop: _isAtTop,
           isScrollingUp: _isScrollingUp,
           isLoadingTop: _isLoadingTopData,
@@ -176,10 +176,10 @@ class InfiniteListBloc extends Bloc<InfiniteListBlocEvent, InfiniteListBlocState
   }
 
   void hideRefreshWidget() {
-    add(InfiniteListBlocEventCloseRefresh());
+    add(InfiniteListEventCloseRefresh());
   }
 
-  void _closeRefresh(InfiniteListBlocEventCloseRefresh event, Emitter<InfiniteListBlocState> emit) {
+  void _closeRefresh(InfiniteListEventCloseRefresh event, Emitter<InfiniteListState> emit) {
     _isRefreshing = false;
     _swipeRefreshHeight = 0;
     _emitLoaded(emit);
@@ -190,10 +190,10 @@ class InfiniteListBloc extends Bloc<InfiniteListBlocEvent, InfiniteListBlocState
   // --------------------------------------------------------------------------
 
   void setLoadingBottomStatus(bool status, [bool? hasReachedEnd]) {
-    add(InfiniteListBlocEventChangeLoadBottomDataStatus(status, hasReachedEnd ?? _hasReachedEnd));
+    add(InfiniteListEventChangeLoadBottomDataStatus(status, hasReachedEnd ?? _hasReachedEnd));
   }
 
   void setLoadingTopStatus(bool status) {
-    add(InfiniteListBlocEventChangeLoadTopDataStatus(status));
+    add(InfiniteListEventChangeLoadTopDataStatus(status));
   }
 }

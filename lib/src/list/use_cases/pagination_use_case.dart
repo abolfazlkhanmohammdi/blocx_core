@@ -1,5 +1,13 @@
-import 'package:blocx/src/core/models/base_entity.dart';
-import 'package:blocx/src/list/models/page.dart';
+import 'package:blocx/blocx.dart';
 import 'package:blocx/src/core/use_cases/base_use_case.dart';
 
-abstract class PaginationUseCase<T extends BaseEntity, S> extends BaseUseCase<Page<T>, PaginationQuery<S>> {}
+abstract class PaginationUseCase<T extends BaseEntity, S> extends BaseUseCase<Page<T>> {
+  final PaginationQuery<S> queryInput;
+  PaginationUseCase({required this.queryInput});
+
+  UseCaseResult<Page<T>> successResult(List<T> items) {
+    return UseCaseResult.success(
+      Page(items: items, offset: queryInput.offset, loadCount: queryInput.loadCount),
+    );
+  }
+}

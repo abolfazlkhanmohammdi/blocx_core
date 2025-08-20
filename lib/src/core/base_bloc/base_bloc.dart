@@ -5,7 +5,7 @@ import 'package:meta/meta.dart';
 part 'base_bloc_event.dart';
 part 'base_bloc_state.dart';
 
-class BaseBloc<E extends BaseBlocEvent, S extends BaseBlocState> extends Bloc<E, S> {
+class BaseBloc<E extends BaseEvent, S extends BaseState> extends Bloc<E, S> {
   final ScreenManagerCubit _screenManagerCubit;
   BaseBloc(super.initialState, this._screenManagerCubit);
 

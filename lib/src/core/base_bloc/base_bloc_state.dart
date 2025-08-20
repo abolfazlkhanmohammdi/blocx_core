@@ -1,9 +1,9 @@
 part of 'base_bloc.dart';
 
 @immutable
-class BaseBlocState {
+class BaseState {
   final bool shouldRebuild;
   final bool shouldListen;
 
-  const BaseBlocState({required this.shouldRebuild, required this.shouldListen});
+  const BaseState({required this.shouldRebuild, required this.shouldListen});
 }

@@ -1,12 +1,12 @@
 part of 'list_bloc.dart';
 
-sealed class ListBlocState<T extends ListEntity<T>> extends BaseBlocState {
+sealed class ListState<T extends ListEntity<T>> extends BaseState {
   final List<T> list;
   final bool hasReachedEnd;
   final bool isLoadingNextPage;
   final bool isRefreshing;
   final bool isSearching;
-  ListBlocState({
+  ListState({
     required this.list,
     required super.shouldListen,
     required super.shouldRebuild,
@@ -17,12 +17,12 @@ sealed class ListBlocState<T extends ListEntity<T>> extends BaseBlocState {
   });
 }
 
-class ListBlocStateLoading<T extends ListEntity<T>> extends ListBlocState<T> {
-  ListBlocStateLoading() : super(list: const [], shouldRebuild: true, shouldListen: false);
+class ListStateLoading<T extends ListEntity<T>> extends ListState<T> {
+  ListStateLoading() : super(list: const [], shouldRebuild: true, shouldListen: false);
 }
 
-class ListBlocStateLoaded<T extends ListEntity<T>> extends ListBlocState<T> {
-  ListBlocStateLoaded({
+class ListStateLoaded<T extends ListEntity<T>> extends ListState<T> {
+  ListStateLoaded({
     required super.list,
     required super.hasReachedEnd,
     required super.isLoadingNextPage,

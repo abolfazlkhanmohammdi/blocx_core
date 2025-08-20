@@ -2,11 +2,11 @@
 import 'package:meta/meta.dart';
 import 'package:blocx/src/list/models/use_case_result.dart';
 
-abstract class BaseUseCase<T, S> {
+abstract class BaseUseCase<T> {
   @nonVirtual
-  Future<UseCaseResult<T>> execute({S? query}) async {
+  Future<UseCaseResult<T>> execute() async {
     try {
-      return await perform(payload: query);
+      return await perform();
     } on Object catch (e, s) {
       return UseCaseResult.failure(e, stackTrace: s);
     }
@@ -14,5 +14,5 @@ abstract class BaseUseCase<T, S> {
 
   /// Subclasses must implement this. Public so it can be overridden.
   @protected
-  Future<UseCaseResult<T>> perform({S? payload});
+  Future<UseCaseResult<T>> perform();
 }

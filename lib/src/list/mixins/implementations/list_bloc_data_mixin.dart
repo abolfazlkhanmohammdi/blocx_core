@@ -6,33 +6,31 @@ import 'package:blocx/blocx.dart';
 import 'package:blocx/src/core/base_bloc/base_bloc.dart';
 import 'package:blocx/src/core/list_entity_extensions.dart';
 import 'package:blocx/src/list/mixins/contracts/list_bloc_data_contract.dart';
-import 'package:blocx/src/list/models/page.dart';
-import 'package:blocx/src/list/use_cases/pagination_use_case.dart';
 
-mixin ListBlocDataMixin<T extends ListEntity<T>, P> on BaseBloc<ListBlocEvent<T>, ListBlocState<T>>
+mixin ListBlocDataMixin<T extends ListEntity<T>, P> on BaseBloc<ListEvent<T>, ListState<T>>
     implements ListBlocDataContract<T, P> {
   P? payload;
   final List<T> _list = [];
+
+  /// **Important:** This list is an [UnmodifiableListView].
+  /// You cannot add/remove/mutate items directly.
+  /// Always use the provided helpers (e.g. [selectItemInList], [deselectItemInList],
+  /// [removeItemFromList], [clearSelection], etc.) to make changes.
   UnmodifiableListView<T> get list => UnmodifiableListView(_list);
   bool isLoadingNextPage = false;
   bool hasReachedEnd = false;
   bool isSearching = false;
   bool isRefreshing = false;
   @override
-  Future loadInitialPage(ListBlocEventLoadInitialPage<T, P> event, Emitter<ListBlocState<T>> emit) async {
+  Future loadInitialPage(ListEventLoadInitialPage<T, P> event, Emitter<ListState<T>> emit) async {
     payload = event.payload;
     if (loadInitialPageUseCase != null) return await _fetchInitialPage(event, emit);
     throw UnimplementedError("You must either override loadUseCase getter or loadData method");
   }
 
-  Future<void> _fetchInitialPage(
-    ListBlocEventLoadInitialPage<T, P> event,
-    Emitter<ListBlocState<T>> emit,
-  ) async {
-    emit(ListBlocStateLoading<T>());
-    var result = await loadInitialPageUseCase!.execute(
-      query: PaginationQuery(payload: payload, loadCount: loadCount, offset: 0),
-    );
+  Future<void> _fetchInitialPage(ListEventLoadInitialPage<T, P> event, Emitter<ListState<T>> emit) async {
+    emit(ListStateLoading<T>());
+    var result = await loadInitialPageUseCase!.execute();
     if (result.isFailure) {
       await handleDataError(result.error!, emit, stacktrace: result.stackTrace);
       return;
@@ -44,7 +42,7 @@ mixin ListBlocDataMixin<T extends ListEntity<T>, P> on BaseBloc<ListBlocEvent<T>
   int get loadCount => 20;
   int get offset => list.length;
 
-  FutureOr<void> handleDataError(Object error, Emitter<ListBlocState<T>> emit, {StackTrace? stacktrace}) {
+  FutureOr<void> handleDataError(Object error, Emitter<ListState<T>> emit, {StackTrace? stacktrace}) {
     (String message, String? title) converted = convertErrorToMessageAndTitle(error);
     if (errorDisplayPolicy == ErrorDisplayPolicy.snackBar) {
       displayErrorSnackbar(converted.$1, title: converted.$2);
@@ -56,12 +54,12 @@ mixin ListBlocDataMixin<T extends ListEntity<T>, P> on BaseBloc<ListBlocEvent<T>
   Future<void> doBeforeInsert(List<T> data) async {}
 
   void initDataMixin() {
-    on<ListBlocEventLoadInitialPage<T, P>>(loadInitialPage);
+    on<ListEventLoadInitialPage<T, P>>(loadInitialPage);
   }
 
-  emitState(Emitter<ListBlocState<T>> emit) {
+  emitState(Emitter<ListState<T>> emit) {
     emit(
-      ListBlocStateLoaded(
+      ListStateLoaded(
         list: list,
         hasReachedEnd: hasReachedEnd,
         isLoadingNextPage: this.isLoadingNextPage,
@@ -101,16 +99,46 @@ mixin ListBlocDataMixin<T extends ListEntity<T>, P> on BaseBloc<ListBlocEvent<T>
     _list.removeById(item);
   }
 
+  void setItemBeingRemoved(T item) {
+    _list.setBeingRemoved(item);
+  }
+
+  void clearItemBeingRemoved(T item) {
+    _list.clearItemBeingRemoved(item);
+  }
+
+  clearSelection() {
+    for (int i = 0; i < _list.length; i++) {
+      _list[i] = _list[i].copyWithListFlags(isSelected: false);
+    }
+  }
+
+  selectItemInList(T item) {
+    _list.selectItem(item);
+  }
+
+  deselectItemInList(T item) {
+    _list.deselectItem(item);
+  }
+
+  highlightItemInList(T item) {
+    _list.highlightItem(item);
+  }
+
+  clearHighlightedItemInList(T item) {
+    _list.clearHighlightedItem(item);
+  }
+
   void _addInfiniteListEvent(DataInsertSource insertSource) {
     switch (insertSource) {
       case DataInsertSource.search:
       case DataInsertSource.init:
         break;
       case DataInsertSource.nextPage:
-        infiniteListBloc.add(InfiniteListBlocEventChangeLoadBottomDataStatus(false, hasReachedEnd));
+        infiniteListBloc.add(InfiniteListEventChangeLoadBottomDataStatus(false, hasReachedEnd));
         break;
       case DataInsertSource.refresh:
-        infiniteListBloc.add(InfiniteListBlocEventCloseRefresh());
+        infiniteListBloc.add(InfiniteListEventCloseRefresh());
         break;
     }
   }

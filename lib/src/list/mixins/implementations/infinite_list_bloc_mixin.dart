@@ -1,14 +1,15 @@
 import 'package:bloc/bloc.dart';
 import 'package:blocx/blocx.dart';
 import 'package:blocx/src/list/mixins/contracts/infinite_list_bloc_contract.dart';
-import 'package:blocx/src/list/mixins/implementations/list_bloc_data_mixin.dart';
-import 'package:blocx/src/list/models/page.dart';
-import 'package:blocx/src/list/use_cases/pagination_use_case.dart';
 
 mixin InfiniteListBlocMixin<T extends ListEntity<T>, P> on ListBloc<T, P>
     implements InfiniteListBlocContract<T, P> {
   @override
-  Future loadNextPage(ListBlocEventLoadNextPage<T> event, Emitter<ListBlocState<T>> emit) async {
+  Future loadNextPage(ListEventLoadNextPage<T> event, Emitter<ListState<T>> emit) async {
+    if (isSearchable && (this as SearchableListBlocMixin<T, P>).searchText.isNotEmpty) {
+      add(ListEventSearchNextPage());
+      return;
+    }
     if (hasReachedEnd || isLoadingNextPage) return;
     isLoadingNextPage = true;
     var useCase = loadNextPageUseCase;
@@ -16,10 +17,8 @@ mixin InfiniteListBlocMixin<T extends ListEntity<T>, P> on ListBloc<T, P>
     throw UnimplementedError("You must either override loadMoreUseCase getter or loadNextPage method");
   }
 
-  Future<void> _fetchNextPage(ListBlocEventLoadNextPage<T> event, Emitter<ListBlocState<T>> emit) async {
-    var result = await loadNextPageUseCase!.execute(
-      query: PaginationQuery(payload: payload, loadCount: loadCount, offset: offset),
-    );
+  Future<void> _fetchNextPage(ListEventLoadNextPage<T> event, Emitter<ListState<T>> emit) async {
+    var result = await loadNextPageUseCase!.execute();
     isLoadingNextPage = false;
     if (result.isFailure) {
       await handleDataError(result.error!, emit, stacktrace: result.stackTrace);
@@ -31,7 +30,7 @@ mixin InfiniteListBlocMixin<T extends ListEntity<T>, P> on ListBloc<T, P>
 
   @override
   void initInfiniteList() {
-    on<ListBlocEventLoadNextPage<T>>(loadNextPage);
+    on<ListEventLoadNextPage<T>>(loadNextPage);
   }
 
   @override

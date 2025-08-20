@@ -6,7 +6,7 @@ abstract class ListEntity<T> extends BaseEntity {
   final bool _isBeingRemoved;
   final bool _isBeingSelected;
 
-  ListEntity.empty()
+  const ListEntity.empty()
     : _isSelected = false,
       _isBeingRemoved = false,
       _isBeingSelected = false,
@@ -26,5 +26,5 @@ abstract class ListEntity<T> extends BaseEntity {
   bool get isBeingRemoved => _isBeingRemoved;
   bool get isBeingSelected => _isBeingSelected;
 
-  T copyWith({bool? isSelected, bool? isBeingSelected, bool? isBeingRemoved, bool? isHighlighted});
+  T copyWithListFlags({bool? isSelected, bool? isBeingSelected, bool? isBeingRemoved, bool? isHighlighted});
 }

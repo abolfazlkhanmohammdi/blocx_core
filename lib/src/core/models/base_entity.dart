@@ -1,8 +1,6 @@
-import 'package:uuid/uuid.dart';
-
 abstract class BaseEntity {
   String get identifier;
-  BaseEntity();
+  const BaseEntity();
 
   @override
   bool operator ==(Object other) {

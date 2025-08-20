@@ -4,6 +4,6 @@ import 'package:blocx/src/list/use_cases/pagination_use_case.dart';
 
 abstract interface class InfiniteListBlocContract<T extends ListEntity<T>, P> {
   void initInfiniteList();
-  Future loadNextPage(ListBlocEventLoadNextPage<T> event, Emitter<ListBlocState<T>> emit);
+  Future loadNextPage(ListEventLoadNextPage<T> event, Emitter<ListState<T>> emit);
   PaginationUseCase<T, P>? get loadNextPageUseCase;
 }

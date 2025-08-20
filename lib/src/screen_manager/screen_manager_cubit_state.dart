@@ -1,7 +1,7 @@
 part of 'screen_manager_cubit.dart';
 
 @immutable
-class ScreenManagerCubitState extends BaseBlocState {
+class ScreenManagerCubitState extends BaseState {
   const ScreenManagerCubitState({required super.shouldRebuild, required super.shouldListen});
 }
 

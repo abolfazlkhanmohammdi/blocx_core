@@ -9,11 +9,7 @@ import 'package:meta/meta.dart';
 
 abstract class ListBlocDataContract<T extends ListEntity<T>, P> {
   @protected
-  FutureOr loadInitialPage(ListBlocEventLoadInitialPage<T, P> event, Emitter<ListBlocState<T>> emit);
-  @protected
-  FutureOr refreshPage(ListBlocEventRefreshData<T> event, Emitter<ListBlocState<T>> emit);
-  @protected
-  FutureOr loadNextPage(ListBlocEventLoadNextPage<T> event, Emitter<ListBlocState<T>> emit);
+  FutureOr loadInitialPage(ListEventLoadInitialPage<T, P> event, Emitter<ListState<T>> emit);
 
   PaginationUseCase<T, P>? get loadInitialPageUseCase;
   InfiniteListBloc get infiniteListBloc;
