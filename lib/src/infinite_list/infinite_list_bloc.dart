@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:bloc/bloc.dart';
@@ -56,6 +57,7 @@ class InfiniteListBloc extends Bloc<InfiniteListEvent, InfiniteListState> {
     on<InfiniteListEventVerticalDragEnded>(_onDragEnded, transformer: restartable());
     on<InfiniteListEventOnScroll>(_onScroll);
     on<InfiniteListEventCloseRefresh>(_closeRefresh);
+    on<InfiniteListEventReachedEnd>(_reachedEnd);
   }
 
   void _emitLoaded(Emitter<InfiniteListState> emit) {
@@ -102,10 +104,10 @@ class InfiniteListBloc extends Bloc<InfiniteListEvent, InfiniteListState> {
       _isAtBottom = event.isAtBottom;
       _isScrollingUp = event.isScrollingUp;
     }
-    logger.i(
-      'onScroll → isAtTop: $_isAtTop, isAtBottom: $_isAtBottom, '
-      'isScrollingUp: $_isScrollingUp, isIdle: $_isIdle',
-    );
+    // logger.i(
+    //   'onScroll → isAtTop: $_isAtTop, isAtBottom: $_isAtBottom, '
+    //   'isScrollingUp: $_isScrollingUp, isIdle: $_isIdle',
+    // );
     _emitLoaded(emit);
   }
 
@@ -182,6 +184,7 @@ class InfiniteListBloc extends Bloc<InfiniteListEvent, InfiniteListState> {
   void _closeRefresh(InfiniteListEventCloseRefresh event, Emitter<InfiniteListState> emit) {
     _isRefreshing = false;
     _swipeRefreshHeight = 0;
+    _isScrollingUp = false;
     _emitLoaded(emit);
   }
 
@@ -195,5 +198,22 @@ class InfiniteListBloc extends Bloc<InfiniteListEvent, InfiniteListState> {
 
   void setLoadingTopStatus(bool status) {
     add(InfiniteListEventChangeLoadTopDataStatus(status));
+  }
+
+  FutureOr<void> _reachedEnd(InfiniteListEventReachedEnd event, Emitter<InfiniteListState> emit) {
+    _hasReachedEnd = true;
+    emit(
+      InfiniteListStateLoaded(
+        isAtTop: isAtTop,
+        isIdle: isIdle,
+        isLoadingBottom: false,
+        isLoadingTop: _isLoadingTopData,
+        isRefreshing: isRefreshing,
+        isScrollingUp: isScrollingUp,
+        isAtBottom: isAtBottom,
+        swipeRefreshHeight: swipeRefreshHeight,
+        hasReachedEnd: hasReachedEnd,
+      ),
+    );
   }
 }

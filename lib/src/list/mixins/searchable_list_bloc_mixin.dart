@@ -2,11 +2,8 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
-import 'package:blocx/src/list/bloc/list_bloc.dart';
+import 'package:blocx/blocx.dart';
 import 'package:blocx/src/list/misc/event_transformers.dart';
-import 'package:blocx/src/list/mixins/contracts/searchable_list_bloc_contract.dart';
-import 'package:blocx/src/list/models/list_entity.dart';
-import 'package:blocx/src/list/use_cases/search_use_case.dart';
 
 /// Adds **search** behavior to a [ListBloc].
 ///
@@ -28,14 +25,16 @@ import 'package:blocx/src/list/use_cases/search_use_case.dart';
 /// - For empty search text (`""`), it will fall back to [loadInitialPageUseCase].
 ///
 /// If you don’t supply [searchUseCase], you must override [search] yourself.
-mixin SearchableListBlocMixin<T extends ListEntity<T>, P> on ListBloc<T, P>
-    implements SearchableListBlocContract<T, P> {
+mixin SearchableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
+  String searchText = "";
+
   /// Wire up search events:
   /// - [`ListEventSearch`]: debounced, restartable execution
   /// - [`ListEventClearSearch`]: droppable (ignores overlap)
-  @override
+
   void initSearch() {
     on<ListEventSearch<T>>(_search, transformer: debounceRestartable(searchDebounceDuration));
+    on<ListEventSearchRefresh<T>>(searchRefresh, transformer: debounceRestartable(searchDebounceDuration));
     on<ListEventClearSearch<T>>(_clearSearch, transformer: droppable());
     on<ListEventSearchNextPage<T>>(searchNextPage, transformer: debounceRestartable(searchDebounceDuration));
   }
@@ -52,7 +51,6 @@ mixin SearchableListBlocMixin<T extends ListEntity<T>, P> on ListBloc<T, P>
     await search(event, emit);
   }
 
-  @override
   Future<void> search(ListEventSearch<T> event, Emitter<ListState<T>> emit) async {
     if (searchUseCase(event.searchText) != null) {
       return _fetchSearchResult(event, emit);
@@ -113,16 +111,57 @@ mixin SearchableListBlocMixin<T extends ListEntity<T>, P> on ListBloc<T, P>
   }
 
   /// Use case for fetching search results. If `null`, override [search].
-  @override
-  SearchUseCase<T, P>? searchUseCase(String searchText) => null;
+
+  SearchUseCase<T, P>? searchUseCase(String searchText, {int? loadCount, int? offset}) => null;
 
   /// Debounce duration for search requests. Default: 300ms.
   Duration get searchDebounceDuration => const Duration(milliseconds: 300);
 
-  @override
   FutureOr<void> clearSearch(ListEventClearSearch<T> event, Emitter<ListState<T>> emit) {
     add(ListEventLoadInitialPage<T, P>(payload: payload));
   }
 
   FutureOr<void> searchNextPage(ListEventSearchNextPage<T> event, Emitter<ListState<T>> emit) {}
+
+  FutureOr<void> searchRefresh(ListEventSearchRefresh<T> event, Emitter<ListState<T>> emit) {
+    if (searchUseCase(searchText) != null) {
+      return _fetchSearchRefreshResult(event, emit);
+    }
+    throw UnimplementedError(
+      'Search is not configured. Either provide `searchUseCase` or override '
+      '`search(...)` in your bloc.',
+    );
+  }
+
+  Future<void> _fetchSearchRefreshResult(ListEventSearchRefresh<T> event, Emitter<ListState<T>> emit) async {
+    isSearching = true;
+    emitState(emit);
+
+    try {
+      final useCase = searchUseCase(searchText, loadCount: list.length, offset: 0);
+
+      if (useCase == null) {
+        throw UnimplementedError(
+          'No use case available for this search path. '
+          'Empty query requires `loadInitialPageUseCase`; non-empty query requires `searchUseCase`.',
+        );
+      }
+
+      final result = await useCase.execute();
+
+      if (result.isFailure) {
+        await handleDataError(result.error!, emit, stacktrace: result.stackTrace);
+        return;
+      }
+
+      // Replace data immutably
+      clearList();
+      await insertToList(result.data!.items, !result.data!.hasNext, DataInsertSource.search);
+      emitState(emit);
+    } finally {
+      // Make sure the flag is reset even on failures
+      isSearching = false;
+      emitState(emit);
+    }
+  }
 }

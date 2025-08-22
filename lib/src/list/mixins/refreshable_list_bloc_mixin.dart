@@ -1,12 +1,13 @@
 import 'package:bloc/bloc.dart';
 import 'package:blocx/blocx.dart';
-import 'package:blocx/src/list/mixins/contracts/refreshable_list_bloc_contract.dart';
 
-mixin RefreshableListBlocMixin<T extends ListEntity<T>, P> on ListBloc<T, P>
-    implements RefreshableListBlocContract<T, P> {
-  @override
+mixin RefreshableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   Future refreshPage(ListEventRefreshData<T> event, Emitter<ListState<T>> emit) async {
     if (isRefreshing) return;
+    if (isSearchable && (this as SearchableListBlocMixin<T, P>).searchText.isNotEmpty) {
+      add(ListEventSearchRefresh());
+      return;
+    }
     if (refreshPageUseCase != null) return await _fetchRefreshPage(event, emit);
     throw UnimplementedError("You must either override refreshUseCase getter or refreshPage method");
   }
@@ -25,11 +26,9 @@ mixin RefreshableListBlocMixin<T extends ListEntity<T>, P> on ListBloc<T, P>
     emitState(emit);
   }
 
-  @override
   initRefresh() {
     on<ListEventRefreshData<T>>(refreshPage);
   }
 
-  @override
   PaginationUseCase<T, P>? get refreshPageUseCase => null;
 }

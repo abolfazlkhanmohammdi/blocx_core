@@ -41,3 +41,5 @@ class InfiniteListEventVerticalDragEnded extends InfiniteListEvent {
 }
 
 class InfiniteListEventCloseRefresh extends InfiniteListEvent {}
+
+class InfiniteListEventReachedEnd extends InfiniteListEvent {}

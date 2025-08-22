@@ -5,12 +5,12 @@ import 'package:bloc/bloc.dart';
 import 'package:blocx/blocx.dart';
 import 'package:blocx/src/core/base_bloc/base_bloc.dart';
 import 'package:blocx/src/core/list_entity_extensions.dart';
-import 'package:blocx/src/list/mixins/contracts/list_bloc_data_contract.dart';
+import 'package:blocx/src/core/logger.dart';
 
-mixin ListBlocDataMixin<T extends ListEntity<T>, P> on BaseBloc<ListEvent<T>, ListState<T>>
-    implements ListBlocDataContract<T, P> {
+mixin ListBlocDataMixin<T extends BaseEntity, P> on BaseBloc<ListEvent<T>, ListState<T>> {
   P? payload;
   final List<T> _list = [];
+  InfiniteListBloc get infiniteListBloc;
 
   /// **Important:** This list is an [UnmodifiableListView].
   /// You cannot add/remove/mutate items directly.
@@ -21,7 +21,7 @@ mixin ListBlocDataMixin<T extends ListEntity<T>, P> on BaseBloc<ListEvent<T>, Li
   bool hasReachedEnd = false;
   bool isSearching = false;
   bool isRefreshing = false;
-  @override
+
   Future loadInitialPage(ListEventLoadInitialPage<T, P> event, Emitter<ListState<T>> emit) async {
     payload = event.payload;
     if (loadInitialPageUseCase != null) return await _fetchInitialPage(event, emit);
@@ -64,11 +64,11 @@ mixin ListBlocDataMixin<T extends ListEntity<T>, P> on BaseBloc<ListEvent<T>, Li
         hasReachedEnd: hasReachedEnd,
         isLoadingNextPage: this.isLoadingNextPage,
         isRefreshing: this.isRefreshing,
+        isSearching: isSearching,
       ),
     );
   }
 
-  @override
   PaginationUseCase<T, P>? get loadInitialPageUseCase => null;
 
   (String, String?) convertErrorToMessageAndTitle(Object error);
@@ -80,6 +80,10 @@ mixin ListBlocDataMixin<T extends ListEntity<T>, P> on BaseBloc<ListEvent<T>, Li
     _addInfiniteListEvent(insertSource);
     _list.insertAll(index, data);
     this.hasReachedEnd = hasReachedEnd;
+    if (hasReachedEnd) {
+      logger.i("List has reached its end");
+      infiniteListBloc.add(InfiniteListEventReachedEnd());
+    }
   }
 
   void clearList() {
@@ -97,36 +101,6 @@ mixin ListBlocDataMixin<T extends ListEntity<T>, P> on BaseBloc<ListEvent<T>, Li
 
   void removeItemFromList(T item) {
     _list.removeById(item);
-  }
-
-  void setItemBeingRemoved(T item) {
-    _list.setBeingRemoved(item);
-  }
-
-  void clearItemBeingRemoved(T item) {
-    _list.clearItemBeingRemoved(item);
-  }
-
-  clearSelection() {
-    for (int i = 0; i < _list.length; i++) {
-      _list[i] = _list[i].copyWithListFlags(isSelected: false);
-    }
-  }
-
-  selectItemInList(T item) {
-    _list.selectItem(item);
-  }
-
-  deselectItemInList(T item) {
-    _list.deselectItem(item);
-  }
-
-  highlightItemInList(T item) {
-    _list.highlightItem(item);
-  }
-
-  clearHighlightedItemInList(T item) {
-    _list.clearHighlightedItem(item);
   }
 
   void _addInfiniteListEvent(DataInsertSource insertSource) {

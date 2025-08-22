@@ -1,28 +1,22 @@
 import 'package:blocx/blocx.dart';
 import 'package:blocx/src/core/base_bloc/base_bloc.dart';
-import 'package:blocx/src/list/mixins/contracts/deletable_list_bloc_contract.dart';
-import 'package:blocx/src/list/mixins/contracts/highlightable_list_bloc_contract.dart';
-import 'package:blocx/src/list/mixins/contracts/infinite_list_bloc_contract.dart';
-import 'package:blocx/src/list/mixins/contracts/refreshable_list_bloc_contract.dart';
-import 'package:blocx/src/list/mixins/contracts/searchable_list_bloc_contract.dart';
-import 'package:blocx/src/list/mixins/contracts/selectable_list_bloc_contract.dart';
-import 'package:blocx/src/list/mixins/implementations/list_bloc_data_mixin.dart';
+import 'package:blocx/src/list/mixins/list_bloc_data_mixin.dart';
 
-part 'list_event.dart';
 part 'lis_state.dart';
+part 'list_event.dart';
 
-abstract class ListBloc<T extends ListEntity<T>, P> extends BaseBloc<ListEvent<T>, ListState<T>>
+abstract class ListBloc<T extends BaseEntity, P> extends BaseBloc<ListEvent<T>, ListState<T>>
     with ListBlocDataMixin<T, P> {
   final InfiniteListBloc _infiniteListBloc;
   ListBloc(ScreenManagerCubit screenManagerCubit, this._infiniteListBloc)
     : super(ListStateLoading(), screenManagerCubit) {
     initDataMixin();
-    if (isSelectable) (this as SelectableBlocContract<T>).initSelectionMixin();
-    if (isHighlightable) (this as HighlightableListBlocContract<T>).initHighlightMixin();
-    if (isSearchable) (this as SearchableListBlocContract<T, P>).initSearch();
-    if (isRefreshable) (this as RefreshableListBlocContract<T, P>).initRefresh();
-    if (isInfinite) (this as InfiniteListBlocContract<T, P>).initInfiniteList();
-    if (isDeletable) (this as DeletableListBlocContract<T>).initDeletable();
+    if (isSelectable) (this as SelectableListBlocMixin<T, P>).initSelectionMixin();
+    if (isHighlightable) (this as HighlightableListBlocMixin<T, P>).initHighlightMixin();
+    if (isSearchable) (this as SearchableListBlocMixin<T, P>).initSearch();
+    if (isRefreshable) (this as RefreshableListBlocMixin<T, P>).initRefresh();
+    if (isInfinite) (this as InfiniteListBlocMixin<T, P>).initInfiniteList();
+    if (isDeletable) (this as DeletableListBlocMixin<T, P>).initDeletable();
   }
 
   @override
@@ -34,12 +28,12 @@ abstract class ListBloc<T extends ListEntity<T>, P> extends BaseBloc<ListEvent<T
   @override
   InfiniteListBloc get infiniteListBloc => _infiniteListBloc;
 
-  bool get isSearchable => this is SearchableListBlocContract<T, P>;
-  bool get isHighlightable => this is HighlightableListBlocContract<T>;
-  bool get isSelectable => this is SelectableBlocContract<T>;
-  bool get isRefreshable => this is RefreshableListBlocContract<T, P>;
-  bool get isInfinite => this is InfiniteListBlocContract<T, P>;
-  bool get isDeletable => this is DeletableListBlocContract<T>;
+  bool get isSearchable => this is SearchableListBlocMixin<T, P>;
+  bool get isHighlightable => this is HighlightableListBlocMixin<T, P>;
+  bool get isSelectable => this is SelectableListBlocMixin<T, P>;
+  bool get isRefreshable => this is RefreshableListBlocMixin<T, P>;
+  bool get isInfinite => this is InfiniteListBlocMixin<T, P>;
+  bool get isDeletable => this is DeletableListBlocMixin<T, P>;
 }
 
 enum DataInsertSource { init, nextPage, refresh, search }

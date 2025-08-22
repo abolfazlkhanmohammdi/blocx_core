@@ -1,6 +1,6 @@
 part of 'list_bloc.dart';
 
-sealed class ListState<T extends ListEntity<T>> extends BaseState {
+sealed class ListState<T extends BaseEntity> extends BaseState {
   final List<T> list;
   final bool hasReachedEnd;
   final bool isLoadingNextPage;
@@ -17,15 +17,23 @@ sealed class ListState<T extends ListEntity<T>> extends BaseState {
   });
 }
 
-class ListStateLoading<T extends ListEntity<T>> extends ListState<T> {
+class ListStateLoading<T extends BaseEntity> extends ListState<T> {
   ListStateLoading() : super(list: const [], shouldRebuild: true, shouldListen: false);
 }
 
-class ListStateLoaded<T extends ListEntity<T>> extends ListState<T> {
+class ListStateLoaded<T extends BaseEntity> extends ListState<T> {
   ListStateLoaded({
     required super.list,
     required super.hasReachedEnd,
     required super.isLoadingNextPage,
     required super.isRefreshing,
+    required super.isSearching,
   }) : super(shouldRebuild: true, shouldListen: false);
+}
+
+class ListStateScrollToItem<T extends BaseEntity> extends ListState<T> {
+  final T item;
+  final int index;
+  ListStateScrollToItem({required this.item, required this.index})
+    : super(shouldRebuild: false, shouldListen: true, list: []);
 }

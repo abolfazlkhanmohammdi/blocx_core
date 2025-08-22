@@ -1,10 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:blocx/blocx.dart';
-import 'package:blocx/src/list/mixins/contracts/infinite_list_bloc_contract.dart';
 
-mixin InfiniteListBlocMixin<T extends ListEntity<T>, P> on ListBloc<T, P>
-    implements InfiniteListBlocContract<T, P> {
-  @override
+mixin InfiniteListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   Future loadNextPage(ListEventLoadNextPage<T> event, Emitter<ListState<T>> emit) async {
     if (isSearchable && (this as SearchableListBlocMixin<T, P>).searchText.isNotEmpty) {
       add(ListEventSearchNextPage());
@@ -28,11 +25,9 @@ mixin InfiniteListBlocMixin<T extends ListEntity<T>, P> on ListBloc<T, P>
     emitState(emit);
   }
 
-  @override
   void initInfiniteList() {
     on<ListEventLoadNextPage<T>>(loadNextPage);
   }
 
-  @override
   PaginationUseCase<T, P>? get loadNextPageUseCase => null;
 }

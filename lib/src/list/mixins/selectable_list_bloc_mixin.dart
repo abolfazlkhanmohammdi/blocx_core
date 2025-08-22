@@ -1,11 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
-import 'package:blocx/src/list/bloc/list_bloc.dart';
-import 'package:blocx/src/list/mixins/contracts/selectable_list_bloc_contract.dart';
-import 'package:blocx/src/list/models/list_entity.dart';
-import 'package:blocx/src/core/use_cases/base_use_case.dart';
-import 'package:blocx/src/list/models/use_case_result.dart';
+import 'package:blocx/blocx.dart';
 
 /// Adds selection behavior to a [ListBloc].
 ///
@@ -21,8 +17,9 @@ import 'package:blocx/src/list/models/use_case_result.dart';
 /// Registers:
 /// - [ListEventSelectItem]
 /// - [ListEventDeselectItem]
-mixin SelectableListBlocMixin<T extends ListEntity<T>, P> on ListBloc<T, P>
-    implements SelectableBlocContract<T> {
+mixin SelectableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
+  Set<String> selectedItemIds = {};
+  Set<String> beingSelectedItemIds = {};
   // ===========================================================================
   // Configuration
   // ===========================================================================
@@ -30,7 +27,7 @@ mixin SelectableListBlocMixin<T extends ListEntity<T>, P> on ListBloc<T, P>
   /// When `true`, selecting an item clears any existing selection first.
   ///
   /// Defaults to `true` (single-select). Override to enable multi-select.
-  @override
+
   bool get isSingleSelect => true;
 
   /// When `true`, selection/deselection attempts a remote sync:
@@ -52,7 +49,7 @@ mixin SelectableListBlocMixin<T extends ListEntity<T>, P> on ListBloc<T, P>
   /// - `false` → logical failure (triggers rollback)
   ///
   /// If `null`, the mixin falls back to [performRemoteSelection].
-  @override
+
   BaseUseCase<bool>? get selectItemUseCase => null;
 
   /// Preferred: a use case that performs the remote **deselection** side-effect.
@@ -62,7 +59,7 @@ mixin SelectableListBlocMixin<T extends ListEntity<T>, P> on ListBloc<T, P>
   /// - `false` → logical failure (triggers rollback)
   ///
   /// If `null`, the mixin falls back to [performRemoteDeselection].
-  @override
+
   BaseUseCase<bool>? get deselectItemUseCase => null;
 
   // ===========================================================================
@@ -70,7 +67,7 @@ mixin SelectableListBlocMixin<T extends ListEntity<T>, P> on ListBloc<T, P>
   // ===========================================================================
 
   /// Registers select/deselect handlers.
-  @override
+
   void initSelectionMixin() {
     on<ListEventSelectItem<T>>(selectItem);
     on<ListEventDeselectItem<T>>(deselectItem);
@@ -88,10 +85,10 @@ mixin SelectableListBlocMixin<T extends ListEntity<T>, P> on ListBloc<T, P>
   /// 3) If [syncWithServerOnSelection]:
   ///    - Prefer [selectItemUseCase]; else use [performRemoteSelection].
   ///    - On failure/exception: rollback (deselect), [emitState], then [onSelectionSyncFailed].
-  @override
+
   Future<void> selectItem(ListEventSelectItem<T> event, Emitter<ListState<T>> emit) async {
-    if (isSingleSelect) clearSelection();
-    selectItemInList(event.item);
+    if (isSingleSelect) selectedItemIds.clear();
+    selectedItemIds.add(event.item.identifier);
     emitState(emit);
 
     if (!syncWithServerOnSelection) {
@@ -100,18 +97,22 @@ mixin SelectableListBlocMixin<T extends ListEntity<T>, P> on ListBloc<T, P>
     }
 
     try {
+      beingSelectedItemIds.add(event.item.identifier);
+      emitState(emit);
       final ok = await _runSelectRemote();
+      beingSelectedItemIds.remove(event.item.identifier);
+      emitState(emit);
       if (ok) {
         onItemSelected(event.item);
         return;
       }
       // rollback on failure
-      deselectItemInList(event.item);
+      selectedItemIds.remove(event.item.identifier);
       emitState(emit);
       onSelectionSyncFailed(event.item, isSelectOperation: true);
     } catch (_) {
       // rollback on exception
-      deselectItemInList(event.item);
+      selectedItemIds.remove(event.item.identifier);
       emitState(emit);
       onSelectionSyncFailed(event.item, isSelectOperation: true);
     }
@@ -124,11 +125,10 @@ mixin SelectableListBlocMixin<T extends ListEntity<T>, P> on ListBloc<T, P>
   /// 2) If [syncWithServerOnSelection]:
   ///    - Prefer [deselectItemUseCase]; else use [performRemoteDeselection].
   ///    - On failure/exception: rollback (re-select), [emitState], then [onSelectionSyncFailed].
-  @override
-  Future<void> deselectItem(ListEventDeselectItem<T> event, Emitter<ListState<T>> emit) async {
-    deselectItemInList(event.item);
-    emitState(emit);
 
+  Future<void> deselectItem(ListEventDeselectItem<T> event, Emitter<ListState<T>> emit) async {
+    selectedItemIds.remove(event.item.identifier);
+    emitState(emit);
     if (!syncWithServerOnSelection) {
       onItemDeselected(event.item);
       return;
@@ -141,12 +141,11 @@ mixin SelectableListBlocMixin<T extends ListEntity<T>, P> on ListBloc<T, P>
         return;
       }
       // rollback on failure
-      selectItemInList(event.item);
+      selectedItemIds.add(event.item.identifier);
       emitState(emit);
       onSelectionSyncFailed(event.item, isSelectOperation: false);
     } catch (_) {
       // rollback on exception
-      selectItemInList(event.item);
       emitState(emit);
       onSelectionSyncFailed(event.item, isSelectOperation: false);
     }
@@ -221,5 +220,13 @@ mixin SelectableListBlocMixin<T extends ListEntity<T>, P> on ListBloc<T, P>
           ? "Could not select the item. Please try again."
           : "Could not deselect the item. Please try again.",
     );
+  }
+
+  bool isSelected(String identifier) {
+    return selectedItemIds.contains(identifier);
+  }
+
+  bool isBeingSelected(String identifier) {
+    return beingSelectedItemIds.contains(identifier);
   }
 }
