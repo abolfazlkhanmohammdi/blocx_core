@@ -5,7 +5,6 @@ import 'package:bloc/bloc.dart';
 import 'package:blocx/blocx.dart';
 import 'package:blocx/src/core/base_bloc/base_bloc.dart';
 import 'package:blocx/src/core/list_entity_extensions.dart';
-import 'package:blocx/src/core/logger.dart';
 
 mixin ListBlocDataMixin<T extends BaseEntity, P> on BaseBloc<ListEvent<T>, ListState<T>> {
   P? payload;
@@ -13,17 +12,25 @@ mixin ListBlocDataMixin<T extends BaseEntity, P> on BaseBloc<ListEvent<T>, ListS
 
   /// **Important:** This list is an [UnmodifiableListView].
   /// You cannot add/remove/mutate items directly.
-  /// Always use the provided helpers (e.g. [selectItemInList], [deselectItemInList],
-  /// [removeItemFromList], [clearSelection], etc.) to make changes.
+  /// Always use the provided helpers.
   UnmodifiableListView<T> get list => UnmodifiableListView(_list);
+
   bool isLoadingNextPage = false;
   bool hasReachedEnd = false;
   bool isSearching = false;
   bool isRefreshing = false;
 
+  Set<String> get selectedItemIds;
+  Set<String> get beingSelectedItemIds;
+  Set<String> get highlightedItemIds;
+  Set<String> get beingRemovedItemIds;
+  Set<String> get expandedItemIds;
+
   Future loadInitialPage(ListEventLoadInitialPage<T, P> event, Emitter<ListState<T>> emit) async {
     payload = event.payload;
-    if (loadInitialPageUseCase != null) return await _fetchInitialPage(event, emit);
+    if (loadInitialPageUseCase != null) {
+      return await _fetchInitialPage(event, emit);
+    }
     throw UnimplementedError("You must either override loadUseCase getter or loadData method");
   }
 
@@ -61,9 +68,15 @@ mixin ListBlocDataMixin<T extends BaseEntity, P> on BaseBloc<ListEvent<T>, ListS
       ListStateLoaded(
         list: list,
         hasReachedEnd: hasReachedEnd,
-        isLoadingNextPage: this.isLoadingNextPage,
-        isRefreshing: this.isRefreshing,
+        isLoadingNextPage: isLoadingNextPage,
+        isRefreshing: isRefreshing,
         isSearching: isSearching,
+        // pass state-driven sets from getters
+        selectedItemIds: selectedItemIds,
+        beingSelectedItemIds: beingSelectedItemIds,
+        highlightedItemIds: highlightedItemIds,
+        beingRemovedItemIds: beingRemovedItemIds,
+        expandedItemIds: expandedItemIds,
       ),
     );
   }
@@ -80,7 +93,6 @@ mixin ListBlocDataMixin<T extends BaseEntity, P> on BaseBloc<ListEvent<T>, ListS
     _list.insertAll(index, data);
     this.hasReachedEnd = hasReachedEnd;
     if (hasReachedEnd) {
-      // logger.i("List has reached its end");
       infiniteListBloc.add(InfiniteListEventSetReachedEnd(hasReachedEnd: true));
     }
   }
@@ -90,8 +102,9 @@ mixin ListBlocDataMixin<T extends BaseEntity, P> on BaseBloc<ListEvent<T>, ListS
   }
 
   void replaceList(List<T> newList) {
-    _list.clear();
-    _list.addAll(newList);
+    _list
+      ..clear()
+      ..addAll(newList);
   }
 
   void replaceItemInList(T item) {

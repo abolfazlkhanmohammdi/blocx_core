@@ -18,8 +18,8 @@ import 'package:blocx/blocx.dart';
 /// - [ListEventSelectItem]
 /// - [ListEventDeselectItem]
 mixin SelectableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
-  Set<String> selectedItemIds = {};
-  Set<String> beingSelectedItemIds = {};
+  final Set<String> _selectedItemIds = {};
+  final Set<String> _beingSelectedItemIds = {};
   // ===========================================================================
   // Configuration
   // ===========================================================================
@@ -71,6 +71,7 @@ mixin SelectableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   void initSelectionMixin() {
     on<ListEventSelectItem<T>>(selectItem);
     on<ListEventDeselectItem<T>>(deselectItem);
+    on<ListEventDeselectMultipleItems<T>>(deselectMultipleItems);
   }
 
   // ===========================================================================
@@ -87,8 +88,8 @@ mixin SelectableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   ///    - On failure/exception: rollback (deselect), [emitState], then [onSelectionSyncFailed].
 
   Future<void> selectItem(ListEventSelectItem<T> event, Emitter<ListState<T>> emit) async {
-    if (isSingleSelect) selectedItemIds.clear();
-    selectedItemIds.add(event.item.identifier);
+    if (isSingleSelect) _selectedItemIds.clear();
+    _selectedItemIds.add(event.item.identifier);
     emitState(emit);
 
     if (!syncWithServerOnSelection) {
@@ -97,22 +98,22 @@ mixin SelectableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
     }
 
     try {
-      beingSelectedItemIds.add(event.item.identifier);
+      _beingSelectedItemIds.add(event.item.identifier);
       emitState(emit);
       final ok = await _runSelectRemote();
-      beingSelectedItemIds.remove(event.item.identifier);
+      _beingSelectedItemIds.remove(event.item.identifier);
       emitState(emit);
       if (ok) {
         onItemSelected(event.item);
         return;
       }
       // rollback on failure
-      selectedItemIds.remove(event.item.identifier);
+      _selectedItemIds.remove(event.item.identifier);
       emitState(emit);
       onSelectionSyncFailed(event.item, isSelectOperation: true);
     } catch (_) {
       // rollback on exception
-      selectedItemIds.remove(event.item.identifier);
+      _selectedItemIds.remove(event.item.identifier);
       emitState(emit);
       onSelectionSyncFailed(event.item, isSelectOperation: true);
     }
@@ -127,7 +128,7 @@ mixin SelectableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   ///    - On failure/exception: rollback (re-select), [emitState], then [onSelectionSyncFailed].
 
   Future<void> deselectItem(ListEventDeselectItem<T> event, Emitter<ListState<T>> emit) async {
-    selectedItemIds.remove(event.item.identifier);
+    _selectedItemIds.remove(event.item.identifier);
     emitState(emit);
     if (!syncWithServerOnSelection) {
       onItemDeselected(event.item);
@@ -141,7 +142,7 @@ mixin SelectableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
         return;
       }
       // rollback on failure
-      selectedItemIds.add(event.item.identifier);
+      _selectedItemIds.add(event.item.identifier);
       emitState(emit);
       onSelectionSyncFailed(event.item, isSelectOperation: false);
     } catch (_) {
@@ -222,11 +223,14 @@ mixin SelectableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
     );
   }
 
-  bool isSelected(String identifier) {
-    return selectedItemIds.contains(identifier);
-  }
+  Set<String> get beingSelectedItemIdsOriginal => _beingSelectedItemIds;
 
-  bool isBeingSelected(String identifier) {
-    return beingSelectedItemIds.contains(identifier);
+  Set<String> get selectedItemIdsOriginal => _selectedItemIds;
+
+  FutureOr<void> deselectMultipleItems(ListEventDeselectMultipleItems<T> event, Emitter<ListState<T>> emit) {
+    for (T item in event.items) {
+      selectedItemIds.remove(item.identifier);
+    }
+    emitState(emit);
   }
 }

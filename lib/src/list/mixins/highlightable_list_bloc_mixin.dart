@@ -9,7 +9,7 @@ import 'package:blocx/blocx.dart';
 /// - [ListEventHighlightItem] → sets `isHighlighted = true` for the item
 /// - [ListEventClearHighlightedItem] → clears highlight (usually after a delay)
 mixin HighlightableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
-  Set<String> highlightedItemIds = {};
+  final Set<String> _highlightedItemIds = {};
 
   /// Whether the highlight should auto-clear after [highlightDuration].
 
@@ -33,7 +33,7 @@ mixin HighlightableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   ///   [ListEventClearHighlightedItem].
 
   FutureOr<void> highlightItem(ListEventHighlightItem<T> event, Emitter<ListState<T>> emit) async {
-    highlightedItemIds.add(event.item.identifier);
+    _highlightedItemIds.add(event.item.identifier);
     emitState(emit);
     if (autoClearHighlight) {
       add(ListEventClearHighlightedItem<T>(item: event.item));
@@ -50,11 +50,13 @@ mixin HighlightableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
     Emitter<ListState<T>> emit,
   ) async {
     await Future.delayed(highlightDuration);
-    highlightedItemIds.remove(event.item.identifier);
+    _highlightedItemIds.remove(event.item.identifier);
     emitState(emit);
   }
 
   bool isHighlighted(String identifier) {
-    return highlightedItemIds.contains(identifier);
+    return _highlightedItemIds.contains(identifier);
   }
+
+  Set<String> get highlightedItemIdsOriginal => _highlightedItemIds;
 }

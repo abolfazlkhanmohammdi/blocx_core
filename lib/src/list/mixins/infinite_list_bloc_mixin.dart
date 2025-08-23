@@ -30,5 +30,4 @@ mixin InfiniteListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   }
 
   PaginationUseCase<T, P>? get loadNextPageUseCase => null;
-  InfiniteListBloc get infiniteListBloc;
 }

@@ -4,6 +4,7 @@ import 'package:blocx/src/list/mixins/expandable_list_bloc_mixin.dart';
 import 'package:blocx/src/list/mixins/list_bloc_data_mixin.dart';
 
 part 'lis_state.dart';
+part 'lis_state_extension.dart';
 part 'list_event.dart';
 
 abstract class ListBloc<T extends BaseEntity, P> extends BaseBloc<ListEvent<T>, ListState<T>>
@@ -39,6 +40,25 @@ abstract class ListBloc<T extends BaseEntity, P> extends BaseBloc<ListEvent<T>, 
 
   @override
   InfiniteListBloc get infiniteListBloc => _infiniteListBloc;
+
+  @override
+  Set<String> get beingRemovedItemIds =>
+      isDeletable ? (this as DeletableListBlocMixin<T, P>).beingRemovedItemIdsOriginal : {};
+  @override
+  Set<String> get selectedItemIds =>
+      isSelectable ? (this as SelectableListBlocMixin<T, P>).selectedItemIdsOriginal : const {};
+
+  @override
+  Set<String> get beingSelectedItemIds =>
+      isSelectable ? (this as SelectableListBlocMixin<T, P>).beingSelectedItemIdsOriginal : const {};
+
+  @override
+  Set<String> get highlightedItemIds =>
+      isHighlightable ? (this as HighlightableListBlocMixin<T, P>).highlightedItemIdsOriginal : const {};
+
+  @override
+  Set<String> get expandedItemIds =>
+      isExpandable ? (this as ExpandableListBlocMixin<T, P>).expandedItemIdsOriginal : const {};
 }
 
 enum DataInsertSource { init, nextPage, refresh, search }

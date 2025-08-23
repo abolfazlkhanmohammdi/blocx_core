@@ -4,7 +4,7 @@ import 'package:bloc/bloc.dart';
 import 'package:blocx/blocx.dart';
 
 mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
-  Set<String> beingRemovedItemIds = {};
+  final Set<String> _beingRemovedItemIds = {};
 
   BaseUseCase<bool>? deleteItemUseCase(T item) => null;
   BaseUseCase<bool>? deleteMultipleItemsUseCase(List<T> items) => null;
@@ -15,7 +15,7 @@ mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   }
 
   Future<void> removeItem(ListEventRemoveItem<T> event, Emitter<ListState<T>> emit) async {
-    beingRemovedItemIds.add(event.item.identifier);
+    _beingRemovedItemIds.add(event.item.identifier);
     emitState(emit);
 
     final uc = deleteItemUseCase(event.item);
@@ -32,15 +32,18 @@ mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
 
       // Update local state based on outcome
       final ok = result.isSuccess && (result.data ?? false);
-      beingRemovedItemIds.remove(event.item.identifier);
-      if (ok) removeItemFromList(event.item);
+      _beingRemovedItemIds.remove(event.item.identifier);
+      if (ok) {
+        removeItemFromList(event.item);
+        if (isSelectable) add(ListEventDeselectMultipleItems([event.item]));
+      }
 
       emitState(emit);
-      onItemDeletedResult(result);
+      _onItemDeletedResult(result);
     } catch (e, s) {
-      beingRemovedItemIds.remove(event.item.identifier);
+      _beingRemovedItemIds.remove(event.item.identifier);
       emitState(emit);
-      onDeletionUnexpectedError(e, s);
+      handleDataError(e, emit, stacktrace: s);
     }
   }
 
@@ -52,7 +55,7 @@ mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
 
     // Mark all as being removed (for UI feedback)
     for (final it in items) {
-      beingRemovedItemIds.add(it.identifier);
+      _beingRemovedItemIds.add(it.identifier);
     }
     emitState(emit);
 
@@ -63,7 +66,7 @@ mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
     if (!hasMany && !hasSingle) {
       // Revert the flags to avoid leaving items stuck as "being removed"
       for (final it in items) {
-        beingRemovedItemIds.remove(it.identifier);
+        _beingRemovedItemIds.remove(it.identifier);
       }
       emitState(emit);
       throw UnimplementedError(
@@ -79,19 +82,19 @@ mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
     try {
       if (hasMany) {
         // Try bulk use case once
-        final result = await ucMany!.execute();
+        final result = await ucMany.execute();
         final ok = result.isSuccess && (result.data ?? false);
 
         // If bulk succeeds, consider all deleted; else none
         if (ok) {
           for (final it in items) {
-            beingRemovedItemIds.remove(it.identifier);
+            _beingRemovedItemIds.remove(it.identifier);
             removeItemFromList(it);
             results[it] = UseCaseResult.success(true);
           }
         } else {
           for (final it in items) {
-            beingRemovedItemIds.remove(it.identifier);
+            _beingRemovedItemIds.remove(it.identifier);
             results[it] = result; // same failure result for each
           }
         }
@@ -105,12 +108,13 @@ mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
             final ok = r.isSuccess && (r.data ?? false);
             if (ok) {
               removeItemFromList(it);
+              if (isSelectable) add(ListEventDeselectMultipleItems([it]));
             }
             results[it] = r;
           } catch (e, s) {
             results[it] = UseCaseResult.failure(e, stackTrace: s);
           } finally {
-            beingRemovedItemIds.remove(it.identifier);
+            _beingRemovedItemIds.remove(it.identifier);
             emitState(emit);
           }
         }
@@ -118,18 +122,18 @@ mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
     } catch (e, s) {
       // Catastrophic path (e.g., bulk UC threw)
       for (final it in items) {
-        beingRemovedItemIds.remove(it.identifier);
+        _beingRemovedItemIds.remove(it.identifier);
       }
       emitState(emit);
-      onDeletionUnexpectedError(e, s);
+      handleDataError(e, emit, stacktrace: s);
     } finally {
-      onMultipleItemsDeletedResult(results);
+      _onMultipleItemsDeletedResult(results, event.items, wasMultipleDelete: hasMany);
     }
   }
 
   // ---- Hooks ----------------------------------------------------------------
 
-  void onItemDeletedResult(UseCaseResult<bool> result) {
+  void _onItemDeletedResult(UseCaseResult<bool> result) {
     final ok = result.isSuccess && (result.data ?? false);
     if (ok) {
       displayInfoSnackbar("Item deleted");
@@ -140,12 +144,17 @@ mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
 
   /// Called after multi-delete completes (successes + failures mixed).
   /// Default: shows a brief summary; override for richer UX/telemetry.
-  void onMultipleItemsDeletedResult(Map<T, UseCaseResult<bool>> results) {
+  void _onMultipleItemsDeletedResult(
+    Map<T, UseCaseResult<bool>> results,
+    List<T> items, {
+    required bool wasMultipleDelete,
+  }) {
     final total = results.length;
     final successes = results.values.where((r) => r.isSuccess && (r.data ?? false)).length;
     final failures = total - successes;
     if (failures == 0) {
       displayInfoSnackbar("Deleted $successes item(s).");
+      if (isSelectable && wasMultipleDelete) add(ListEventDeselectMultipleItems(items));
     } else if (successes == 0) {
       displayWarningSnackbar("Failed to delete $failures item(s).");
     } else {
@@ -153,9 +162,5 @@ mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
     }
   }
 
-  void onDeletionUnexpectedError(Object error, StackTrace stack) {
-    displayWarningSnackbar("Unexpected error while deleting.");
-  }
-
-  bool isBeingRemoved(String id) => beingRemovedItemIds.contains(id);
+  Set<String> get beingRemovedItemIdsOriginal => _beingRemovedItemIds;
 }

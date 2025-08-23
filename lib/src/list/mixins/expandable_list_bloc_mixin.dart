@@ -11,7 +11,7 @@ import 'package:blocx/blocx.dart';
 /// ### How it works
 /// - Tracks a set of expanded items by their [BaseEntity.identifier].
 /// - Listens to [ListEventExpandItem] and [ListEventCollapseItem].
-/// - Updates [expandedItemIds] accordingly and emits the latest state via [emitState].
+/// - Updates [_expandedItemIds] accordingly and emits the latest state via [emitState].
 ///
 /// ### Usage
 /// ```dart
@@ -25,7 +25,7 @@ import 'package:blocx/blocx.dart';
 ///
 /// In your UI, you can check whether an item is expanded:
 /// ```dart
-/// final isExpanded = bloc.expandedItemIds.contains(entity.identifier);
+/// final isExpanded = bloc._expandedItemIds.contains(entity.identifier);
 /// ```
 ///
 /// ### Notes
@@ -37,7 +37,7 @@ mixin ExpandableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   /// Stores the identifiers of currently expanded items.
   ///
   /// Each item is tracked by its [BaseEntity.identifier].
-  final Set<String> expandedItemIds = {};
+  final Set<String> _expandedItemIds = {};
 
   /// Registers the event handlers for expansion/collapse.
   ///
@@ -54,19 +54,21 @@ mixin ExpandableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
 
   /// Handles [ListEventExpandItem].
   ///
-  /// - Adds the item’s [BaseEntity.identifier] to [expandedItemIds].
+  /// - Adds the item’s [BaseEntity.identifier] to [_expandedItemIds].
   /// - Emits the updated state so the UI can rebuild accordingly.
   FutureOr<void> expandItem(ListEventExpandItem<T> event, Emitter<ListState<T>> emit) {
-    expandedItemIds.add(event.item.identifier);
+    _expandedItemIds.add(event.item.identifier);
     emitState(emit);
   }
 
   /// Handles [ListEventCollapseItem].
   ///
-  /// - Removes the item’s [BaseEntity.identifier] from [expandedItemIds].
+  /// - Removes the item’s [BaseEntity.identifier] from [_expandedItemIds].
   /// - Emits the updated state so the UI can rebuild accordingly.
   FutureOr<void> collapseItem(ListEventCollapseItem<T> event, Emitter<ListState<T>> emit) {
-    expandedItemIds.remove(event.item.identifier);
+    _expandedItemIds.remove(event.item.identifier);
     emitState(emit);
   }
+
+  Set<String> get expandedItemIdsOriginal => _expandedItemIds;
 }

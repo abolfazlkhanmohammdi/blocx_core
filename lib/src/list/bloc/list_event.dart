@@ -137,3 +137,8 @@ class ListEventScrollToIdentifier<T extends BaseEntity> extends ListEvent<T> {
 }
 
 class ListEventHighlightScrolledToItems<T extends BaseEntity> extends ListEvent<T> {}
+
+class ListEventDeselectMultipleItems<T extends BaseEntity> extends ListEvent<T> {
+  final List<T> items;
+  ListEventDeselectMultipleItems(this.items);
+}
