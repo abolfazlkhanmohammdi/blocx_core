@@ -57,7 +57,7 @@ class InfiniteListBloc extends Bloc<InfiniteListEvent, InfiniteListState> {
     on<InfiniteListEventVerticalDragEnded>(_onDragEnded, transformer: restartable());
     on<InfiniteListEventOnScroll>(_onScroll);
     on<InfiniteListEventCloseRefresh>(_closeRefresh);
-    on<InfiniteListEventReachedEnd>(_reachedEnd);
+    on<InfiniteListEventSetReachedEnd>(_setReachedEnd);
   }
 
   void _emitLoaded(Emitter<InfiniteListState> emit) {
@@ -65,8 +65,7 @@ class InfiniteListBloc extends Bloc<InfiniteListEvent, InfiniteListState> {
       InfiniteListStateLoaded(
         isAtTop: _isAtTop,
         isScrollingUp: _isScrollingUp,
-        isLoadingTop: _isLoadingTopData,
-        isLoadingBottom: _isLoadingBottomData,
+        isLoadingMore: _isLoadingBottomData,
         isIdle: _isIdle,
         isRefreshing: _isRefreshing,
         isAtBottom: _isAtBottom,
@@ -150,8 +149,7 @@ class InfiniteListBloc extends Bloc<InfiniteListEvent, InfiniteListState> {
         InfiniteListStateRefresh(
           isAtTop: _isAtTop,
           isScrollingUp: _isScrollingUp,
-          isLoadingTop: _isLoadingTopData,
-          isLoadingBottom: _isLoadingBottomData,
+          isLoadingMore: _isLoadingBottomData,
           isIdle: _isIdle,
           isRefreshing: _isRefreshing,
           isAtBottom: _isAtBottom,
@@ -200,14 +198,13 @@ class InfiniteListBloc extends Bloc<InfiniteListEvent, InfiniteListState> {
     add(InfiniteListEventChangeLoadTopDataStatus(status));
   }
 
-  FutureOr<void> _reachedEnd(InfiniteListEventReachedEnd event, Emitter<InfiniteListState> emit) {
-    _hasReachedEnd = true;
+  FutureOr<void> _setReachedEnd(InfiniteListEventSetReachedEnd event, Emitter<InfiniteListState> emit) {
+    _hasReachedEnd = event.hasReachedEnd;
     emit(
       InfiniteListStateLoaded(
         isAtTop: isAtTop,
         isIdle: isIdle,
-        isLoadingBottom: false,
-        isLoadingTop: _isLoadingTopData,
+        isLoadingMore: false,
         isRefreshing: isRefreshing,
         isScrollingUp: isScrollingUp,
         isAtBottom: isAtBottom,

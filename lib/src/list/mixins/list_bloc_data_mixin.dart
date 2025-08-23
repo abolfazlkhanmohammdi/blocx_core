@@ -10,7 +10,6 @@ import 'package:blocx/src/core/logger.dart';
 mixin ListBlocDataMixin<T extends BaseEntity, P> on BaseBloc<ListEvent<T>, ListState<T>> {
   P? payload;
   final List<T> _list = [];
-  InfiniteListBloc get infiniteListBloc;
 
   /// **Important:** This list is an [UnmodifiableListView].
   /// You cannot add/remove/mutate items directly.
@@ -81,8 +80,8 @@ mixin ListBlocDataMixin<T extends BaseEntity, P> on BaseBloc<ListEvent<T>, ListS
     _list.insertAll(index, data);
     this.hasReachedEnd = hasReachedEnd;
     if (hasReachedEnd) {
-      logger.i("List has reached its end");
-      infiniteListBloc.add(InfiniteListEventReachedEnd());
+      // logger.i("List has reached its end");
+      infiniteListBloc.add(InfiniteListEventSetReachedEnd(hasReachedEnd: true));
     }
   }
 
@@ -116,6 +115,8 @@ mixin ListBlocDataMixin<T extends BaseEntity, P> on BaseBloc<ListEvent<T>, ListS
         break;
     }
   }
+
+  InfiniteListBloc get infiniteListBloc;
 }
 
 extension on DataInsertSource {

@@ -21,5 +21,7 @@ export 'src/list/mixins/deletable_list_bloc_mixin.dart';
 export 'src/list/mixins/highlightable_list_bloc_mixin.dart';
 export 'src/list/mixins/refreshable_list_bloc_mixin.dart';
 export 'src/list/mixins/searchable_list_bloc_mixin.dart';
+export 'src/list/mixins/scrollable_list_bloc_mixin.dart';
+export 'src/list/mixins/expandable_list_bloc_mixin.dart';
 
 // TODO: Export any libraries intended for clients of this package.

@@ -42,4 +42,7 @@ class InfiniteListEventVerticalDragEnded extends InfiniteListEvent {
 
 class InfiniteListEventCloseRefresh extends InfiniteListEvent {}
 
-class InfiniteListEventReachedEnd extends InfiniteListEvent {}
+class InfiniteListEventSetReachedEnd extends InfiniteListEvent {
+  final bool hasReachedEnd;
+  InfiniteListEventSetReachedEnd({required this.hasReachedEnd});
+}

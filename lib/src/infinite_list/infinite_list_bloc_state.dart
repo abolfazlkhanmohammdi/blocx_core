@@ -1,8 +1,7 @@
 part of 'infinite_list_bloc.dart';
 
 class InfiniteListState extends BaseState {
-  final bool isLoadingTop;
-  final bool isLoadingBottom;
+  final bool isLoadingMore;
   final bool isRefreshing;
   final bool isIdle;
   final bool isScrollingUp;
@@ -13,8 +12,7 @@ class InfiniteListState extends BaseState {
   InfiniteListState({
     required super.shouldRebuild,
     required super.shouldListen,
-    required this.isLoadingTop,
-    required this.isLoadingBottom,
+    required this.isLoadingMore,
     required this.isRefreshing,
     required this.isIdle,
     required this.isScrollingUp,
@@ -31,8 +29,7 @@ class InfiniteListStateInitial extends InfiniteListState {
         shouldRebuild: false,
         shouldListen: false,
         isIdle: true,
-        isLoadingBottom: false,
-        isLoadingTop: false,
+        isLoadingMore: false,
         isRefreshing: false,
         isScrollingUp: false,
         isAtTop: true,
@@ -46,8 +43,7 @@ class InfiniteListStateLoaded extends InfiniteListState {
   InfiniteListStateLoaded({
     required super.isAtTop,
     required super.isIdle,
-    required super.isLoadingBottom,
-    required super.isLoadingTop,
+    required super.isLoadingMore,
     required super.isRefreshing,
     required super.isScrollingUp,
     required super.isAtBottom,
@@ -60,8 +56,7 @@ class InfiniteListStateRefresh extends InfiniteListState {
   InfiniteListStateRefresh({
     required super.isAtTop,
     required super.isIdle,
-    required super.isLoadingBottom,
-    required super.isLoadingTop,
+    required super.isLoadingMore,
     required super.isRefreshing,
     required super.isScrollingUp,
     required super.isAtBottom,

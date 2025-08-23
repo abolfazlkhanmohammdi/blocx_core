@@ -1,5 +1,6 @@
 import 'package:blocx/blocx.dart';
 import 'package:blocx/src/core/base_bloc/base_bloc.dart';
+import 'package:blocx/src/list/mixins/expandable_list_bloc_mixin.dart';
 import 'package:blocx/src/list/mixins/list_bloc_data_mixin.dart';
 
 part 'lis_state.dart';
@@ -17,16 +18,15 @@ abstract class ListBloc<T extends BaseEntity, P> extends BaseBloc<ListEvent<T>, 
     if (isRefreshable) (this as RefreshableListBlocMixin<T, P>).initRefresh();
     if (isInfinite) (this as InfiniteListBlocMixin<T, P>).initInfiniteList();
     if (isDeletable) (this as DeletableListBlocMixin<T, P>).initDeletable();
+    if (isScrollable) (this as ScrollableListBlocMixin<T, P>).initScrollable();
+    if (isExpandable) (this as ExpandableListBlocMixin<T, P>).initExpandable();
   }
 
   @override
   Future<void> close() async {
-    await _infiniteListBloc.close();
+    await infiniteListBloc.close();
     await super.close();
   }
-
-  @override
-  InfiniteListBloc get infiniteListBloc => _infiniteListBloc;
 
   bool get isSearchable => this is SearchableListBlocMixin<T, P>;
   bool get isHighlightable => this is HighlightableListBlocMixin<T, P>;
@@ -34,6 +34,11 @@ abstract class ListBloc<T extends BaseEntity, P> extends BaseBloc<ListEvent<T>, 
   bool get isRefreshable => this is RefreshableListBlocMixin<T, P>;
   bool get isInfinite => this is InfiniteListBlocMixin<T, P>;
   bool get isDeletable => this is DeletableListBlocMixin<T, P>;
+  bool get isScrollable => this is ScrollableListBlocMixin<T, P>;
+  bool get isExpandable => this is ExpandableListBlocMixin<T, P>;
+
+  @override
+  InfiniteListBloc get infiniteListBloc => _infiniteListBloc;
 }
 
 enum DataInsertSource { init, nextPage, refresh, search }

@@ -15,6 +15,8 @@ sealed class ListState<T extends BaseEntity> extends BaseState {
     this.isRefreshing = false,
     this.isSearching = false,
   });
+
+  dynamic get additionalInfo => null;
 }
 
 class ListStateLoading<T extends BaseEntity> extends ListState<T> {
