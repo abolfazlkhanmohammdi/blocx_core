@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:bloc/bloc.dart';
-import 'package:blocx/blocx.dart';
-import 'package:blocx/src/blocs/base_bloc/base_bloc.dart';
-import 'package:blocx/src/core/list_entity_extensions.dart';
+import 'package:blocx_core/blocx_core.dart';
+import 'package:blocx_core/src/blocs/base/base_bloc.dart';
+import 'package:blocx_core/src/core/models/base_entity_extensions.dart';
 
 mixin ListBlocDataMixin<T extends BaseEntity, P> on BaseBloc<ListEvent<T>, ListState<T>> {
   P? payload;

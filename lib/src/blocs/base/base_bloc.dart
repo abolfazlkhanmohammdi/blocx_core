@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
-import 'package:blocx/src/blocs/screen_manager/screen_manager_cubit.dart';
+import 'package:blocx_core/src/blocs/screen_manager/screen_manager_cubit.dart';
+import 'package:blocx_core/src/core/enum_error_codes.dart';
 import 'package:meta/meta.dart';
 
 part 'base_bloc_event.dart';
@@ -12,6 +13,9 @@ class BaseBloc<E extends BaseEvent, S extends BaseState> extends Bloc<E, S> {
   void pop() => _screenManagerCubit.pop();
   void displayErrorWidget(Object error, {StackTrace? stackTrace}) =>
       _screenManagerCubit.displayErrorWidget(error, stackTrace);
+
+  void displayErrorWidgetByErrorCode(BlocXErrorCode errorCode, {Object? error, StackTrace? stackTrace}) =>
+      _screenManagerCubit.displayErrorWidgetByErrorCode(errorCode, error: error, st: stackTrace);
 
   void displayWarningSnackbar(String message, {String? title}) =>
       _screenManagerCubit.displaySnackbar(message, BlocXSnackbarType.warning, title: title);

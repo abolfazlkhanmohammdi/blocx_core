@@ -3,7 +3,7 @@
 /// More dartdocs go here.
 library;
 
-export './src/blocs/infinite_list/infinite_list_bloc.dart';
+export './src/blocs/list/sub_blocs/infinite_list/infinite_list_bloc.dart';
 export './src/blocs/list/bloc/list_bloc.dart';
 export './src/blocs/list/mixins/infinite_list_bloc_mixin.dart';
 export './src/blocs/list/mixins/selectable_list_bloc_mixin.dart';
@@ -23,5 +23,6 @@ export 'src/blocs/list/mixins/highlightable_list_bloc_mixin.dart';
 export 'src/blocs/list/mixins/refreshable_list_bloc_mixin.dart';
 export 'src/blocs/list/mixins/scrollable_list_bloc_mixin.dart';
 export 'src/blocs/list/mixins/searchable_list_bloc_mixin.dart';
+export 'src/blocs/base/base_bloc.dart';
 
 // TODO: Export any libraries intended for clients of this package.

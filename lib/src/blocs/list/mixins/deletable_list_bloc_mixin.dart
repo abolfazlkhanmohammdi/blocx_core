@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
-import 'package:blocx/blocx.dart';
+import 'package:blocx_core/blocx_core.dart';
 
 mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   final Set<String> _beingRemovedItemIds = {};

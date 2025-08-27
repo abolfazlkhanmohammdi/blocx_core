@@ -1,4 +1,4 @@
-import 'package:blocx/src/blocs/list/models/page.dart';
+import 'package:blocx_core/src/blocs/list/models/page.dart';
 
 class SearchQuery<P> extends PaginationQuery<P> {
   final String searchText;

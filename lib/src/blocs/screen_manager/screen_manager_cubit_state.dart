@@ -19,6 +19,15 @@ class ScreenManagerCubitStateDisplayErrorPage extends ScreenManagerCubitState {
 }
 
 @immutable
+class ScreenManagerCubitStateDisplayErrorPageByErrorCode extends ScreenManagerCubitState {
+  final BlocXErrorCode errorCode;
+  final Object? error;
+  final StackTrace? stackTrace;
+  const ScreenManagerCubitStateDisplayErrorPageByErrorCode(this.errorCode, {this.error, this.stackTrace})
+    : super(shouldRebuild: true, shouldListen: false);
+}
+
+@immutable
 class ScreenManagerCubitStateDisplaySnackbar extends ScreenManagerCubitState {
   final String message;
   final String? title;
@@ -27,6 +36,16 @@ class ScreenManagerCubitStateDisplaySnackbar extends ScreenManagerCubitState {
     required this.snackbarType,
     required this.message,
     this.title,
+  }) : super(shouldRebuild: false, shouldListen: true);
+}
+
+@immutable
+class ScreenManagerCubitStateDisplaySnackbarByErrorCode extends ScreenManagerCubitState {
+  final BlocXErrorCode errorCode;
+  final BlocXSnackbarType snackbarType;
+  const ScreenManagerCubitStateDisplaySnackbarByErrorCode({
+    required this.snackbarType,
+    required this.errorCode,
   }) : super(shouldRebuild: false, shouldListen: true);
 }
 

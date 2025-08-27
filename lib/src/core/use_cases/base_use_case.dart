@@ -1,5 +1,5 @@
 // core/use_cases/base_use_case.dart
-import 'package:blocx/blocx.dart';
+import 'package:blocx_core/blocx_core.dart';
 import 'package:meta/meta.dart';
 
 abstract class BaseUseCase<T> {

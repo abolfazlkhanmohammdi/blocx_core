@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
-import 'package:blocx/blocx.dart';
+import 'package:blocx_core/blocx_core.dart';
 
 /// A mixin that adds **expand/collapse support** to a [ListBloc].
 ///

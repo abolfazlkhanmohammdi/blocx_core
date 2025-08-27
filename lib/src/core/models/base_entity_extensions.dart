@@ -1,4 +1,4 @@
-import 'package:blocx/blocx.dart';
+import 'package:blocx_core/blocx_core.dart';
 
 extension ListEntityExtension<T extends BaseEntity> on List<T> {
   void replaceItem(T item) {

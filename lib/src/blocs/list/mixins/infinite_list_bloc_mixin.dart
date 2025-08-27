@@ -1,5 +1,5 @@
 import 'package:bloc/bloc.dart';
-import 'package:blocx/blocx.dart';
+import 'package:blocx_core/blocx_core.dart';
 
 mixin InfiniteListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   Future loadNextPage(ListEventLoadNextPage<T> event, Emitter<ListState<T>> emit) async {

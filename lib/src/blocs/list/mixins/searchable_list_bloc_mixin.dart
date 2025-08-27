@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
-import 'package:blocx/blocx.dart';
-import 'package:blocx/src/blocs/list/misc/event_transformers.dart';
+import 'package:blocx_core/blocx_core.dart';
+import 'package:blocx_core/src/blocs/list/misc/event_transformers.dart';
 
 /// Adds **search** behavior to a [ListBloc].
 ///

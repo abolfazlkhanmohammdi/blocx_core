@@ -1,5 +1,5 @@
-import 'package:blocx/blocx.dart';
-import 'package:blocx/src/blocs/list/models/search_query.dart';
+import 'package:blocx_core/blocx_core.dart';
+import 'package:blocx_core/src/blocs/list/models/search_query.dart';
 
 abstract class SearchUseCase<T extends BaseEntity, P> extends BaseUseCase<Page<T>> {
   final SearchQuery<P> searchQuery;

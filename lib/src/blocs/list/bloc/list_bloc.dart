@@ -1,6 +1,6 @@
-import 'package:blocx/blocx.dart';
-import 'package:blocx/src/blocs/base_bloc/base_bloc.dart';
-import 'package:blocx/src/blocs/list/mixins/list_bloc_data_mixin.dart';
+import 'package:blocx_core/blocx_core.dart';
+import 'package:blocx_core/src/blocs/base/base_bloc.dart';
+import 'package:blocx_core/src/blocs/list/mixins/list_bloc_data_mixin.dart';
 
 part 'lis_state_extension.dart';
 part 'list_event.dart';

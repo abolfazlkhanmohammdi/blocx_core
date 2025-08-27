@@ -3,8 +3,8 @@ import 'dart:math';
 
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
-import 'package:blocx/src/blocs/base_bloc/base_bloc.dart';
-import 'package:blocx/src/core/logger.dart';
+import 'package:blocx_core/src/blocs/base/base_bloc.dart';
+import 'package:blocx_core/src/core/logger.dart';
 
 part './infinite_list_bloc_event.dart';
 part './infinite_list_bloc_state.dart';

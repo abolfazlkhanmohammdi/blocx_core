@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
-import 'package:blocx/blocx.dart';
-import 'package:blocx/src/core/list_entity_extensions.dart';
-import 'package:blocx/src/core/logger.dart';
-import 'package:blocx/src/blocs/list/misc/event_transformers.dart';
+import 'package:blocx_core/blocx_core.dart';
+import 'package:blocx_core/src/core/models/base_entity_extensions.dart';
+import 'package:blocx_core/src/core/logger.dart';
+import 'package:blocx_core/src/blocs/list/misc/event_transformers.dart';
 
 /// A mixin that adds **scroll-to-item** capabilities for list-based blocs.
 ///
