@@ -27,3 +27,8 @@ class FormStateApplyInitialDataToForm<F, E extends Enum> extends FormBlocState<F
   FormStateApplyInitialDataToForm({required super.formData})
     : super(shouldRebuild: false, shouldListen: true, step: 0, errors: {});
 }
+
+class FormStateSubmittingForm<F, E extends Enum> extends FormBlocState<F, E> {
+  FormStateSubmittingForm({required super.formData})
+    : super(shouldRebuild: false, shouldListen: true, step: 0, errors: {});
+}
