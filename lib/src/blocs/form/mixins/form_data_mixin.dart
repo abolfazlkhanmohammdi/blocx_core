@@ -1,8 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
-import 'package:blocx_core/src/blocs/base/base_bloc.dart';
-import 'package:blocx_core/src/blocs/form/bloc/form_bloc.dart';
+import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/src/blocs/form/mixins/unique_field_validator_mixin.dart';
 
 mixin FormDataMixin<F, P, E extends Enum> on BaseBloc<FormEvent, FormBlocState<F, E>> {
@@ -12,6 +11,7 @@ mixin FormDataMixin<F, P, E extends Enum> on BaseBloc<FormEvent, FormBlocState<F
     this.formData = formData;
     on<FormEventInit<P>>(initForm);
     on<FormEventUpdateData<E>>(updateData);
+    on<FormEventSubmit>(submit);
   }
 
   FutureOr<void> initForm(FormEventInit<P> event, Emitter<FormBlocState<F, E>> emit) {
@@ -42,7 +42,26 @@ mixin FormDataMixin<F, P, E extends Enum> on BaseBloc<FormEvent, FormBlocState<F
 
   bool get isInfoFetcher;
 
+  BaseUseCase get submitUseCase;
+
   F updateFormData(E key, data);
 
   void emitState(Emitter<FormBlocState<F, E>> emit);
+
+  Future<void> submit(FormEventSubmit event, Emitter<FormBlocState<F, E>> emit) async {
+    try {
+      emit(FormStateSubmittingForm(formData: formData));
+      var result = await submitUseCase.execute();
+      emitState(emit);
+      if (result.isFailure) {
+        displayErrorWidget(StateError("an error occurred in data register check your submit"));
+        return;
+      }
+      onFormSubmitted(result);
+    } catch (e, s) {
+      displayErrorWidget(e, stackTrace: s);
+    }
+  }
+
+  void onFormSubmitted(UseCaseResult<dynamic> result);
 }

@@ -24,3 +24,5 @@ class FormEventCheckUniqueValue<E extends Enum> extends FormEvent {
 }
 
 class FormEventFetchRequiredInfo extends FormEvent {}
+
+class FormEventSubmit extends FormEvent {}
