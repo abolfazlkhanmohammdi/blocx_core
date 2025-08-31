@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
-
+import 'dart:developer' as dev;
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/src/blocs/base/base_bloc.dart';
@@ -49,6 +49,8 @@ mixin ListBlocDataMixin<T extends BaseEntity, P> on BaseBloc<ListEvent<T>, ListS
   int get offset => list.length;
 
   FutureOr<void> handleDataError(Object error, Emitter<ListState<T>> emit, {StackTrace? stacktrace}) {
+    dev.log(error.toString());
+    if (stacktrace != null) dev.log(stacktrace.toString());
     (String message, String? title) converted = convertErrorToMessageAndTitle(error);
     if (errorDisplayPolicy == ErrorDisplayPolicy.snackBar) {
       displayErrorSnackbar(converted.$1, title: converted.$2);
