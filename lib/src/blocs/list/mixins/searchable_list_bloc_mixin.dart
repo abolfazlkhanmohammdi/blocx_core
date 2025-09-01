@@ -161,7 +161,16 @@ mixin SearchableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   /// Default: no-op. Override to fetch more search results using your
   /// [searchUseCase] with updated `loadCount`/`offset`, and append via
   /// [insertToList] with [DataInsertSource.search].
-  FutureOr<void> searchNextPage(ListEventSearchNextPage<T> event, Emitter<ListState<T>> emit) {}
+  FutureOr<void> searchNextPage(ListEventSearchNextPage<T> event, Emitter<ListState<T>> emit) async {
+    var result = await searchUseCase(searchText, offset: list.length)!.execute();
+    if (result.isFailure) {
+      handleDataError(result.error!, emit, stacktrace: result.stackTrace);
+      return;
+    }
+    await insertToList(result.data!.items, !result.data!.hasNext, DataInsertSource.nextPage);
+    infiniteListBloc.add(InfiniteListEventChangeLoadBottomDataStatus(false, hasReachedEnd));
+    emitState(emit);
+  }
 
   /// Refreshes the current search results (same [searchText]).
   ///
