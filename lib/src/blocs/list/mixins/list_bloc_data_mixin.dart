@@ -63,6 +63,8 @@ mixin ListBlocDataMixin<T extends BaseEntity, P> on BaseBloc<ListEvent<T>, ListS
 
   void initDataMixin() {
     on<ListEventLoadInitialPage<T, P>>(loadInitialPage);
+    on<ListEventAddItem<T>>(addItem);
+    on<ListEventUpdateItem<T>>(updateItem);
   }
 
   emitState(Emitter<ListState<T>> emit) {
@@ -93,6 +95,7 @@ mixin ListBlocDataMixin<T extends BaseEntity, P> on BaseBloc<ListEvent<T>, ListS
     int index = insertSource.insertIndex(list);
     _addInfiniteListEvent(insertSource);
     _list.insertAll(index, data);
+    doAfterInsert();
     this.hasReachedEnd = hasReachedEnd;
     if (hasReachedEnd) {
       infiniteListBloc.add(InfiniteListEventSetReachedEnd(hasReachedEnd: true));
@@ -132,6 +135,33 @@ mixin ListBlocDataMixin<T extends BaseEntity, P> on BaseBloc<ListEvent<T>, ListS
   }
 
   InfiniteListBloc get infiniteListBloc;
+
+  bool get isHighlightable;
+
+  Future<void> addItem(ListEventAddItem<T> event, Emitter<ListState<T>> emit) async {
+    _list.insert(event.index, event.item);
+    emitState(emit);
+  }
+
+  FutureOr<void> updateItem(ListEventUpdateItem<T> event, Emitter<ListState<T>> emit) {
+    int index = _list.indexById(event.item);
+    if (index == -1) {
+      throw Exception('Item not found in list');
+    }
+    _list[index] = event.item;
+    if (isHighlightable) add(ListEventHighlightItem(item: event.item));
+    emitState(emit);
+  }
+
+  void insertToListSingle(T item, {int index = 0}) {
+    _list.insert(index, item);
+  }
+
+  sortList(Comparator<T> comparator) {
+    _list.sort(comparator);
+  }
+
+  void doAfterInsert() {}
 }
 
 extension on DataInsertSource {

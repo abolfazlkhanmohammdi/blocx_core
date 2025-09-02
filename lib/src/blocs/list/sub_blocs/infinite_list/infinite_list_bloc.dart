@@ -134,8 +134,6 @@ class InfiniteListBloc extends Bloc<InfiniteListEvent, InfiniteListState> {
       final delta = (_dragUpdateY! - _dragStartY!).abs();
       _swipeRefreshHeight = min(refreshThreshold, delta);
     }
-
-    logger.d('dragUpdated → height=$_swipeRefreshHeight');
     _emitLoaded(emit);
   }
 

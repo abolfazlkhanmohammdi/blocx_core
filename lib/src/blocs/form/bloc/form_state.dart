@@ -30,5 +30,17 @@ class FormStateApplyInitialDataToForm<F, E extends Enum> extends FormBlocState<F
 
 class FormStateSubmittingForm<F, E extends Enum> extends FormBlocState<F, E> {
   FormStateSubmittingForm({required super.formData})
-    : super(shouldRebuild: false, shouldListen: true, step: 0, errors: {});
+    : super(shouldRebuild: true, shouldListen: false, step: 0, errors: {});
+}
+
+class FormStateFormSubmitted<F, E extends Enum> extends FormBlocState<F, E> {
+  final dynamic submittedData;
+  FormStateFormSubmitted({required super.formData, required this.submittedData})
+    : super(shouldRebuild: false, shouldListen: true, errors: {}, step: 0);
+}
+
+class FormStateCheckingUniqueFormField<F, E extends Enum> extends FormBlocState<F, E> {
+  final E key;
+  FormStateCheckingUniqueFormField({required this.key, required super.formData})
+    : super(shouldRebuild: true, shouldListen: false, step: 0, errors: {});
 }

@@ -37,6 +37,7 @@ mixin RefreshableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
       return;
     }
     if (refreshPageUseCase != null) return await _fetchRefreshPage(event, emit);
+    infiniteListBloc.add(InfiniteListEventCloseRefresh());
     throw UnimplementedError("You must either override refreshUseCase getter or refreshPage method");
   }
 

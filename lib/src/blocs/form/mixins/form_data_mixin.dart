@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
-import 'package:blocx_core/src/blocs/form/mixins/unique_field_validator_mixin.dart';
 
 mixin FormDataMixin<F, P, E extends Enum> on BaseBloc<FormEvent, FormBlocState<F, E>> {
   late F formData;
@@ -52,16 +51,19 @@ mixin FormDataMixin<F, P, E extends Enum> on BaseBloc<FormEvent, FormBlocState<F
     try {
       emit(FormStateSubmittingForm(formData: formData));
       var result = await submitUseCase.execute();
-      emitState(emit);
       if (result.isFailure) {
         displayErrorWidget(StateError("an error occurred in data register check your submit"));
         return;
       }
-      onFormSubmitted(result);
+      await onFormSubmitted(result);
+      emit(FormStateFormSubmitted(submittedData: result.data, formData: formData));
+      emitState(emit);
     } catch (e, s) {
       displayErrorWidget(e, stackTrace: s);
     }
   }
 
-  void onFormSubmitted(UseCaseResult<dynamic> result);
+  Future<void> onFormSubmitted(UseCaseResult result) async {}
+  bool get isUpdate => _payload != null;
+  P? get payload => _payload;
 }

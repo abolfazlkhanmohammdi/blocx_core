@@ -142,3 +142,14 @@ class ListEventDeselectMultipleItems<T extends BaseEntity> extends ListEvent<T> 
   final List<T> items;
   ListEventDeselectMultipleItems(this.items);
 }
+
+class ListEventAddItem<T extends BaseEntity> extends ListEvent<T> {
+  final T item;
+  final int index;
+  ListEventAddItem({required this.item, this.index = 0});
+}
+
+class ListEventUpdateItem<T extends BaseEntity> extends ListEvent<T> {
+  final T item;
+  ListEventUpdateItem({required this.item});
+}

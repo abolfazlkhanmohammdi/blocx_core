@@ -141,7 +141,7 @@ mixin SearchableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   /// - [searchText]: the query string.
   /// - [loadCount]: optional page size to request.
   /// - [offset]: optional offset for paginated searches.
-  SearchUseCase<T, P>? searchUseCase(String searchText, {int? loadCount, int? offset}) => null;
+  SearchUseCase<T>? searchUseCase(String searchText, {int? loadCount, int? offset}) => null;
 
   /// Debounce duration applied to [`ListEventSearch`].
   ///

@@ -29,6 +29,7 @@ abstract class ListBloc<T extends BaseEntity, P> extends BaseBloc<ListEvent<T>, 
   }
 
   bool get isSearchable => this is SearchableListBlocMixin<T, P>;
+  @override
   bool get isHighlightable => this is HighlightableListBlocMixin<T, P>;
   bool get isSelectable => this is SelectableListBlocMixin<T, P>;
   bool get isRefreshable => this is RefreshableListBlocMixin<T, P>;

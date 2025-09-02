@@ -1,7 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:blocx_core/blocx_core.dart';
-import 'package:blocx_core/src/blocs/form/bloc/form_bloc.dart';
 import 'package:blocx_core/src/core/enum_error_codes.dart';
 
 mixin UniqueFieldValidatorMixin<F, P, E extends Enum> on FormBloc<F, P, E> {
@@ -20,11 +19,12 @@ mixin UniqueFieldValidatorMixin<F, P, E extends Enum> on FormBloc<F, P, E> {
     FormEventCheckUniqueValue<E> event,
     Emitter<FormBlocState<F, E>> emit,
   ) async {
+    emit(FormStateCheckingUniqueFormField(key: event.key, formData: formData));
     final token = Object();
     _inFlightTokenByField[event.key] = token;
-
     try {
       final result = await useCaseIsUniqueValueAvailable(event.key, event.data).execute();
+      emitState(emit);
       if (_inFlightTokenByField[event.key] != token) return;
       if (result.isFailure) {
         handleError(BlocXErrorCode.checkingUniqueValue, result.error, result.stackTrace);
@@ -35,11 +35,11 @@ mixin UniqueFieldValidatorMixin<F, P, E extends Enum> on FormBloc<F, P, E> {
       bool stateChanged;
       if (isAvailable) {
         formData = updateFormData(event.key, event.data);
-        stateChanged = clearFieldError(event.key,errorCode: BlocXErrorCode.valueNotAvailable);
+        stateChanged = clearFieldError(event.key, errorCode: BlocXErrorCode.valueNotAvailable);
       } else {
         stateChanged = setFieldError(event.key, BlocXErrorCode.valueNotAvailable);
       }
-      if(stateChanged)emitState(emit);
+      if (stateChanged) emitState(emit);
     } catch (e, s) {
       if (_inFlightTokenByField[event.key] != token) return; // still drop stale
       handleError(BlocXErrorCode.checkingUniqueValue, e, s);
