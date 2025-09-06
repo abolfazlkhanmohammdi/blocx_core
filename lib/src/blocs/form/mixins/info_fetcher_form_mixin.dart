@@ -3,10 +3,8 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
-import 'package:blocx_core/src/blocs/form/bloc/form_bloc.dart';
-import 'package:blocx_core/src/core/enum_error_codes.dart';
 
-mixin InfoFetcherMixin<F, P, E extends Enum> on FormBloc<F, P, E> {
+mixin InfoFetcherFormMixin<F, P, E extends Enum> on FormBloc<F, P, E> {
   /// Declare the initial info use cases once per bloc.
   Map<E, BaseUseCase<dynamic>> get requiredInitialInfoUseCases;
 

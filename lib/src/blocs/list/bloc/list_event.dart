@@ -97,7 +97,6 @@ class ListEventRemoveMultipleItems<T extends BaseEntity> extends ListEvent<T> {
 class ListEventExpandItem<T extends BaseEntity> extends ListEvent<T> {
   /// The item to expand.
   final T item;
-
   ListEventExpandItem({required this.item});
 }
 
@@ -105,8 +104,12 @@ class ListEventExpandItem<T extends BaseEntity> extends ListEvent<T> {
 class ListEventCollapseItem<T extends BaseEntity> extends ListEvent<T> {
   /// The item to collapse.
   final T item;
-
   ListEventCollapseItem({required this.item});
+}
+
+class ListEventToggleItemExpansion<T extends BaseEntity> extends ListEvent<T> {
+  final T item;
+  ListEventToggleItemExpansion({required this.item});
 }
 
 /// Scrolls the list to a given [item].
@@ -140,7 +143,7 @@ class ListEventHighlightScrolledToItems<T extends BaseEntity> extends ListEvent<
 
 class ListEventDeselectMultipleItems<T extends BaseEntity> extends ListEvent<T> {
   final List<T> items;
-  ListEventDeselectMultipleItems(this.items);
+  ListEventDeselectMultipleItems({required this.items});
 }
 
 class ListEventAddItem<T extends BaseEntity> extends ListEvent<T> {

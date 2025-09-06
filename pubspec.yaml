@@ -1,8 +1,9 @@
 name: blocx_core
-description: A starting point for Dart libraries or applications.
-version: 1.0.0
-# repository: https://github.com/my_org/my_repo
-
+description: Composable BLoC mixins and use-cases for lists & forms (Dart-only core).
+version: 0.5.0-beta
+repository: https://github.com/abolfazlkhanmohammdi/blocx_core
+issue_tracker: https://github.com/abolfazlkhanmohammdi/blocx_core
+topics: [bloc, architecture, lists, forms]
 environment:
   sdk: ^3.8.1
 

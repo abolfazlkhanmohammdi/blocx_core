@@ -35,7 +35,7 @@ mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
       _beingRemovedItemIds.remove(event.item.identifier);
       if (ok) {
         removeItemFromList(event.item);
-        if (isSelectable) add(ListEventDeselectMultipleItems([event.item]));
+        if (isSelectable) add(ListEventDeselectMultipleItems(items: [event.item]));
       }
 
       emitState(emit);
@@ -108,7 +108,7 @@ mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
             final ok = r.isSuccess && (r.data ?? false);
             if (ok) {
               removeItemFromList(it);
-              if (isSelectable) add(ListEventDeselectMultipleItems([it]));
+              if (isSelectable) add(ListEventDeselectMultipleItems(items: [it]));
             }
             results[it] = r;
           } catch (e, s) {
@@ -154,7 +154,7 @@ mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
     final failures = total - successes;
     if (failures == 0) {
       displayInfoSnackbar("Deleted $successes item(s).");
-      if (isSelectable && wasMultipleDelete) add(ListEventDeselectMultipleItems(items));
+      if (isSelectable && wasMultipleDelete) add(ListEventDeselectMultipleItems(items: items));
     } else if (successes == 0) {
       displayWarningSnackbar("Failed to delete $failures item(s).");
     } else {

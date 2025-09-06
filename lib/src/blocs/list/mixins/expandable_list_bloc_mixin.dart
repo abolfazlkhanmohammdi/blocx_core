@@ -50,6 +50,7 @@ mixin ExpandableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   void initExpandable() {
     on<ListEventExpandItem<T>>(expandItem);
     on<ListEventCollapseItem<T>>(collapseItem);
+    on<ListEventToggleItemExpansion<T>>(toggleItemExpansion);
   }
 
   /// Handles [ListEventExpandItem].
@@ -71,4 +72,10 @@ mixin ExpandableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   }
 
   Set<String> get expandedItemIdsOriginal => _expandedItemIds;
+
+  FutureOr<void> toggleItemExpansion(ListEventToggleItemExpansion<T> event, Emitter<ListState<T>> emit) {
+    final isExpanded = _expandedItemIds.contains(event.item.identifier);
+    isExpanded ? _expandedItemIds.remove(event.item.identifier) : _expandedItemIds.add(event.item.identifier);
+    emitState(emit);
+  }
 }

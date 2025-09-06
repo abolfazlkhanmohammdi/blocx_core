@@ -28,7 +28,7 @@ export 'src/blocs/list/mixins/scrollable_list_bloc_mixin.dart';
 export 'src/blocs/list/mixins/searchable_list_bloc_mixin.dart';
 export 'src/blocs/form/mixins/unique_field_validator_mixin.dart';
 export 'src/blocs/form/mixins/form_errors_mixin.dart';
-export 'src/blocs/form/mixins/info_fetcher_mixin.dart';
+export 'src/blocs/form/mixins/info_fetcher_form_mixin.dart';
 export 'src/blocs/form/mixins/stepped_form_mixin.dart';
 
 // TODO: Export any libraries intended for clients of this package.
