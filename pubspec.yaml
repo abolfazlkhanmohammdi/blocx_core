@@ -1,0 +1,23 @@
+name: blocx_core
+description: Composable BLoC mixins and use-cases for lists & forms (Dart-only core).
+version: 0.5.6-beta
+repository: https://github.com/abolfazlkhanmohammdi/blocx_core
+issue_tracker: https://github.com/abolfazlkhanmohammdi/blocx_core
+topics: [bloc, architecture, lists, forms]
+environment:
+  sdk: ">=3.8.1 <4.0.0"
+
+
+# Add regular dependencies here.
+dependencies:
+  uuid: ^4.5.1
+  bloc: ^9.0.0
+  meta: ^1.16.0
+  bloc_concurrency: ^0.3.0
+  stream_transform: ^2.1.1
+  logger: ^2.6.1
+  # path: ^1.8.0
+
+dev_dependencies:
+  lints: ^5.0.0
+  test: ^1.24.0
