@@ -20,7 +20,7 @@ Add this to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  blocx_core: ^0.5.6-beta
+  blocx_core: ^0.5.7-beta
 ```
 
 Or add via the command line:
