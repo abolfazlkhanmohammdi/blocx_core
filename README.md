@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/abolfazlkhanmohammdi/blocx_core/main/assets/pub/logo.png" height="300" alt="flutter_blocx" />
+</p>
+
 # blocx\_core
 
 Composable BLoC building blocks for **lists** and **forms** in pure Dart. Use small, focused mixins to add paging, search, refresh, selection, and error surfacing to your own domain BLoCs and use-cases.
