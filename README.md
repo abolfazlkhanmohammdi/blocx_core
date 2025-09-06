@@ -2,7 +2,7 @@
 
 Composable BLoC building blocks for **lists** and **forms** in pure Dart. Use small, focused mixins to add paging, search, refresh, selection, and error surfacing to your own domain BLoCs and use-cases.
 
-> Framework-agnostic core. Pair with **blocx\_flutter** for ready-made UI widgets.
+> Framework-agnostic core. Pair with **flutter_blocx** for ready-made UI widgets.
 
 ---
 
@@ -16,7 +16,7 @@ Add this to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  blocx_core: ^0.5.0-beta
+  blocx_core: ^0.5.1-beta
 ```
 
 Or add via the command line:
