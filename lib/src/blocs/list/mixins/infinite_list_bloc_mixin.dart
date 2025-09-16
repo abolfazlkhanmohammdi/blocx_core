@@ -19,6 +19,7 @@ mixin InfiniteListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
     isLoadingNextPage = false;
     if (result.isFailure) {
       await handleDataError(result.error!, emit, stacktrace: result.stackTrace);
+      infiniteListBloc.add(InfiniteListEventChangeLoadBottomDataStatus(false, hasReachedEnd));
       return;
     }
     await insertToList(result.data!.items, !result.data!.hasNext, DataInsertSource.nextPage);
@@ -29,5 +30,5 @@ mixin InfiniteListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
     on<ListEventLoadNextPage<T>>(loadNextPage);
   }
 
-  PaginationUseCase<T, P>? get loadNextPageUseCase => null;
+  PaginationUseCase<T>? get loadNextPageUseCase => null;
 }

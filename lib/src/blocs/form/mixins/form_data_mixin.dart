@@ -59,6 +59,7 @@ mixin FormDataMixin<F, P, E extends Enum> on BaseBloc<FormEvent, FormBlocState<F
       emit(FormStateFormSubmitted(submittedData: result.data, formData: formData));
       emitState(emit);
     } catch (e, s) {
+      emitState(emit);
       displayErrorWidget(e, stackTrace: s);
     }
   }

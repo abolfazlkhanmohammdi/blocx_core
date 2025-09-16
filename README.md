@@ -20,7 +20,7 @@ Add this to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  blocx_core: ^0.5.7-beta
+  blocx_core: ^0.5.9-beta
 ```
 
 Or add via the command line:
@@ -43,7 +43,7 @@ import 'package:blocx_core/blocx_core.dart';
 
 * **Mixins, not monoliths** – compose features: infinite paging, search, refresh, selection, highlight, expand, scroll-to.
 * **Use cases** – `BaseUseCase<T>` returning `UseCaseResult<T>` for uniform success/failure handling.
-* **Pagination primitives** – `Page<T>`, `PaginationUseCase<T, P>`, `SearchUseCase<T>`.
+* **Pagination primitives** – `Page<T>`, `PaginationUseCase<T>`, `SearchUseCase<T>`.
 * **List bloc family** – `ListBloc<T, P>` + mixins for data, infinite, searchable, selectable, refreshable, etc.
 * **Form bloc** – helpers for field state, validation, submit/reset.
 * **Screen manager hooks** – forward snackbars, errors, and navigation intents via `ScreenManagerCubit` (UI layer chooses how to render).

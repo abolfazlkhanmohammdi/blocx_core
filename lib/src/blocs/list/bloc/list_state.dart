@@ -120,3 +120,20 @@ class ListStateScrollToItem<T extends BaseEntity> extends ListState<T> {
         shouldListen: true,
       );
 }
+
+class ListStateSelectionChanged<T extends BaseEntity> extends ListState<T> {
+  final SelectionChangedData<T> selectionData;
+  const ListStateSelectionChanged({
+    required this.selectionData,
+    required super.list,
+    required super.hasReachedEnd,
+    required super.isLoadingNextPage,
+    required super.isRefreshing,
+    required super.isSearching,
+    required super.selectedItemIds,
+    required super.beingSelectedItemIds,
+    required super.highlightedItemIds,
+    required super.beingRemovedItemIds,
+    required super.expandedItemIds,
+  }) : super(shouldRebuild: false, shouldListen: true);
+}

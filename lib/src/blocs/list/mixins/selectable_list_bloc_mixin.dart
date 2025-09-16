@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
+import 'package:blocx_core/src/blocs/list/models/selection_changed_data.dart';
 
 /// Adds selection behavior to a [ListBloc].
 ///
@@ -93,7 +94,7 @@ mixin SelectableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
     emitState(emit);
 
     if (!syncWithServerOnSelection) {
-      onItemSelected(event.item);
+      emitSelectionChanged(emit, event.item, true);
       return;
     }
 
@@ -104,7 +105,7 @@ mixin SelectableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
       _beingSelectedItemIds.remove(event.item.identifier);
       emitState(emit);
       if (ok) {
-        onItemSelected(event.item);
+        emitSelectionChanged(emit, event.item, true);
         return;
       }
       // rollback on failure
@@ -131,14 +132,14 @@ mixin SelectableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
     _selectedItemIds.remove(event.item.identifier);
     emitState(emit);
     if (!syncWithServerOnSelection) {
-      onItemDeselected(event.item);
+      emitSelectionChanged(emit, event.item, false);
       return;
     }
 
     try {
       final ok = await _runDeselectRemote();
       if (ok) {
-        onItemDeselected(event.item);
+        emitSelectionChanged(emit, event.item, false);
         return;
       }
       // rollback on failure
@@ -208,11 +209,23 @@ mixin SelectableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   // Hooks (UX / telemetry)
   // ===========================================================================
 
-  /// Called after a successful (local + optional remote) *selection*.
-  void onItemSelected(T item) {}
-
-  /// Called after a successful (local + optional remote) *deselection*.
-  void onItemDeselected(T item) {}
+  void emitSelectionChanged(Emitter<ListState<T>> emit, T item, bool wasSelected) {
+    emit(
+      ListStateSelectionChanged(
+        list: list,
+        hasReachedEnd: hasReachedEnd,
+        isLoadingNextPage: isLoadingNextPage,
+        isRefreshing: isRefreshing,
+        isSearching: isSearching,
+        selectedItemIds: selectedItemIds,
+        beingSelectedItemIds: beingSelectedItemIds,
+        highlightedItemIds: highlightedItemIds,
+        beingRemovedItemIds: beingRemovedItemIds,
+        expandedItemIds: expandedItemIds,
+        selectionData: SelectionChangedData(selection: selectedItems, wasSelected: wasSelected, item: item),
+      ),
+    );
+  }
 
   /// Called when remote sync fails and the local change has been rolled back.
   void onSelectionSyncFailed(T item, {required bool isSelectOperation}) {
@@ -226,6 +239,8 @@ mixin SelectableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   Set<String> get beingSelectedItemIdsOriginal => _beingSelectedItemIds;
 
   Set<String> get selectedItemIdsOriginal => _selectedItemIds;
+
+  List<T> get selectedItems => list.where((e) => _selectedItemIds.contains(e.identifier)).toList();
 
   FutureOr<void> deselectMultipleItems(ListEventDeselectMultipleItems<T> event, Emitter<ListState<T>> emit) {
     for (T item in event.items) {

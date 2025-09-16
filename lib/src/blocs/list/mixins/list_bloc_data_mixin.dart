@@ -3,7 +3,6 @@ import 'dart:collection';
 import 'dart:developer' as dev;
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
-import 'package:blocx_core/src/blocs/base/base_bloc.dart';
 import 'package:blocx_core/src/core/models/base_entity_extensions.dart';
 
 mixin ListBlocDataMixin<T extends BaseEntity, P> on BaseBloc<ListEvent<T>, ListState<T>> {
@@ -59,7 +58,9 @@ mixin ListBlocDataMixin<T extends BaseEntity, P> on BaseBloc<ListEvent<T>, ListS
     }
   }
 
-  Future<void> doBeforeInsert(List<T> data) async {}
+  Future<List<T>> modifyListBeforeInsert(List<T> data) async {
+    return data;
+  }
 
   void initDataMixin() {
     on<ListEventLoadInitialPage<T, P>>(loadInitialPage);
@@ -75,7 +76,6 @@ mixin ListBlocDataMixin<T extends BaseEntity, P> on BaseBloc<ListEvent<T>, ListS
         isLoadingNextPage: isLoadingNextPage,
         isRefreshing: isRefreshing,
         isSearching: isSearching,
-        // pass state-driven sets from getters
         selectedItemIds: selectedItemIds,
         beingSelectedItemIds: beingSelectedItemIds,
         highlightedItemIds: highlightedItemIds,
@@ -85,13 +85,13 @@ mixin ListBlocDataMixin<T extends BaseEntity, P> on BaseBloc<ListEvent<T>, ListS
     );
   }
 
-  PaginationUseCase<T, P>? get loadInitialPageUseCase => null;
+  PaginationUseCase<T>? get loadInitialPageUseCase => null;
 
   (String, String?) convertErrorToMessageAndTitle(Object error);
   ErrorDisplayPolicy get errorDisplayPolicy => ErrorDisplayPolicy.snackBar;
 
   Future<void> insertToList(List<T> data, bool hasReachedEnd, DataInsertSource insertSource) async {
-    await doBeforeInsert(data);
+    data = await modifyListBeforeInsert(data);
     int index = insertSource.insertIndex(list);
     _addInfiniteListEvent(insertSource);
     _list.insertAll(index, data);

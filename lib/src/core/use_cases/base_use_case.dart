@@ -7,7 +7,7 @@ abstract class BaseUseCase<T> {
   Future<UseCaseResult<T>> execute() async {
     try {
       return await perform();
-    } on Object catch (e, s) {
+    } catch (e, s) {
       return UseCaseResult.failure(e, stackTrace: s);
     }
   }

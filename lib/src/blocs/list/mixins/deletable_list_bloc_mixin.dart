@@ -12,6 +12,7 @@ mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   void initDeletable() {
     on<ListEventRemoveItem<T>>(removeItem);
     on<ListEventRemoveMultipleItems<T>>(removeMultipleItems);
+    on<ListEventRemoveItemById<T>>(removeItemById);
   }
 
   Future<void> removeItem(ListEventRemoveItem<T> event, Emitter<ListState<T>> emit) async {
@@ -163,4 +164,11 @@ mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   }
 
   Set<String> get beingRemovedItemIdsOriginal => _beingRemovedItemIds;
+
+  FutureOr<void> removeItemById(ListEventRemoveItemById<T> event, Emitter<ListState<T>> emit) async {
+    int index = list.indexWhere((item) => item.identifier == event.identifier);
+    if (index == -1) return;
+    removeItemFromList(list[index]);
+    emitState(emit);
+  }
 }

@@ -130,6 +130,7 @@ mixin SearchableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   ///   [`ListEventLoadInitialPage`].
   FutureOr<void> _clearSearch(ListEventClearSearch<T> event, Emitter<ListState<T>> emit) {
     searchText = "";
+    hasReachedEnd = false;
     clearList();
     clearSearch(event, emit);
   }

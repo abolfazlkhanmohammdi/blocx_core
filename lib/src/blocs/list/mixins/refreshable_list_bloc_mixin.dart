@@ -82,5 +82,5 @@ mixin RefreshableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   ///
   /// If `null`, you must either provide an implementation by overriding
   /// [refreshPage] or supply this use case in the concrete bloc.
-  PaginationUseCase<T, P>? get refreshPageUseCase => null;
+  PaginationUseCase<T>? get refreshPageUseCase => null;
 }

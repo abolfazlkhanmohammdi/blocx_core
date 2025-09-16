@@ -25,8 +25,17 @@ abstract class FormBloc<F, P, E extends Enum> extends BaseBloc<FormEvent, FormBl
   bool get isUniqueFieldValidator => this is UniqueFieldValidatorMixin<F, P, E>;
   @override
   bool get isInfoFetcher => this is InfoFetcherFormMixin<F, P, E>;
+
+  Set<E> get fieldsFetchingInfo => {};
   @override
   void emitState(Emitter<FormBlocState<F, E>> emit) {
-    emit(FormStateLoaded(formData: formData, step: stepIndex, errors: errors));
+    emit(
+      FormStateLoaded(
+        formData: formData,
+        step: stepIndex,
+        errors: errors,
+        fieldsFetchingInfo: fieldsFetchingInfo,
+      ),
+    );
   }
 }

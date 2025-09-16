@@ -1,6 +1,6 @@
 import 'package:blocx_core/blocx_core.dart';
-import 'package:blocx_core/src/blocs/base/base_bloc.dart';
 import 'package:blocx_core/src/blocs/list/mixins/list_bloc_data_mixin.dart';
+import 'package:blocx_core/src/blocs/list/mixins/list_bloc_sync_stream_mixin.dart';
 
 part 'lis_state_extension.dart';
 part 'list_event.dart';
@@ -20,11 +20,13 @@ abstract class ListBloc<T extends BaseEntity, P> extends BaseBloc<ListEvent<T>, 
     if (isDeletable) (this as DeletableListBlocMixin<T, P>).initDeletable();
     if (isScrollable) (this as ScrollableListBlocMixin<T, P>).initScrollable();
     if (isExpandable) (this as ExpandableListBlocMixin<T, P>).initExpandable();
+    if (isStreamable) (this as ListBlocSyncStreamMixin<T, P>).initStreams();
   }
 
   @override
   Future<void> close() async {
     await infiniteListBloc.close();
+    if (isStreamable) (this as ListBlocSyncStreamMixin<T, P>).closeStreams();
     await super.close();
   }
 
@@ -37,6 +39,7 @@ abstract class ListBloc<T extends BaseEntity, P> extends BaseBloc<ListEvent<T>, 
   bool get isDeletable => this is DeletableListBlocMixin<T, P>;
   bool get isScrollable => this is ScrollableListBlocMixin<T, P>;
   bool get isExpandable => this is ExpandableListBlocMixin<T, P>;
+  bool get isStreamable => this is ListBlocSyncStreamMixin<T, P>;
 
   @override
   InfiniteListBloc get infiniteListBloc => _infiniteListBloc;

@@ -54,9 +54,9 @@ mixin InfoFetcherFormMixin<F, P, E extends Enum> on FormBloc<F, P, E> {
         failedKeys.add(k);
         continue;
       }
+      onInfoFetched(k, r.data);
       _formInfo[k] = r.data;
     }
-
     emitState(emit);
 
     // Surface a global snackbar on any failure (and consider per-key UI if needed).
@@ -72,4 +72,9 @@ mixin InfoFetcherFormMixin<F, P, E extends Enum> on FormBloc<F, P, E> {
     _formInfo.clear();
     emitState(emit);
   }
+
+  void onInfoFetched(E k, data) {}
+
+  @override
+  Set<E> get fieldsFetchingInfo => _loading;
 }

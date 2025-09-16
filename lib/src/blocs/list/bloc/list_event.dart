@@ -85,6 +85,14 @@ class ListEventRemoveItem<T extends BaseEntity> extends ListEvent<T> {
   ListEventRemoveItem({required this.item});
 }
 
+/// Removes a single [item] from the list.
+class ListEventRemoveItemById<T extends BaseEntity> extends ListEvent<T> {
+  /// The item to remove.
+  final String identifier;
+
+  ListEventRemoveItemById({required this.identifier});
+}
+
 /// Removes multiple [items] from the list at once.
 class ListEventRemoveMultipleItems<T extends BaseEntity> extends ListEvent<T> {
   /// The items to remove.
