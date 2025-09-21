@@ -37,7 +37,7 @@ mixin ListBlocDataMixin<T extends BaseEntity, P> on BaseBloc<ListEvent<T>, ListS
     emit(ListStateLoading<T>());
     var result = await loadInitialPageUseCase!.execute();
     if (result.isFailure) {
-      await handleDataError(result.error!, emit, stacktrace: result.stackTrace);
+      await handleError(result.error!, emit, stacktrace: result.stackTrace);
       return;
     }
     await insertToList(result.data!.items, !result.data!.hasNext, DataInsertSource.init);
@@ -46,17 +46,6 @@ mixin ListBlocDataMixin<T extends BaseEntity, P> on BaseBloc<ListEvent<T>, ListS
 
   int get loadCount => 20;
   int get offset => list.length;
-
-  FutureOr<void> handleDataError(Object error, Emitter<ListState<T>> emit, {StackTrace? stacktrace}) {
-    dev.log(error.toString());
-    if (stacktrace != null) dev.log(stacktrace.toString());
-    (String message, String? title) converted = convertErrorToMessageAndTitle(error);
-    if (errorDisplayPolicy == ErrorDisplayPolicy.snackBar) {
-      displayErrorSnackbar(converted.$1, title: converted.$2);
-    } else {
-      displayErrorWidget(error, stackTrace: stacktrace);
-    }
-  }
 
   Future<List<T>> modifyListBeforeInsert(List<T> data) async {
     return data;
@@ -86,9 +75,6 @@ mixin ListBlocDataMixin<T extends BaseEntity, P> on BaseBloc<ListEvent<T>, ListS
   }
 
   PaginationUseCase<T>? get loadInitialPageUseCase => null;
-
-  (String, String?) convertErrorToMessageAndTitle(Object error);
-  ErrorDisplayPolicy get errorDisplayPolicy => ErrorDisplayPolicy.snackBar;
 
   Future<void> insertToList(List<T> data, bool hasReachedEnd, DataInsertSource insertSource) async {
     data = await modifyListBeforeInsert(data);

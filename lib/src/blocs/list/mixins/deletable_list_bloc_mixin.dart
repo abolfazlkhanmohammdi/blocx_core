@@ -44,7 +44,7 @@ mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
     } catch (e, s) {
       _beingRemovedItemIds.remove(event.item.identifier);
       emitState(emit);
-      handleDataError(e, emit, stacktrace: s);
+      handleError(e, emit, stacktrace: s);
     }
   }
 
@@ -126,7 +126,7 @@ mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
         _beingRemovedItemIds.remove(it.identifier);
       }
       emitState(emit);
-      handleDataError(e, emit, stacktrace: s);
+      handleError(e, emit, stacktrace: s);
     } finally {
       _onMultipleItemsDeletedResult(results, event.items, wasMultipleDelete: hasMany);
     }

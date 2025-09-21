@@ -18,7 +18,7 @@ mixin InfiniteListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
     var result = await loadNextPageUseCase!.execute();
     isLoadingNextPage = false;
     if (result.isFailure) {
-      await handleDataError(result.error!, emit, stacktrace: result.stackTrace);
+      await handleError(result.error!, emit, stacktrace: result.stackTrace);
       infiniteListBloc.add(InfiniteListEventChangeLoadBottomDataStatus(false, hasReachedEnd));
       return;
     }

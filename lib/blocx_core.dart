@@ -13,6 +13,7 @@ export './src/blocs/list/sub_blocs/infinite_list/infinite_list_bloc.dart';
 export './src/blocs/list/use_cases/pagination_use_case.dart';
 export 'src/blocs/list/models/selection_changed_data.dart';
 export 'src/blocs/list/mixins/list_bloc_sync_stream_mixin.dart';
+export 'src/blocs/base/readable_error.dart';
 //use cases
 export './src/blocs/list/use_cases/search_use_case.dart';
 //bloc

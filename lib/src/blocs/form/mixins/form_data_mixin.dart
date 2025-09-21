@@ -52,7 +52,8 @@ mixin FormDataMixin<F, P, E extends Enum> on BaseBloc<FormEvent, FormBlocState<F
       emit(FormStateSubmittingForm(formData: formData));
       var result = await submitUseCase.execute();
       if (result.isFailure) {
-        displayErrorWidget(StateError("an error occurred in data register check your submit"));
+        handleError(result.error!, emit);
+        emitState(emit);
         return;
       }
       await onFormSubmitted(result);
@@ -60,11 +61,14 @@ mixin FormDataMixin<F, P, E extends Enum> on BaseBloc<FormEvent, FormBlocState<F
       emitState(emit);
     } catch (e, s) {
       emitState(emit);
-      displayErrorWidget(e, stackTrace: s);
+      handleError(e, emit, stacktrace: s);
     }
   }
 
   Future<void> onFormSubmitted(UseCaseResult result) async {}
   bool get isUpdate => _payload != null;
   P? get payload => _payload;
+
+  @override
+  ErrorDisplayPolicy get errorDisplayPolicy => ErrorDisplayPolicy.snackBar;
 }

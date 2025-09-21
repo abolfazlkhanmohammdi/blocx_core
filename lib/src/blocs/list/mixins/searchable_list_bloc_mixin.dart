@@ -81,7 +81,7 @@ mixin SearchableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   /// - Otherwise:
   ///   - Sets [isSearching] to true, runs [searchUseCase], applies results via
   ///     [clearList] + [insertToList] with [DataInsertSource.search].
-  /// - On failure, delegates to [handleDataError].
+  /// - On failure, delegates to [handleError].
   /// - Always resets [isSearching] in `finally`.
   ///
   /// Includes a **race guard**: if [searchText] becomes empty while awaiting
@@ -107,7 +107,7 @@ mixin SearchableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
       // query is now empty (i.e., search mode ended).
       if (searchText != event.searchText) return;
       if (result.isFailure) {
-        await handleDataError(result.error!, emit, stacktrace: result.stackTrace);
+        await handleError(result.error!, emit, stacktrace: result.stackTrace);
         return;
       }
       // Replace data immutably
@@ -165,7 +165,7 @@ mixin SearchableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   FutureOr<void> searchNextPage(ListEventSearchNextPage<T> event, Emitter<ListState<T>> emit) async {
     var result = await searchUseCase(searchText, offset: list.length)!.execute();
     if (result.isFailure) {
-      handleDataError(result.error!, emit, stacktrace: result.stackTrace);
+      handleError(result.error!, emit, stacktrace: result.stackTrace);
       return;
     }
     await insertToList(result.data!.items, !result.data!.hasNext, DataInsertSource.nextPage);
@@ -209,7 +209,7 @@ mixin SearchableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
       final result = await useCase.execute();
 
       if (result.isFailure) {
-        await handleDataError(result.error!, emit, stacktrace: result.stackTrace);
+        await handleError(result.error!, emit, stacktrace: result.stackTrace);
         return;
       }
 

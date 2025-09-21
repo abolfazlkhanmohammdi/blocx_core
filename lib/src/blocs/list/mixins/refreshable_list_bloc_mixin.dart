@@ -14,7 +14,7 @@ import 'package:blocx_core/blocx_core.dart';
 ///   ensuring the refresh respects the current search context.
 /// - If `refreshPageUseCase` is available, it is executed to fetch fresh data.
 ///   On success, the current list is cleared and replaced; on failure, the
-///   configured error policy is applied via `handleDataError`.
+///   configured error policy is applied via `handleError`.
 mixin RefreshableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   /// Handles a request to refresh the list data.
   ///
@@ -47,7 +47,7 @@ mixin RefreshableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   /// 1. Sets `isRefreshing = true` and emits state (so UI can show a spinner).
   /// 2. Awaits the result from [refreshPageUseCase].
   /// 3. Resets `isRefreshing = false`.
-  /// 4. On failure: delegates to [handleDataError] (snackbar or error widget).
+  /// 4. On failure: delegates to [handleError] (snackbar or error widget).
   /// 5. On success:
   ///    - Clears the current list.
   ///    - Inserts the fresh items via [insertToList] with source
@@ -62,7 +62,7 @@ mixin RefreshableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
     var result = await refreshPageUseCase!.execute();
     isRefreshing = false;
     if (result.isFailure) {
-      await handleDataError(result.error!, emit, stacktrace: result.stackTrace);
+      await handleError(result.error!, emit, stacktrace: result.stackTrace);
       return;
     }
     clearList();
