@@ -1,6 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:blocx_core/blocx_core.dart';
+import 'package:blocx_core/src/core/localizations/loc_provider.dart';
 
 mixin UniqueFieldValidatorMixin<F, P, E extends Enum> on FormBloc<F, P, E> {
   List<E> get uniqueFieldKeys;
@@ -32,9 +33,12 @@ mixin UniqueFieldValidatorMixin<F, P, E extends Enum> on FormBloc<F, P, E> {
       bool stateChanged;
       if (isAvailable) {
         formData = updateFormData(event.key, event.data);
-        stateChanged = clearFieldError(event.key, errorCode: BlocXErrorCode.valueNotAvailable);
+        stateChanged = clearFieldError(
+          event.key,
+          errorCode: loc.errorCodeMessage(BlocXErrorCode.valueNotAvailable),
+        );
       } else {
-        stateChanged = setFieldError(event.key, BlocXErrorCode.valueNotAvailable);
+        stateChanged = setFieldError(event.key, loc.errorCodeMessage(BlocXErrorCode.valueNotAvailable));
       }
       if (stateChanged) emitState(emit);
     } catch (e, s) {

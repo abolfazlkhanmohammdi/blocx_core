@@ -3,6 +3,8 @@
 /// More dartdocs go here.
 library;
 
+export 'src/core/localizations/blocx_localizations.dart';
+
 export 'src/core/enum_error_codes.dart';
 export './src/blocs/list/bloc/list_bloc.dart';
 export './src/blocs/list/mixins/infinite_list_bloc_mixin.dart';

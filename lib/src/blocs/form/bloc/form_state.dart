@@ -3,7 +3,7 @@ part of 'form_bloc.dart';
 class FormBlocState<F, E extends Enum> extends BaseState {
   final F formData;
   final int step;
-  final Map<E, Set<BlocXErrorCode>> errors;
+  final Map<E, Set<String>> errors;
   final Set<E> fieldsFetchingInfo;
   FormBlocState({
     required this.step,

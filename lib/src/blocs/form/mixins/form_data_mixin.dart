@@ -34,6 +34,7 @@ mixin FormDataMixin<F, P, E extends Enum> on BaseBloc<FormEvent, FormBlocState<F
       return;
     }
     formData = updateFormData(event.key, event.data);
+    validateForm(formData);
     emitState(emit);
   }
 
@@ -71,4 +72,6 @@ mixin FormDataMixin<F, P, E extends Enum> on BaseBloc<FormEvent, FormBlocState<F
 
   @override
   ErrorDisplayPolicy get errorDisplayPolicy => ErrorDisplayPolicy.snackBar;
+
+  void validateForm(F formData) {}
 }
