@@ -14,11 +14,11 @@ mixin FormErrorsMixin<F, P, E extends Enum> on BaseBloc<FormEvent, FormBlocState
   }
 
   /// Returns true if something was removed.
-  bool clearFieldError(E key, {String? errorCode}) {
+  bool clearFieldError(E key, {String? errorMessage}) {
     final set = _errors[key];
     if (set == null) return false;
 
-    final changed = (errorCode == null) ? (_errors.remove(key) != null) : set.remove(errorCode);
+    final changed = (errorMessage == null) ? (_errors.remove(key) != null) : set.remove(errorMessage);
 
     if (set.isEmpty) _errors.remove(key);
     return changed;

@@ -17,13 +17,14 @@ mixin UniqueFieldValidatorMixin<F, P, E extends Enum> on FormBloc<F, P, E> {
     FormEventCheckUniqueValue<E> event,
     Emitter<FormBlocState<F, E>> emit,
   ) async {
-    emit(FormStateCheckingUniqueFormField(key: event.key, formData: formData));
+    emitState(emit);
     final token = Object();
     _inFlightTokenByField[event.key] = token;
     try {
       final result = await useCaseIsUniqueValueAvailable(event.key, event.data).execute();
-      emitState(emit);
       if (_inFlightTokenByField[event.key] != token) return;
+      _inFlightTokenByField.remove(event.key);
+      emitState(emit);
       if (result.isFailure) {
         handleError(result.error!, emit, stacktrace: StackTrace.current);
         return;
@@ -33,12 +34,9 @@ mixin UniqueFieldValidatorMixin<F, P, E extends Enum> on FormBloc<F, P, E> {
       bool stateChanged;
       if (isAvailable) {
         formData = updateFormData(event.key, event.data);
-        stateChanged = clearFieldError(
-          event.key,
-          errorCode: loc.errorCodeMessage(BlocXErrorCode.valueNotAvailable),
-        );
+        stateChanged = clearFieldError(event.key, errorMessage: unavailableFormDataMessage(event.key));
       } else {
-        stateChanged = setFieldError(event.key, loc.errorCodeMessage(BlocXErrorCode.valueNotAvailable));
+        stateChanged = setFieldError(event.key, unavailableFormDataMessage(event.key));
       }
       if (stateChanged) emitState(emit);
     } catch (e, s) {
@@ -49,5 +47,12 @@ mixin UniqueFieldValidatorMixin<F, P, E extends Enum> on FormBloc<F, P, E> {
         _inFlightTokenByField.remove(event.key);
       }
     }
+  }
+
+  @override
+  Set<E> get uniqueKeysBeingChecked => _inFlightTokenByField.keys.toSet();
+
+  String unavailableFormDataMessage(E key) {
+    return loc.errorCodeMessage(BlocXErrorCode.valueNotAvailable);
   }
 }

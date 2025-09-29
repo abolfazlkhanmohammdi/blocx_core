@@ -17,6 +17,7 @@ mixin FormDataMixin<F, P, E extends Enum> on BaseBloc<FormEvent, FormBlocState<F
     _payload = event.payload;
     if (_payload != null) formData = applyPayloadToFormData(_payload as P);
     emit(FormStateApplyInitialDataToForm(formData: formData));
+    if (validateOnInit) validateForm(formData);
     emitState(emit);
     if (isInfoFetcher) add(FormEventFetchRequiredInfo());
   }
@@ -50,14 +51,19 @@ mixin FormDataMixin<F, P, E extends Enum> on BaseBloc<FormEvent, FormBlocState<F
 
   Future<void> submit(FormEventSubmit event, Emitter<FormBlocState<F, E>> emit) async {
     try {
-      emit(FormStateSubmittingForm(formData: formData));
+      bool proceed = await doBeforeSubmit(emit);
+      if (!proceed) {
+        emitState(emit);
+        return;
+      }
+      emit(FormStateSubmittingForm(formData: formData, step: stepIndex));
       var result = await submitUseCase.execute();
       if (result.isFailure) {
         handleError(result.error!, emit);
         emitState(emit);
         return;
       }
-      await onFormSubmitted(result);
+      await onFormSubmitted(emit, result);
       emit(FormStateFormSubmitted(submittedData: result.data, formData: formData));
       emitState(emit);
     } catch (e, s) {
@@ -66,12 +72,18 @@ mixin FormDataMixin<F, P, E extends Enum> on BaseBloc<FormEvent, FormBlocState<F
     }
   }
 
-  Future<void> onFormSubmitted(UseCaseResult result) async {}
+  Future<bool> doBeforeSubmit(Emitter<FormBlocState<F, E>> emit) async {
+    return true;
+  }
+
+  Future<void> onFormSubmitted(Emitter<FormBlocState<F, E>> emit, UseCaseResult result) async {}
   bool get isUpdate => _payload != null;
   P? get payload => _payload;
 
   @override
   ErrorDisplayPolicy get errorDisplayPolicy => ErrorDisplayPolicy.snackBar;
+
+  bool get validateOnInit => false;
 
   void validateForm(F formData) {}
 }
