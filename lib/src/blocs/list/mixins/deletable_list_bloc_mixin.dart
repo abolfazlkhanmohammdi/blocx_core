@@ -135,6 +135,7 @@ mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   // ---- Hooks ----------------------------------------------------------------
 
   void _onItemDeletedResult(UseCaseResult<bool> result) {
+    if(!displayDeletedSnackbar)return;
     final ok = result.isSuccess && (result.data ?? false);
     if (ok) {
       displayInfoSnackbar("Item deleted");
@@ -150,6 +151,7 @@ mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
     List<T> items, {
     required bool wasMultipleDelete,
   }) {
+    if (!displayDeletedSnackbar) return;
     final total = results.length;
     final successes = results.values.where((r) => r.isSuccess && (r.data ?? false)).length;
     final failures = total - successes;
@@ -171,4 +173,6 @@ mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
     removeItemFromList(list[index]);
     emitState(emit);
   }
+
+  bool get displayDeletedSnackbar => false;
 }

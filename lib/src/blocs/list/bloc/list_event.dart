@@ -53,7 +53,10 @@ class ListEventLoadInitialPage<T extends BaseEntity, P> extends ListEvent<T> {
 }
 
 /// Refreshes the current list data, reloading from the source.
-class ListEventRefreshData<T extends BaseEntity> extends ListEvent<T> {}
+class ListEventRefreshData<T extends BaseEntity> extends ListEvent<T> {
+  final bool clearSelection;
+  ListEventRefreshData({this.clearSelection = false});
+}
 
 /// Loads the next page of items and appends them to the list.
 class ListEventLoadNextPage<T extends BaseEntity> extends ListEvent<T> {}
@@ -154,6 +157,15 @@ class ListEventDeselectMultipleItems<T extends BaseEntity> extends ListEvent<T> 
   ListEventDeselectMultipleItems({required this.items});
 }
 
+class ListEventClearSelection<T extends BaseEntity> extends ListEvent<T> {
+  ListEventClearSelection();
+}
+
+class ListEventSelectMultipleItems<T extends BaseEntity> extends ListEvent<T> {
+  final List<T> items;
+  ListEventSelectMultipleItems({required this.items});
+}
+
 class ListEventAddItem<T extends BaseEntity> extends ListEvent<T> {
   final T item;
   final int index;
@@ -163,4 +175,9 @@ class ListEventAddItem<T extends BaseEntity> extends ListEvent<T> {
 class ListEventUpdateItem<T extends BaseEntity> extends ListEvent<T> {
   final T item;
   ListEventUpdateItem({required this.item});
+}
+
+class ListEventReplaceList<T extends BaseEntity> extends ListEvent<T> {
+  final List<T> newItems;
+  ListEventReplaceList({required this.newItems});
 }

@@ -2,27 +2,32 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
+import 'package:meta/meta.dart';
 
 mixin FormDataMixin<F, P, E extends Enum> on BaseBloc<FormEvent, FormBlocState<F, E>> {
   late F formData;
   P? _payload;
-  initData(F formData) {
+  bool _isUpdate = false;
+  @mustCallSuper
+  void initData(F formData) {
     this.formData = formData;
     on<FormEventInit<P>>(initForm);
     on<FormEventUpdateData<E>>(updateData);
     on<FormEventSubmit>(submit);
+    on<FormEventUpdateFormData<P>>(handleUpdateFormDataEvent);
   }
 
-  FutureOr<void> initForm(FormEventInit<P> event, Emitter<FormBlocState<F, E>> emit) {
+  FutureOr<void> initForm(FormEventInit<P> event, Emitter<FormBlocState<F, E>> emit) async {
     _payload = event.payload;
-    if (_payload != null) formData = applyPayloadToFormData(_payload as P);
+    _isUpdate = event.payload != null;
+    if (_payload != null) formData = await applyPayloadToFormData(_payload as P);
     emit(FormStateApplyInitialDataToForm(formData: formData));
     if (validateOnInit) validateForm(formData);
     emitState(emit);
     if (isInfoFetcher) add(FormEventFetchRequiredInfo());
   }
 
-  F applyPayloadToFormData(P payload) {
+  Future<F> applyPayloadToFormData(P payload) async {
     throw UnimplementedError();
   }
 
@@ -35,9 +40,22 @@ mixin FormDataMixin<F, P, E extends Enum> on BaseBloc<FormEvent, FormBlocState<F
       return;
     }
     formData = updateFormData(event.key, event.data);
+    if (emitChangesOnUpdate) {
+      emit(
+        FormStateFormUpdated(
+          step: stepIndex,
+          formData: formData,
+          errors: {},
+          fieldsFetchingInfo: {},
+          checkingUniqueFields: {},
+        ),
+      );
+    }
     validateForm(formData);
     emitState(emit);
   }
+
+  bool get emitChangesOnUpdate => false;
 
   bool get isUniqueFieldValidator;
 
@@ -63,8 +81,10 @@ mixin FormDataMixin<F, P, E extends Enum> on BaseBloc<FormEvent, FormBlocState<F
         emitState(emit);
         return;
       }
-      await onFormSubmitted(emit, result);
-      emit(FormStateFormSubmitted(submittedData: result.data, formData: formData));
+      bool shouldEmitSubmittedState = await onFormSubmitted(emit, result);
+      if (shouldEmitSubmittedState) {
+        emit(FormStateFormSubmitted(submittedData: result.data, formData: formData));
+      }
       emitState(emit);
     } catch (e, s) {
       emitState(emit);
@@ -76,8 +96,11 @@ mixin FormDataMixin<F, P, E extends Enum> on BaseBloc<FormEvent, FormBlocState<F
     return true;
   }
 
-  Future<void> onFormSubmitted(Emitter<FormBlocState<F, E>> emit, UseCaseResult result) async {}
-  bool get isUpdate => _payload != null;
+  Future<bool> onFormSubmitted(Emitter<FormBlocState<F, E>> emit, UseCaseResult result) async {
+    return true;
+  }
+
+  bool get isUpdate => _isUpdate;
   P? get payload => _payload;
 
   @override
@@ -86,4 +109,15 @@ mixin FormDataMixin<F, P, E extends Enum> on BaseBloc<FormEvent, FormBlocState<F
   bool get validateOnInit => false;
 
   void validateForm(F formData) {}
+
+  FutureOr<void> handleUpdateFormDataEvent(
+    FormEventUpdateFormData<P> event,
+    Emitter<FormBlocState<F, E>> emit,
+  ) async {
+    _isUpdate = event.isUpdate;
+    formData = await applyPayloadToFormData(event.payload);
+    emit(FormStateApplyInitialDataToForm(formData: formData));
+    validateForm(formData);
+    emitState(emit);
+  }
 }

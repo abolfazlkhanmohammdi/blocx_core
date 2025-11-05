@@ -7,7 +7,7 @@ abstract class ListState<T extends BaseEntity> extends BaseState {
   final bool isLoadingNextPage;
   final bool isRefreshing;
   final bool isSearching;
-
+  final dynamic additionalInfo;
   final Set<String> selectedItemIds;
   final Set<String> beingSelectedItemIds;
   final Set<String> highlightedItemIds;
@@ -25,13 +25,12 @@ abstract class ListState<T extends BaseEntity> extends BaseState {
     this.highlightedItemIds = const {},
     this.beingRemovedItemIds = const {},
     this.expandedItemIds = const {},
+    this.additionalInfo,
     required super.shouldRebuild,
     required super.shouldListen,
   });
 
   bool get isEmpty => list.isEmpty;
-
-  get additionalInfo => null;
 }
 
 class ListStateLoading<T extends BaseEntity> extends ListState<T> {
@@ -60,6 +59,7 @@ class ListStateLoaded<T extends BaseEntity> extends ListState<T> {
     required super.highlightedItemIds,
     required super.beingRemovedItemIds,
     required super.expandedItemIds,
+    super.additionalInfo,
   }) : super(shouldRebuild: true, shouldListen: false);
 
   ListStateLoaded<T> copyWith({

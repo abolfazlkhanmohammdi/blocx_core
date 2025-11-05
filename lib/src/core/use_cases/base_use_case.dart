@@ -8,6 +8,7 @@ abstract class BaseUseCase<T> {
     try {
       return await perform();
     } catch (e, s) {
+      printError(e,s);
       return UseCaseResult.failure(e, stackTrace: s);
     }
   }
@@ -15,4 +16,7 @@ abstract class BaseUseCase<T> {
   /// Subclasses must implement this. Public so it can be overridden.
   @protected
   Future<UseCaseResult<T>> perform();
+
+  void printError(Object error, [StackTrace? stackTrace]) {
+  }
 }

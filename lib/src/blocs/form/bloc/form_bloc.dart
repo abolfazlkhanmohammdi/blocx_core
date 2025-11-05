@@ -10,6 +10,7 @@ abstract class FormBloc<F, P, E extends Enum> extends BaseBloc<FormEvent, FormBl
   FormBloc(ScreenManagerCubit screenManagerCubit, F formData)
     : super(FormStateInitial(formData: formData), screenManagerCubit) {
     initData(formData);
+    initErrors();
     if (isStepped) (this as SteppedFormMixin<F, P, E>).initStepped();
     if (isUniqueFieldValidator) (this as UniqueFieldValidatorMixin<F, P, E>).initUniqueFieldChecker();
     if (isInfoFetcher) (this as InfoFetcherFormMixin<F, P, E>).initInfoFetcher();
@@ -25,14 +26,16 @@ abstract class FormBloc<F, P, E extends Enum> extends BaseBloc<FormEvent, FormBl
   Set<E> get uniqueKeysBeingChecked => {};
   @override
   void emitState(Emitter<FormBlocState<F, E>> emit) {
-    emit(
-      FormStateLoaded(
-        formData: formData,
-        step: stepIndex,
-        errors: errors,
-        fieldsFetchingInfo: fieldsFetchingInfo,
-        checkingUniqueFields: uniqueKeysBeingChecked,
-      ),
+    var newState = FormStateLoaded(
+      formData: formData,
+      step: stepIndex,
+      errors: errors,
+      fieldsFetchingInfo: fieldsFetchingInfo,
+      checkingUniqueFields: uniqueKeysBeingChecked,
+      comesFromPreviousStep: comesFromPreviousStep,
     );
+    emit(newState);
   }
+
+  bool get comesFromPreviousStep => false;
 }

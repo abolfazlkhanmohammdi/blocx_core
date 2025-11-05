@@ -55,11 +55,13 @@ mixin ListBlocDataMixin<T extends BaseEntity, P> on BaseBloc<ListEvent<T>, ListS
     on<ListEventLoadInitialPage<T, P>>(loadInitialPage);
     on<ListEventAddItem<T>>(addItem);
     on<ListEventUpdateItem<T>>(updateItem);
+    on<ListEventReplaceList<T>>(handleReplaceList);
   }
 
   emitState(Emitter<ListState<T>> emit) {
     emit(
       ListStateLoaded(
+        additionalInfo: additionalInfo,
         list: list,
         hasReachedEnd: hasReachedEnd,
         isLoadingNextPage: isLoadingNextPage,
@@ -73,6 +75,8 @@ mixin ListBlocDataMixin<T extends BaseEntity, P> on BaseBloc<ListEvent<T>, ListS
       ),
     );
   }
+
+  dynamic get additionalInfo => null;
 
   PaginationUseCase<T>? get loadInitialPageUseCase => null;
 
@@ -148,6 +152,11 @@ mixin ListBlocDataMixin<T extends BaseEntity, P> on BaseBloc<ListEvent<T>, ListS
   }
 
   void doAfterInsert() {}
+
+  FutureOr<void> handleReplaceList(ListEventReplaceList<T> event, Emitter<ListState<T>> emit) {
+    replaceList(event.newItems);
+    emitState(emit);
+  }
 }
 
 extension on DataInsertSource {

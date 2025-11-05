@@ -32,6 +32,7 @@ mixin RefreshableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   /// react (e.g., show/hide refresh indicators).
   Future refreshPage(ListEventRefreshData<T> event, Emitter<ListState<T>> emit) async {
     if (isRefreshing) return;
+    if (event.clearSelection && this is SelectableListBlocMixin<T, P>) add(ListEventClearSelection());
     if (isSearchable && (this as SearchableListBlocMixin<T, P>).searchText.isNotEmpty) {
       add(ListEventSearchRefresh());
       return;

@@ -73,6 +73,8 @@ mixin SelectableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
     on<ListEventSelectItem<T>>(selectItem);
     on<ListEventDeselectItem<T>>(deselectItem);
     on<ListEventDeselectMultipleItems<T>>(deselectMultipleItems);
+    on<ListEventSelectMultipleItems<T>>(selectMultipleItems);
+    on<ListEventClearSelection<T>>(clearSelection);
   }
 
   // ===========================================================================
@@ -246,6 +248,19 @@ mixin SelectableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
     for (T item in event.items) {
       selectedItemIds.remove(item.identifier);
     }
+    emitSelectionChanged(emit, list.first, true);
+    emitState(emit);
+  }
+
+  FutureOr<void> selectMultipleItems(ListEventSelectMultipleItems<T> event, Emitter<ListState<T>> emit) {
+    selectedItemIds.clear();
+    selectedItemIds.addAll(list.map((e) => e.identifier));
+    emitSelectionChanged(emit, list.first, false);
+    emitState(emit);
+  }
+
+  FutureOr<void> clearSelection(ListEventClearSelection<T> event, Emitter<ListState<T>> emit) {
+    selectedItemIds.clear();
     emitState(emit);
   }
 }

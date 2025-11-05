@@ -62,6 +62,7 @@ abstract class ListBloc<T extends BaseEntity, P> extends BaseBloc<ListEvent<T>, 
   @override
   Set<String> get expandedItemIds =>
       isExpandable ? (this as ExpandableListBlocMixin<T, P>).expandedItemIdsOriginal : const {};
+
 }
 
 enum DataInsertSource { init, nextPage, refresh, search }

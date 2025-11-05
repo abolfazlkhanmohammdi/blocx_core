@@ -3,6 +3,7 @@ part of 'form_bloc.dart';
 class FormBlocState<F, E extends Enum> extends BaseState {
   final F formData;
   final int step;
+  final bool comesFromPreviousStep;
   final Map<E, Set<String>> errors;
   final Set<E> fieldsFetchingInfo;
   final Set<E> checkingUniqueFields;
@@ -12,6 +13,7 @@ class FormBlocState<F, E extends Enum> extends BaseState {
     required this.errors,
     required this.fieldsFetchingInfo,
     required this.checkingUniqueFields,
+    this.comesFromPreviousStep = false,
     required super.shouldRebuild,
     required super.shouldListen,
   });
@@ -21,6 +23,11 @@ class FormBlocState<F, E extends Enum> extends BaseState {
   }
 
   bool get isValid => errors.isEmpty;
+  String? errorByKey(E key) {
+    var errors = this.errors[key];
+    if (errors == null || errors.isEmpty) return null;
+    return errors.first;
+  }
 }
 
 class FormStateInitial<F, E extends Enum> extends FormBlocState<F, E> {
@@ -38,6 +45,7 @@ class FormStateInitial<F, E extends Enum> extends FormBlocState<F, E> {
 class FormStateLoaded<F, E extends Enum> extends FormBlocState<F, E> {
   FormStateLoaded({
     required super.step,
+    required super.comesFromPreviousStep,
     required super.errors,
     required super.fieldsFetchingInfo,
     required super.formData,
@@ -80,4 +88,14 @@ class FormStateFormSubmitted<F, E extends Enum> extends FormBlocState<F, E> {
         fieldsFetchingInfo: {},
         checkingUniqueFields: {},
       );
+}
+
+class FormStateFormUpdated<F, E extends Enum> extends FormBlocState<F, E> {
+  FormStateFormUpdated({
+    required super.step,
+    required super.formData,
+    required super.errors,
+    required super.fieldsFetchingInfo,
+    required super.checkingUniqueFields,
+  }) : super(shouldRebuild: false, shouldListen: true);
 }
