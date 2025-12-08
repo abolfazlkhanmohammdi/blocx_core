@@ -23,6 +23,12 @@ mixin FormErrorsMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
     return changed;
   }
 
+  void setFieldErrorsBulk(E key, List<String> error) {
+    final set = _errors.putIfAbsent(key, () => <String>{});
+    set.addAll(error);
+    if (set.isEmpty) _errors.remove(key);
+  }
+
   /// Returns true if something was removed.
   bool clearFieldError(E key, {String? errorMessage}) {
     final set = _errors[key];

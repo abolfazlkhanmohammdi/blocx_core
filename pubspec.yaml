@@ -5,7 +5,7 @@ repository: https://github.com/abolfazlkhanmohammdi/blocx_core
 issue_tracker: https://github.com/abolfazlkhanmohammdi/blocx_core
 topics: [bloc, architecture, lists, forms]
 environment:
-  sdk: ">=3.7.2 <4.0.0"
+  sdk: ">=3.10.0 <4.0.0"
 
 
 # Add regular dependencies here.
