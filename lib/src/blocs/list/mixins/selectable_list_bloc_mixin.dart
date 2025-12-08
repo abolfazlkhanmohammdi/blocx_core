@@ -254,7 +254,7 @@ mixin SelectableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
 
   FutureOr<void> selectMultipleItems(ListEventSelectMultipleItems<T> event, Emitter<ListState<T>> emit) {
     selectedItemIds.clear();
-    selectedItemIds.addAll(list.map((e) => e.identifier));
+    selectedItemIds.addAll(event.items.map((e) => e.identifier));
     emitSelectionChanged(emit, list.first, false);
     emitState(emit);
   }

@@ -28,6 +28,16 @@ class FormBlocState<F, E extends Enum> extends BaseState {
     if (errors == null || errors.isEmpty) return null;
     return errors.first;
   }
+
+  String allErrors(FieldNameProvider<E> nameProvider) {
+    List<String> errors = [];
+    for (var entry in this.errors.entries) {
+      var fieldName = nameProvider(entry.key);
+      var fieldErrors = entry.value;
+      errors.add("$fieldName:\n${fieldErrors.join(".\n")}.\n");
+    }
+    return errors.join('\n');
+  }
 }
 
 class FormStateInitial<F, E extends Enum> extends FormBlocState<F, E> {
@@ -99,3 +109,5 @@ class FormStateFormUpdated<F, E extends Enum> extends FormBlocState<F, E> {
     required super.checkingUniqueFields,
   }) : super(shouldRebuild: false, shouldListen: true);
 }
+
+typedef FieldNameProvider<E> = String Function(E key);
