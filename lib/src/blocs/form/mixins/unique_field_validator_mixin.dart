@@ -2,8 +2,9 @@ import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/src/core/localizations/loc_provider.dart';
+import 'package:blocx_core/src/core/models/base_form_entity.dart';
 
-mixin UniqueFieldValidatorMixin<F, P, E extends Enum> on FormBloc<F, P, E> {
+mixin UniqueFieldValidatorMixin<F extends BaseFormEntity<F, E>, P, E extends Enum> on FormBloc<F, P, E> {
   List<E> get uniqueFieldKeys;
   final Map<E, Object> _inFlightTokenByField = {};
 

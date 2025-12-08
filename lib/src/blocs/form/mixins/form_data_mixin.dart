@@ -2,9 +2,11 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
+import 'package:blocx_core/src/core/models/base_form_entity.dart';
 import 'package:meta/meta.dart';
 
-mixin FormDataMixin<F, P, E extends Enum> on BaseBloc<FormEvent, FormBlocState<F, E>> {
+mixin FormDataMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
+    on BaseBloc<FormEvent, FormBlocState<F, E>> {
   late F formData;
   P? _payload;
   bool _isUpdate = false;
@@ -63,7 +65,9 @@ mixin FormDataMixin<F, P, E extends Enum> on BaseBloc<FormEvent, FormBlocState<F
 
   BaseUseCase get submitUseCase;
 
-  F updateFormData(E key, data);
+  F updateFormData(E key, data) {
+    return formData.updateByKeySafe(key, data);
+  }
 
   void emitState(Emitter<FormBlocState<F, E>> emit);
 

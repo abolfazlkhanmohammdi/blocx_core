@@ -2,8 +2,9 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/src/blocs/form/bloc/form_bloc.dart';
+import 'package:blocx_core/src/core/models/base_form_entity.dart';
 
-mixin SteppedFormMixin<F, P, E extends Enum> on FormBloc<F, P, E> {
+mixin SteppedFormMixin<F extends BaseFormEntity<F, E>, P, E extends Enum> on FormBloc<F, P, E> {
   int _stepIndex = 0;
   int _previousStepIndex = 0;
   int get maxStep;

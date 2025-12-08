@@ -1,11 +1,13 @@
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/src/blocs/form/mixins/form_data_mixin.dart';
+import 'package:blocx_core/src/core/models/base_form_entity.dart';
 
 part 'form_event.dart';
 part 'form_state.dart';
 
-abstract class FormBloc<F, P, E extends Enum> extends BaseBloc<FormEvent, FormBlocState<F, E>>
+abstract class FormBloc<F extends BaseFormEntity<F, E>, P, E extends Enum>
+    extends BaseBloc<FormEvent, FormBlocState<F, E>>
     with FormDataMixin<F, P, E>, FormErrorsMixin<F, P, E> {
   FormBloc(ScreenManagerCubit screenManagerCubit, F formData)
     : super(FormStateInitial(formData: formData), screenManagerCubit) {

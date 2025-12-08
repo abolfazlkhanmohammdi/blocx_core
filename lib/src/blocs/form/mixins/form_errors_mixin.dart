@@ -3,8 +3,10 @@ import 'dart:collection';
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/src/blocs/base/base_bloc.dart';
 import 'package:blocx_core/src/blocs/form/bloc/form_bloc.dart';
+import 'package:blocx_core/src/core/models/base_form_entity.dart';
 
-mixin FormErrorsMixin<F, P, E extends Enum> on BaseBloc<FormEvent, FormBlocState<F, E>> {
+mixin FormErrorsMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
+    on BaseBloc<FormEvent, FormBlocState<F, E>> {
   final Map<E, Set<String>> _errors = <E, Set<String>>{};
 
   void initErrors() {
