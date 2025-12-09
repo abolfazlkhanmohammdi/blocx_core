@@ -1,7 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
 
-/// Mixin that adds **pull-to-refresh** behavior to a [ListBloc].
+/// Mixin that adds **pull-to-refresh** behavior to a [BlocxListBloc].
 ///
 /// This mixin wires a refresh event, coordinates the `refreshPageUseCase`
 /// (if provided), updates the `isRefreshing` flag, and re-emits state so the UI
@@ -10,18 +10,18 @@ import 'package:blocx_core/blocx_core.dart';
 /// ### Behavior
 /// - Ignores refresh requests while a refresh is already in progress.
 /// - If the list is **searchable** and there is an active non-empty query,
-///   it dispatches a `ListEventSearchRefresh` instead of running a generic refresh,
+///   it dispatches a `BlocxListEventSearchRefresh` instead of running a generic refresh,
 ///   ensuring the refresh respects the current search context.
 /// - If `refreshPageUseCase` is available, it is executed to fetch fresh data.
 ///   On success, the current list is cleared and replaced; on failure, the
 ///   configured error policy is applied via `handleError`.
-mixin RefreshableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
+mixin BlocxRefreshableListBlocMixin<T extends BaseEntity, P> on BlocxListBloc<T, P> {
   /// Handles a request to refresh the list data.
   ///
   /// Guard clauses:
   /// - Returns immediately if a refresh is already in progress (`isRefreshing`).
   /// - If searchable and `searchText` is non-empty, dispatches
-  ///   [ListEventSearchRefresh] to refresh within the search context.
+  ///   [BlocxListEventSearchRefresh] to refresh within the search context.
   ///
   /// Execution path:
   /// - If [refreshPageUseCase] is provided, calls [_fetchRefreshPage].
@@ -30,15 +30,16 @@ mixin RefreshableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   ///
   /// *Note:* This method emits new list states via [emitState] so the UI can
   /// react (e.g., show/hide refresh indicators).
-  Future refreshPage(ListEventRefreshData<T> event, Emitter<ListState<T>> emit) async {
+  Future refreshPage(BlocxListEventRefreshData<T> event, Emitter<BlocxListState<T>> emit) async {
     if (isRefreshing) return;
-    if (event.clearSelection && this is SelectableListBlocMixin<T, P>) add(ListEventClearSelection());
-    if (isSearchable && (this as SearchableListBlocMixin<T, P>).searchText.isNotEmpty) {
-      add(ListEventSearchRefresh());
+    if (event.clearSelection && this is BlocxSelectableListBlocMixin<T, P>)
+      add(BlocxListEventClearSelection());
+    if (isSearchable && (this as BlocxSearchableListBlocMixin<T, P>).searchText.isNotEmpty) {
+      add(BlocxListEventSearchRefresh());
       return;
     }
     if (refreshPageUseCase != null) return await _fetchRefreshPage(event, emit);
-    infiniteListBloc.add(InfiniteListEventCloseRefresh());
+    infiniteListBloc.add(BlocxInfiniteListEventCloseRefresh());
     throw UnimplementedError("You must either override refreshUseCase getter or refreshPage method");
   }
 
@@ -57,7 +58,7 @@ mixin RefreshableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   ///
   /// Any exceptions or failures are surfaced through the error policy defined
   /// by the host bloc (see [errorDisplayPolicy]).
-  Future<void> _fetchRefreshPage(ListEventRefreshData<T> event, Emitter<ListState<T>> emit) async {
+  Future<void> _fetchRefreshPage(BlocxListEventRefreshData<T> event, Emitter<BlocxListState<T>> emit) async {
     isRefreshing = true;
     emitState(emit);
     var result = await refreshPageUseCase!.execute();
@@ -71,17 +72,17 @@ mixin RefreshableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
     emitState(emit);
   }
 
-  /// Registers the event handler for [ListEventRefreshData].
+  /// Registers the event handler for [BlocxListEventRefreshData].
   ///
-  /// Call this during bloc initialization (the base [ListBloc] typically
+  /// Call this during bloc initialization (the base [BlocxListBloc] typically
   /// invokes `initRefresh()` when the bloc mixes in this capability).
   initRefresh() {
-    on<ListEventRefreshData<T>>(refreshPage);
+    on<BlocxListEventRefreshData<T>>(refreshPage);
   }
 
   /// Optional use case that fetches a fresh page of data for refresh.
   ///
   /// If `null`, you must either provide an implementation by overriding
   /// [refreshPage] or supply this use case in the concrete bloc.
-  PaginationUseCase<T>? get refreshPageUseCase => null;
+  BlocxPaginationUseCase<T>? get refreshPageUseCase => null;
 }

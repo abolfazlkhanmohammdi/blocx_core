@@ -3,19 +3,19 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
 
-mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
+mixin BlocxDeletableListBlocMixin<T extends BaseEntity, P> on BlocxListBloc<T, P> {
   final Set<String> _beingRemovedItemIds = {};
 
-  BaseUseCase<bool>? deleteItemUseCase(T item) => null;
-  BaseUseCase<bool>? deleteMultipleItemsUseCase(List<T> items) => null;
+  BlocxBaseUseCase<bool>? deleteItemUseCase(T item) => null;
+  BlocxBaseUseCase<bool>? deleteMultipleItemsUseCase(List<T> items) => null;
 
   void initDeletable() {
-    on<ListEventRemoveItem<T>>(removeItem);
-    on<ListEventRemoveMultipleItems<T>>(removeMultipleItems);
-    on<ListEventRemoveItemById<T>>(removeItemById);
+    on<BlocxListEventRemoveItem<T>>(removeItem);
+    on<BlocxListEventRemoveMultipleItems<T>>(removeMultipleItems);
+    on<BlocxListEventRemoveItemById<T>>(removeItemById);
   }
 
-  Future<void> removeItem(ListEventRemoveItem<T> event, Emitter<ListState<T>> emit) async {
+  Future<void> removeItem(BlocxListEventRemoveItem<T> event, Emitter<BlocxListState<T>> emit) async {
     _beingRemovedItemIds.add(event.item.identifier);
     emitState(emit);
 
@@ -36,7 +36,7 @@ mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
       _beingRemovedItemIds.remove(event.item.identifier);
       if (ok) {
         removeItemFromList(event.item);
-        if (isSelectable) add(ListEventDeselectMultipleItems(items: [event.item]));
+        if (isSelectable) add(BlocxListEventDeselectMultipleItems(items: [event.item]));
       }
 
       emitState(emit);
@@ -49,7 +49,10 @@ mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   }
 
   /// NEW: removeMultipleItems
-  Future<void> removeMultipleItems(ListEventRemoveMultipleItems<T> event, Emitter<ListState<T>> emit) async {
+  Future<void> removeMultipleItems(
+    BlocxListEventRemoveMultipleItems<T> event,
+    Emitter<BlocxListState<T>> emit,
+  ) async {
     final items = event.items;
 
     if (items.isEmpty) return;
@@ -109,7 +112,7 @@ mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
             final ok = r.isSuccess && (r.data ?? false);
             if (ok) {
               removeItemFromList(it);
-              if (isSelectable) add(ListEventDeselectMultipleItems(items: [it]));
+              if (isSelectable) add(BlocxListEventDeselectMultipleItems(items: [it]));
             }
             results[it] = r;
           } catch (e, s) {
@@ -135,7 +138,7 @@ mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   // ---- Hooks ----------------------------------------------------------------
 
   void _onItemDeletedResult(UseCaseResult<bool> result) {
-    if(!displayDeletedSnackbar)return;
+    if (!displayDeletedSnackbar) return;
     final ok = result.isSuccess && (result.data ?? false);
     if (ok) {
       displayInfoSnackbar("Item deleted");
@@ -157,7 +160,7 @@ mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
     final failures = total - successes;
     if (failures == 0) {
       displayInfoSnackbar("Deleted $successes item(s).");
-      if (isSelectable && wasMultipleDelete) add(ListEventDeselectMultipleItems(items: items));
+      if (isSelectable && wasMultipleDelete) add(BlocxListEventDeselectMultipleItems(items: items));
     } else if (successes == 0) {
       displayWarningSnackbar("Failed to delete $failures item(s).");
     } else {
@@ -167,7 +170,10 @@ mixin DeletableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
 
   Set<String> get beingRemovedItemIdsOriginal => _beingRemovedItemIds;
 
-  FutureOr<void> removeItemById(ListEventRemoveItemById<T> event, Emitter<ListState<T>> emit) async {
+  FutureOr<void> removeItemById(
+    BlocxListEventRemoveItemById<T> event,
+    Emitter<BlocxListState<T>> emit,
+  ) async {
     int index = list.indexWhere((item) => item.identifier == event.identifier);
     if (index == -1) return;
     removeItemFromList(list[index]);

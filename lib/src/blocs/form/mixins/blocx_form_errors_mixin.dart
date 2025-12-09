@@ -2,17 +2,17 @@ import 'dart:async';
 import 'dart:collection';
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/src/blocs/base/base_bloc.dart';
-import 'package:blocx_core/src/blocs/form/bloc/form_bloc.dart';
+import 'package:blocx_core/src/blocs/form/bloc/blocx_form_bloc.dart';
 import 'package:blocx_core/src/core/models/base_form_entity.dart';
 
-mixin FormErrorsMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
-    on BaseBloc<FormEvent, FormBlocState<F, E>> {
+mixin BlocxFormErrorsMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
+    on BaseBloc<BlocxFormEvent, BlocxFormState<F, E>> {
   final Map<E, Set<String>> _errors = <E, Set<String>>{};
 
   void initErrors() {
-    on<FormEventSetTimedErrorToField<E>>(setTimedErrorToField);
-    on<FormEventSetErrorToField<E>>(setErrorToField);
-    on<FormEventClearFieldError<E>>(clearFieldErrors);
+    on<BlocxFormEventSetTimedErrorToField<E>>(setTimedErrorToField);
+    on<BlocxFormEventSetErrorToField<E>>(setErrorToField);
+    on<BlocxFormEventClearFieldError<E>>(clearFieldErrors);
   }
 
   /// Returns true if the error map actually changed.
@@ -53,8 +53,8 @@ mixin FormErrorsMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
       UnmodifiableMapView(_errors.map((k, v) => MapEntry(k, UnmodifiableSetView(v))));
 
   Future<void> setTimedErrorToField(
-    FormEventSetTimedErrorToField<E> event,
-    Emitter<FormBlocState<F, E>> emit,
+    BlocxFormEventSetTimedErrorToField<E> event,
+    Emitter<BlocxFormState<F, E>> emit,
   ) async {
     setFieldError(event.key, event.message);
     emitState(emit);
@@ -63,14 +63,14 @@ mixin FormErrorsMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
     emitState(emit);
   }
 
-  void emitState(Emitter<FormBlocState<F, E>> emit);
+  void emitState(Emitter<BlocxFormState<F, E>> emit);
 
-  FutureOr<void> setErrorToField(FormEventSetErrorToField<E> event, Emitter<FormBlocState<F, E>> emit) {
+  FutureOr<void> setErrorToField(BlocxFormEventSetErrorToField<E> event, Emitter<BlocxFormState<F, E>> emit) {
     setFieldError(event.key, event.message);
     emitState(emit);
   }
 
-  FutureOr<void> clearFieldErrors(FormEventClearFieldError<E> event, Emitter<FormBlocState<F, E>> emit) {
+  FutureOr<void> clearFieldErrors(BlocxFormEventClearFieldError<E> event, Emitter<BlocxFormState<F, E>> emit) {
     event.clearAll ? clearFieldError(event.key) : clearFieldError(event.key, errorMessage: event.message!);
     emitState(emit);
   }

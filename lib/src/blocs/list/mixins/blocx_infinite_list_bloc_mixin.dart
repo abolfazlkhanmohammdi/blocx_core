@@ -1,10 +1,10 @@
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
 
-mixin InfiniteListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
-  Future loadNextPage(ListEventLoadNextPage<T> event, Emitter<ListState<T>> emit) async {
-    if (isSearchable && (this as SearchableListBlocMixin<T, P>).searchText.isNotEmpty) {
-      add(ListEventSearchNextPage());
+mixin BlocxInfiniteListBlocMixin<T extends BaseEntity, P> on BlocxListBloc<T, P> {
+  Future loadNextPage(BlocxListEventLoadNextPage<T> event, Emitter<BlocxListState<T>> emit) async {
+    if (isSearchable && (this as BlocxSearchableListBlocMixin<T, P>).searchText.isNotEmpty) {
+      add(BlocxListEventSearchNextPage());
       return;
     }
     if (hasReachedEnd || isLoadingNextPage) return;
@@ -14,12 +14,12 @@ mixin InfiniteListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
     throw UnimplementedError("You must either override loadMoreUseCase getter or loadNextPage method");
   }
 
-  Future<void> _fetchNextPage(ListEventLoadNextPage<T> event, Emitter<ListState<T>> emit) async {
+  Future<void> _fetchNextPage(BlocxListEventLoadNextPage<T> event, Emitter<BlocxListState<T>> emit) async {
     var result = await loadNextPageUseCase!.execute();
     isLoadingNextPage = false;
     if (result.isFailure) {
       await handleError(result.error!, emit, stacktrace: result.stackTrace);
-      infiniteListBloc.add(InfiniteListEventChangeLoadBottomDataStatus(false, hasReachedEnd));
+      infiniteListBloc.add(BlocxInfiniteListEventChangeLoadBottomDataStatus(false, hasReachedEnd));
       return;
     }
     await insertToList(result.data!.items, !result.data!.hasNext, DataInsertSource.nextPage);
@@ -27,8 +27,8 @@ mixin InfiniteListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   }
 
   void initInfiniteList() {
-    on<ListEventLoadNextPage<T>>(loadNextPage);
+    on<BlocxListEventLoadNextPage<T>>(loadNextPage);
   }
 
-  PaginationUseCase<T>? get loadNextPageUseCase => null;
+  BlocxPaginationUseCase<T>? get loadNextPageUseCase => null;
 }

@@ -6,10 +6,10 @@ class BlocxMinDateValidator extends BlocxSingleErrorFieldValidator<DateTime> {
   final DateTime minDate;
 
   /// Creates a validator that enforces the minimum allowed date.
-  BlocxMinDateValidator(this.minDate);
+  BlocxMinDateValidator(this.minDate, {super.duration});
 
   @override
-  String? validateSimple(DateTime value) {
+  String? validateWithSingleError(DateTime value) {
     if (value.isBefore(minDate)) {
       return loc.minDateError(minDate); // localized error message
     }

@@ -22,14 +22,15 @@ import 'package:blocx_core/src/blocs/form/validators/timed_error_message.dart';
 /// }
 /// ```
 abstract class BlocxFieldValidator<T> {
-  /// Validates the given [value] and returns a list of error messages.
-  ///
-  /// Returns an empty list if the value is valid.
-  List<String> validate(T value);
-
   /// Optional duration associated with the error messages.
   ///
   /// Can be used by form systems that display timed errors.
   /// Defaults to `null`.
-  Duration? get duration => null;
+  final Duration? duration;
+  BlocxFieldValidator({this.duration});
+
+  /// Validates the given [value] and returns a list of error messages.
+  ///
+  /// Returns an empty list if the value is valid.
+  List<String> validate(T value);
 }

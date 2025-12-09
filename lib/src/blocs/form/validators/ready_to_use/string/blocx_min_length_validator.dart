@@ -5,10 +5,11 @@ import 'package:blocx_core/src/core/localizations/loc_provider.dart';
 class BlocxMinLengthValidator extends BlocxSingleErrorFieldValidator<String> {
   final int minLength;
 
-  BlocxMinLengthValidator(this.minLength) : assert(minLength >= 0, 'minLength must be non-negative');
+  BlocxMinLengthValidator(this.minLength, {super.duration})
+    : assert(minLength >= 0, 'minLength must be non-negative');
 
   @override
-  String? validateSimple(String value) {
+  String? validateWithSingleError(String value) {
     return value.trim().length < minLength ? loc.minLengthError(minLength) : null;
   }
 }

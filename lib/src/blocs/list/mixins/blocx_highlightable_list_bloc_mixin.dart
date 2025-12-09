@@ -3,12 +3,12 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
 
-/// Adds highlight behavior to a [ListBloc].
+/// Adds highlight behavior to a [BlocxListBloc].
 ///
 /// ### Events wired
-/// - [ListEventHighlightItem] → sets `isHighlighted = true` for the item
-/// - [ListEventClearHighlightedItem] → clears highlight (usually after a delay)
-mixin HighlightableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
+/// - [BlocxListEventHighlightItem] → sets `isHighlighted = true` for the item
+/// - [BlocxListEventClearHighlightedItem] → clears highlight (usually after a delay)
+mixin BlocxHighlightableListBlocMixin<T extends BaseEntity, P> on BlocxListBloc<T, P> {
   final Set<String> _highlightedItemIds = {};
 
   /// Whether the highlight should auto-clear after [highlightDuration].
@@ -22,32 +22,32 @@ mixin HighlightableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   /// Register highlight event handlers.
 
   void initHighlightMixin() {
-    on<ListEventHighlightItem<T>>(highlightItem);
-    on<ListEventClearHighlightedItem<T>>(clearHighlightedItem);
+    on<BlocxListEventHighlightItem<T>>(highlightItem);
+    on<BlocxListEventClearHighlightedItem<T>>(clearHighlightedItem);
   }
 
-  /// Handles [ListEventHighlightItem]:
+  /// Handles [BlocxListEventHighlightItem]:
   /// - Sets `isHighlighted = true` for the given item (immutable update).
   /// - Emits the new state.
   /// - If [autoClearHighlight] is `true`, schedules a clear via
-  ///   [ListEventClearHighlightedItem].
+  ///   [BlocxListEventClearHighlightedItem].
 
-  FutureOr<void> highlightItem(ListEventHighlightItem<T> event, Emitter<ListState<T>> emit) async {
+  FutureOr<void> highlightItem(BlocxListEventHighlightItem<T> event, Emitter<BlocxListState<T>> emit) async {
     _highlightedItemIds.add(event.item.identifier);
     emitState(emit);
     if (autoClearHighlight) {
-      add(ListEventClearHighlightedItem<T>(item: event.item));
+      add(BlocxListEventClearHighlightedItem<T>(item: event.item));
     }
   }
 
-  /// Handles [ListEventClearHighlightedItem]:
+  /// Handles [BlocxListEventClearHighlightedItem]:
   /// - Waits [highlightDuration].
   /// - Sets `isHighlighted = false` for the given item (immutable update).
   /// - Emits the new state.
 
   Future<void> clearHighlightedItem(
-    ListEventClearHighlightedItem<T> event,
-    Emitter<ListState<T>> emit,
+    BlocxListEventClearHighlightedItem<T> event,
+    Emitter<BlocxListState<T>> emit,
   ) async {
     await Future.delayed(highlightDuration);
     _highlightedItemIds.remove(event.item.identifier);

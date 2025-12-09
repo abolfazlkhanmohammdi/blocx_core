@@ -1,7 +1,7 @@
 // lib/src/blocs/list/bloc/list_state.dart
-part of 'list_bloc.dart';
+part of 'blocx_list_bloc.dart';
 
-abstract class ListState<T extends BaseEntity> extends BaseState {
+abstract class BlocxListState<T extends BaseEntity> extends BaseState {
   final List<T> list;
   final bool hasReachedEnd;
   final bool isLoadingNextPage;
@@ -14,7 +14,7 @@ abstract class ListState<T extends BaseEntity> extends BaseState {
   final Set<String> beingRemovedItemIds;
   final Set<String> expandedItemIds;
 
-  const ListState({
+  const BlocxListState({
     required this.list,
     required this.hasReachedEnd,
     required this.isLoadingNextPage,
@@ -33,8 +33,8 @@ abstract class ListState<T extends BaseEntity> extends BaseState {
   bool get isEmpty => list.isEmpty;
 }
 
-class ListStateLoading<T extends BaseEntity> extends ListState<T> {
-  const ListStateLoading({
+class BlocxListStateLoading<T extends BaseEntity> extends BlocxListState<T> {
+  const BlocxListStateLoading({
     super.list = const [],
     super.hasReachedEnd = false,
     super.isLoadingNextPage = false,
@@ -47,8 +47,8 @@ class ListStateLoading<T extends BaseEntity> extends ListState<T> {
   }) : super(shouldRebuild: true, shouldListen: false);
 }
 
-class ListStateLoaded<T extends BaseEntity> extends ListState<T> {
-  const ListStateLoaded({
+class BlocxListStateLoaded<T extends BaseEntity> extends BlocxListState<T> {
+  const BlocxListStateLoaded({
     required super.list,
     required super.hasReachedEnd,
     required super.isLoadingNextPage,
@@ -62,7 +62,7 @@ class ListStateLoaded<T extends BaseEntity> extends ListState<T> {
     super.additionalInfo,
   }) : super(shouldRebuild: true, shouldListen: false);
 
-  ListStateLoaded<T> copyWith({
+  BlocxListStateLoaded<T> copyWith({
     List<T>? list,
     bool? hasReachedEnd,
     bool? isLoadingNextPage,
@@ -73,7 +73,7 @@ class ListStateLoaded<T extends BaseEntity> extends ListState<T> {
     Set<String>? highlightedItemIds,
     Set<String>? beingRemovedItemIds,
   }) {
-    return ListStateLoaded<T>(
+    return BlocxListStateLoaded<T>(
       list: list ?? this.list,
       hasReachedEnd: hasReachedEnd ?? this.hasReachedEnd,
       isLoadingNextPage: isLoadingNextPage ?? this.isLoadingNextPage,
@@ -88,10 +88,10 @@ class ListStateLoaded<T extends BaseEntity> extends ListState<T> {
   }
 }
 
-class ListStateError<T extends BaseEntity> extends ListState<T> {
+class BlocxListStateError<T extends BaseEntity> extends BlocxListState<T> {
   final String message;
 
-  const ListStateError({
+  const BlocxListStateError({
     required this.message,
     super.list = const [],
     super.hasReachedEnd = false,
@@ -105,11 +105,11 @@ class ListStateError<T extends BaseEntity> extends ListState<T> {
   }) : super(shouldRebuild: true, shouldListen: false);
 }
 
-class ListStateScrollToItem<T extends BaseEntity> extends ListState<T> {
+class BlocxListStateScrollToItem<T extends BaseEntity> extends BlocxListState<T> {
   final T item;
   final int index;
 
-  const ListStateScrollToItem({required this.item, required this.index})
+  const BlocxListStateScrollToItem({required this.item, required this.index})
     : super(
         list: const [],
         hasReachedEnd: false,
@@ -121,9 +121,9 @@ class ListStateScrollToItem<T extends BaseEntity> extends ListState<T> {
       );
 }
 
-class ListStateSelectionChanged<T extends BaseEntity> extends ListState<T> {
+class BlocxListStateSelectionChanged<T extends BaseEntity> extends BlocxListState<T> {
   final SelectionChangedData<T> selectionData;
-  const ListStateSelectionChanged({
+  const BlocxListStateSelectionChanged({
     required this.selectionData,
     required super.list,
     required super.hasReachedEnd,

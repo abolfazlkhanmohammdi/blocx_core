@@ -6,10 +6,10 @@ class BlocxMaxDateValidator extends BlocxSingleErrorFieldValidator<DateTime> {
   final DateTime maxDate;
 
   /// Creates a validator that enforces the maximum allowed date.
-  BlocxMaxDateValidator(this.maxDate);
+  BlocxMaxDateValidator(this.maxDate, {super.duration});
 
   @override
-  String? validateSimple(DateTime value) {
+  String? validateWithSingleError(DateTime value) {
     if (value.isAfter(maxDate)) {
       return loc.maxDateError(maxDate); // localized error message
     }

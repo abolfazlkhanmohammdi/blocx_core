@@ -1,6 +1,6 @@
 import 'package:blocx_core/blocx_core.dart';
 
-abstract class SearchUseCase<T extends BaseEntity> extends PaginationUseCase<T> {
+abstract class SearchUseCase<T extends BaseEntity> extends BlocxPaginationUseCase<T> {
   final String searchText;
   SearchUseCase({required this.searchText, required super.loadCount, required super.offset});
 

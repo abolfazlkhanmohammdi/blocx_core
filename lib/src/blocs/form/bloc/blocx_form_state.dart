@@ -1,13 +1,13 @@
-part of 'form_bloc.dart';
+part of 'blocx_form_bloc.dart';
 
-class FormBlocState<F, E extends Enum> extends BaseState {
+class BlocxFormState<F, E extends Enum> extends BaseState {
   final F formData;
   final int step;
   final bool comesFromPreviousStep;
   final Map<E, Set<String>> errors;
   final Set<E> fieldsFetchingInfo;
   final Set<E> checkingUniqueFields;
-  FormBlocState({
+  BlocxFormState({
     required this.step,
     required this.formData,
     required this.errors,
@@ -40,8 +40,8 @@ class FormBlocState<F, E extends Enum> extends BaseState {
   }
 }
 
-class FormStateInitial<F, E extends Enum> extends FormBlocState<F, E> {
-  FormStateInitial({required super.formData})
+class BlocxFormStateInitial<F, E extends Enum> extends BlocxFormState<F, E> {
+  BlocxFormStateInitial({required super.formData})
     : super(
         shouldListen: false,
         shouldRebuild: true,
@@ -52,8 +52,8 @@ class FormStateInitial<F, E extends Enum> extends FormBlocState<F, E> {
       );
 }
 
-class FormStateLoaded<F, E extends Enum> extends FormBlocState<F, E> {
-  FormStateLoaded({
+class BlocxFormStateLoaded<F, E extends Enum> extends BlocxFormState<F, E> {
+  BlocxFormStateLoaded({
     required super.step,
     required super.comesFromPreviousStep,
     required super.errors,
@@ -63,8 +63,8 @@ class FormStateLoaded<F, E extends Enum> extends FormBlocState<F, E> {
   }) : super(shouldListen: false, shouldRebuild: true);
 }
 
-class FormStateApplyInitialDataToForm<F, E extends Enum> extends FormBlocState<F, E> {
-  FormStateApplyInitialDataToForm({required super.formData})
+class BlocxFormStateApplyInitialDataToForm<F, E extends Enum> extends BlocxFormState<F, E> {
+  BlocxFormStateApplyInitialDataToForm({required super.formData})
     : super(
         shouldRebuild: false,
         shouldListen: true,
@@ -75,9 +75,9 @@ class FormStateApplyInitialDataToForm<F, E extends Enum> extends FormBlocState<F
       );
 }
 
-class FormStateSubmittingForm<F, E extends Enum> extends FormBlocState<F, E> {
+class BlocxFormStateSubmittingForm<F, E extends Enum> extends BlocxFormState<F, E> {
   final String? buttonText;
-  FormStateSubmittingForm({required super.step, required super.formData, this.buttonText})
+  BlocxFormStateSubmittingForm({required super.step, required super.formData, this.buttonText})
     : super(
         shouldRebuild: true,
         shouldListen: false,
@@ -87,9 +87,9 @@ class FormStateSubmittingForm<F, E extends Enum> extends FormBlocState<F, E> {
       );
 }
 
-class FormStateFormSubmitted<F, E extends Enum> extends FormBlocState<F, E> {
+class BlocxFormStateFormSubmitted<F, E extends Enum> extends BlocxFormState<F, E> {
   final dynamic submittedData;
-  FormStateFormSubmitted({required super.formData, required this.submittedData})
+  BlocxFormStateFormSubmitted({required super.formData, required this.submittedData})
     : super(
         shouldRebuild: false,
         shouldListen: true,
@@ -100,8 +100,8 @@ class FormStateFormSubmitted<F, E extends Enum> extends FormBlocState<F, E> {
       );
 }
 
-class FormStateFormUpdated<F, E extends Enum> extends FormBlocState<F, E> {
-  FormStateFormUpdated({
+class BlocxFormStateFormUpdated<F, E extends Enum> extends BlocxFormState<F, E> {
+  BlocxFormStateFormUpdated({
     required super.step,
     required super.formData,
     required super.errors,

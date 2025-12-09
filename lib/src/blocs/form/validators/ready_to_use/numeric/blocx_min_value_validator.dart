@@ -6,15 +6,12 @@ class BlocxMinValueValidator<T extends num> extends BlocxSingleErrorFieldValidat
   /// The minimum allowed value.
   final T minValue;
 
-  /// Optional error message. Defaults to a localized message if not provided.
-  final String? message;
-
-  BlocxMinValueValidator(this.minValue, {this.message});
+  BlocxMinValueValidator(this.minValue, {super.duration});
 
   @override
-  String? validateSimple(T value) {
+  String? validateWithSingleError(T value) {
     if (value < minValue) {
-      return message ?? loc.minValueError(minValue);
+      return loc.minValueError(minValue);
     }
     return null;
   }

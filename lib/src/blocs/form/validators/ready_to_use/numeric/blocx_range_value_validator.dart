@@ -6,11 +6,11 @@ class BlocxRangeValueValidator extends BlocxSingleErrorFieldValidator<num> {
   final num minValue;
   final num maxValue;
 
-  BlocxRangeValueValidator({required this.minValue, required this.maxValue})
+  BlocxRangeValueValidator({required this.minValue, required this.maxValue, super.duration})
     : assert(maxValue >= minValue, 'maxValue must be >= minValue');
 
   @override
-  String? validateSimple(num value) {
+  String? validateWithSingleError(num value) {
     if (value < minValue || value > maxValue) {
       return loc.numberRangeError(minValue, maxValue);
     }

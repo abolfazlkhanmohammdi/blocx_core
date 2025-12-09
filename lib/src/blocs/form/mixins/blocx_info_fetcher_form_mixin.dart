@@ -5,9 +5,9 @@ import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/src/core/models/base_form_entity.dart';
 
-mixin InfoFetcherFormMixin<F extends BaseFormEntity<F, E>, P, E extends Enum> on FormBloc<F, P, E> {
+mixin BlocxInfoFetcherFormMixin<F extends BaseFormEntity<F, E>, P, E extends Enum> on BlocxFormBloc<F, P, E> {
   /// Declare the initial info use cases once per bloc.
-  Map<E, BaseUseCase<dynamic>> get requiredInitialInfoUseCases;
+  Map<E, BlocxBaseUseCase<dynamic>> get requiredInitialInfoUseCases;
 
   // Loading flags per key.
   final Set<E> _loading = <E>{};
@@ -17,14 +17,17 @@ mixin InfoFetcherFormMixin<F extends BaseFormEntity<F, E>, P, E extends Enum> on
 
   void initInfoFetcher() {
     // Cancel any in-flight fetch and keep only the latest.
-    on<FormEventFetchRequiredInfo>(_fetchRequiredInfo);
+    on<BlocxFormEventFetchRequiredInfo>(_fetchRequiredInfo);
   }
 
   Set<E> get dataFetchingFields => Set.unmodifiable(_loading);
 
   Map<E, dynamic> get formRequiredInfo => UnmodifiableMapView(_formInfo);
 
-  Future<void> _fetchRequiredInfo(FormEventFetchRequiredInfo event, Emitter<FormBlocState<F, E>> emit) async {
+  Future<void> _fetchRequiredInfo(
+    BlocxFormEventFetchRequiredInfo event,
+    Emitter<BlocxFormState<F, E>> emit,
+  ) async {
     final cases = requiredInitialInfoUseCases;
     if (cases.isEmpty) {
       // Nothing to load; still emit so UI can settle.
@@ -67,7 +70,7 @@ mixin InfoFetcherFormMixin<F extends BaseFormEntity<F, E>, P, E extends Enum> on
   }
 
   /// Optional helper to clear cached info (e.g., on form reset).
-  void clearFormRequiredInfo(Emitter<FormBlocState<F, E>> emit) {
+  void clearFormRequiredInfo(Emitter<BlocxFormState<F, E>> emit) {
     if (_formInfo.isEmpty && _loading.isEmpty) return;
     _loading.clear();
     _formInfo.clear();

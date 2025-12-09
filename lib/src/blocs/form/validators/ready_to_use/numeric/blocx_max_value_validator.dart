@@ -6,15 +6,12 @@ class BlocxMaxValueValidator<T extends num> extends BlocxSingleErrorFieldValidat
   /// The maximum allowed value.
   final T maxValue;
 
-  /// Optional error message. Defaults to a localized message if not provided.
-  final String? message;
-
-  BlocxMaxValueValidator(this.maxValue, {this.message});
+  BlocxMaxValueValidator(this.maxValue, {super.duration});
 
   @override
-  String? validateSimple(T value) {
+  String? validateWithSingleError(T value) {
     if (value > maxValue) {
-      return message ?? loc.maxValueError(maxValue);
+      return loc.maxValueError(maxValue);
     }
     return null;
   }

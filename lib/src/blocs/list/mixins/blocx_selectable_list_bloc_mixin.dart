@@ -1,10 +1,8 @@
 import 'dart:async';
-
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
-import 'package:blocx_core/src/blocs/list/models/selection_changed_data.dart';
 
-/// Adds selection behavior to a [ListBloc].
+/// Adds selection behavior to a [BlocxListBloc].
 ///
 /// ### Features
 /// - **Single- or multi-select** via [isSingleSelect].
@@ -16,9 +14,9 @@ import 'package:blocx_core/src/blocs/list/models/selection_changed_data.dart';
 ///
 /// ### Event wiring
 /// Registers:
-/// - [ListEventSelectItem]
-/// - [ListEventDeselectItem]
-mixin SelectableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
+/// - [BlocxListEventSelectItem]
+/// - [BlocxListEventDeselectItem]
+mixin BlocxSelectableListBlocMixin<T extends BaseEntity, P> on BlocxListBloc<T, P> {
   final Set<String> _selectedItemIds = {};
   final Set<String> _beingSelectedItemIds = {};
   // ===========================================================================
@@ -51,7 +49,7 @@ mixin SelectableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   ///
   /// If `null`, the mixin falls back to [performRemoteSelection].
 
-  BaseUseCase<bool>? get selectItemUseCase => null;
+  BlocxBaseUseCase<bool>? get selectItemUseCase => null;
 
   /// Preferred: a use case that performs the remote **deselection** side-effect.
   ///
@@ -61,7 +59,7 @@ mixin SelectableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   ///
   /// If `null`, the mixin falls back to [performRemoteDeselection].
 
-  BaseUseCase<bool>? get deselectItemUseCase => null;
+  BlocxBaseUseCase<bool>? get deselectItemUseCase => null;
 
   // ===========================================================================
   // Initialization
@@ -70,18 +68,18 @@ mixin SelectableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   /// Registers select/deselect handlers.
 
   void initSelectionMixin() {
-    on<ListEventSelectItem<T>>(selectItem);
-    on<ListEventDeselectItem<T>>(deselectItem);
-    on<ListEventDeselectMultipleItems<T>>(deselectMultipleItems);
-    on<ListEventSelectMultipleItems<T>>(selectMultipleItems);
-    on<ListEventClearSelection<T>>(clearSelection);
+    on<BlocxListEventSelectItem<T>>(selectItem);
+    on<BlocxListEventDeselectItem<T>>(deselectItem);
+    on<BlocxListEventDeselectMultipleItems<T>>(deselectMultipleItems);
+    on<BlocxListEventSelectMultipleItems<T>>(selectMultipleItems);
+    on<BlocxListEventClearSelection<T>>(clearSelection);
   }
 
   // ===========================================================================
   // Handlers
   // ===========================================================================
 
-  /// Handles [ListEventSelectItem].
+  /// Handles [BlocxListEventSelectItem].
   ///
   /// Flow:
   /// 1) If [isSingleSelect], clears existing selection.
@@ -90,7 +88,7 @@ mixin SelectableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   ///    - Prefer [selectItemUseCase]; else use [performRemoteSelection].
   ///    - On failure/exception: rollback (deselect), [emitState], then [onSelectionSyncFailed].
 
-  Future<void> selectItem(ListEventSelectItem<T> event, Emitter<ListState<T>> emit) async {
+  Future<void> selectItem(BlocxListEventSelectItem<T> event, Emitter<BlocxListState<T>> emit) async {
     if (isSingleSelect) _selectedItemIds.clear();
     _selectedItemIds.add(event.item.identifier);
     emitState(emit);
@@ -122,7 +120,7 @@ mixin SelectableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
     }
   }
 
-  /// Handles [ListEventDeselectItem].
+  /// Handles [BlocxListEventDeselectItem].
   ///
   /// Flow:
   /// 1) Deselects locally; [emitState].
@@ -130,7 +128,7 @@ mixin SelectableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   ///    - Prefer [deselectItemUseCase]; else use [performRemoteDeselection].
   ///    - On failure/exception: rollback (re-select), [emitState], then [onSelectionSyncFailed].
 
-  Future<void> deselectItem(ListEventDeselectItem<T> event, Emitter<ListState<T>> emit) async {
+  Future<void> deselectItem(BlocxListEventDeselectItem<T> event, Emitter<BlocxListState<T>> emit) async {
     _selectedItemIds.remove(event.item.identifier);
     emitState(emit);
     if (!syncWithServerOnSelection) {
@@ -211,9 +209,9 @@ mixin SelectableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   // Hooks (UX / telemetry)
   // ===========================================================================
 
-  void emitSelectionChanged(Emitter<ListState<T>> emit, T item, bool wasSelected) {
+  void emitSelectionChanged(Emitter<BlocxListState<T>> emit, T item, bool wasSelected) {
     emit(
-      ListStateSelectionChanged(
+      BlocxListStateSelectionChanged(
         list: list,
         hasReachedEnd: hasReachedEnd,
         isLoadingNextPage: isLoadingNextPage,
@@ -244,7 +242,10 @@ mixin SelectableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
 
   List<T> get selectedItems => list.where((e) => _selectedItemIds.contains(e.identifier)).toList();
 
-  FutureOr<void> deselectMultipleItems(ListEventDeselectMultipleItems<T> event, Emitter<ListState<T>> emit) {
+  FutureOr<void> deselectMultipleItems(
+    BlocxListEventDeselectMultipleItems<T> event,
+    Emitter<BlocxListState<T>> emit,
+  ) {
     for (T item in event.items) {
       selectedItemIds.remove(item.identifier);
     }
@@ -252,14 +253,17 @@ mixin SelectableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
     emitState(emit);
   }
 
-  FutureOr<void> selectMultipleItems(ListEventSelectMultipleItems<T> event, Emitter<ListState<T>> emit) {
+  FutureOr<void> selectMultipleItems(
+    BlocxListEventSelectMultipleItems<T> event,
+    Emitter<BlocxListState<T>> emit,
+  ) {
     selectedItemIds.clear();
     selectedItemIds.addAll(event.items.map((e) => e.identifier));
     emitSelectionChanged(emit, list.first, false);
     emitState(emit);
   }
 
-  FutureOr<void> clearSelection(ListEventClearSelection<T> event, Emitter<ListState<T>> emit) {
+  FutureOr<void> clearSelection(BlocxListEventClearSelection<T> event, Emitter<BlocxListState<T>> emit) {
     selectedItemIds.clear();
     emitState(emit);
   }

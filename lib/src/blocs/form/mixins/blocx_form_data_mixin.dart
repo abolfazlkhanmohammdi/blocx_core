@@ -2,17 +2,19 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
+import 'package:blocx_core/form_bloc.dart';
+import 'package:blocx_core/src/core/logger.dart';
 import 'package:blocx_core/src/core/models/base_form_entity.dart';
 import 'package:meta/meta.dart';
 
-/// A mixin that provides form data management for a [FormBloc].
+/// A mixin that provides form data management for a [BlocxFormBloc].
 ///
 /// This mixin handles initializing form data, updating fields, applying
 /// payloads, submission, and triggering validation. It is intended to be
 /// used with `FormBloc` subclasses that manage forms backed by
 /// immutable `BaseFormEntity`s.
-mixin FormDataMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
-    on BaseBloc<FormEvent, FormBlocState<F, E>> {
+mixin BlocxFormDataMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
+    on BaseBloc<BlocxFormEvent, BlocxFormState<F, E>> {
   /// The current state of the form data.
   late F formData;
 
@@ -29,19 +31,19 @@ mixin FormDataMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
   void initData(F formData) {
     this.formData = formData;
 
-    on<FormEventInit<P>>(initForm);
-    on<FormEventUpdateData<E>>(updateData);
-    on<FormEventSubmit>(submit);
-    on<FormEventUpdateFormData<P>>(handleUpdateFormDataEvent);
+    on<BlocxFormEventInit<P>>(initForm);
+    on<BlocxFormEventUpdateData<E>>(updateData);
+    on<BlocxFormEventSubmit>(submit);
+    on<BlocxFormEventUpdateFormData<P>>(handleUpdateFormDataEvent);
   }
 
-  /// Handles form initialization when receiving a [FormEventInit] event.
+  /// Handles form initialization when receiving a [BlocxFormEventInit] event.
   ///
   /// - Applies an optional payload.
   /// - Emits an initial state with the form data.
   /// - Optionally triggers validation on init if [validateOnInit] is true.
   /// - Triggers fetching of required info if the bloc is an info fetcher.
-  FutureOr<void> initForm(FormEventInit<P> event, Emitter<FormBlocState<F, E>> emit) async {
+  FutureOr<void> initForm(BlocxFormEventInit<P> event, Emitter<BlocxFormState<F, E>> emit) async {
     _payload = event.payload;
     _isUpdate = event.payload != null;
 
@@ -49,13 +51,13 @@ mixin FormDataMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
       formData = await applyPayloadToFormData(_payload as P);
     }
 
-    emit(FormStateApplyInitialDataToForm(formData: formData));
+    emit(BlocxFormStateApplyInitialDataToForm(formData: formData));
 
     if (validateOnInit) validateForm(formData);
 
     emitState(emit);
 
-    if (isInfoFetcher) add(FormEventFetchRequiredInfo());
+    if (isInfoFetcher) add(BlocxFormEventFetchRequiredInfo());
   }
 
   /// Applies a payload to the form data.
@@ -71,23 +73,22 @@ mixin FormDataMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
   /// The current step index of a stepped form.
   int get stepIndex => 0;
 
-  /// Handles updates to individual fields when receiving a [FormEventUpdateData] event.
+  /// Handles updates to individual fields when receiving a [BlocxFormEventUpdateData] event.
   ///
   /// - Checks for unique field validation if applicable.
   /// - Updates the form data via [updateFormData].
   /// - Emits an intermediate state if [emitChangesOnUpdate] is true.
-  FutureOr<void> updateData(FormEventUpdateData<E> event, Emitter<FormBlocState<F, E>> emit) async {
+  FutureOr<void> updateData(BlocxFormEventUpdateData<E> event, Emitter<BlocxFormState<F, E>> emit) async {
     if (isUniqueFieldValidator &&
-        (this as UniqueFieldValidatorMixin<F, P, E>).uniqueFieldKeys.contains(event.key)) {
-      add(FormEventCheckUniqueValue(key: event.key, data: event.data));
+        (this as BlocxUniqueFieldValidatorMixin<F, P, E>).uniqueFieldKeys.contains(event.key)) {
+      add(BlocxFormEventCheckUniqueValue(key: event.key, data: event.data));
       return;
     }
 
     formData = updateFormData(event.key, event.data);
-
     if (emitChangesOnUpdate) {
       emit(
-        FormStateFormUpdated(
+        BlocxFormStateFormUpdated(
           step: stepIndex,
           formData: formData,
           errors: {},
@@ -110,26 +111,27 @@ mixin FormDataMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
   bool get isInfoFetcher;
 
   /// The use case responsible for submitting the form.
-  BaseUseCase get submitUseCase;
+  BlocxBaseUseCase get submitUseCase;
 
   /// Updates the form data for a single field.
   ///
   /// Validates the field before updating.
   F updateFormData(E key, data) {
-    validateForm(formData, key: key);
-    return formData.updateByKeySafe(key, data);
+    var result = formData.updateByKeySafe(key, data);
+    validateForm(result, key: key);
+    return result;
   }
 
   /// Emits the current form state. Subclasses must implement this to
   /// define how state is emitted.
-  void emitState(Emitter<FormBlocState<F, E>> emit);
+  void emitState(Emitter<BlocxFormState<F, E>> emit);
 
-  /// Handles form submission when receiving a [FormEventSubmit] event.
+  /// Handles form submission when receiving a [BlocxFormEventSubmit] event.
   ///
   /// - Runs [doBeforeSubmit] to check if submission should proceed.
   /// - Executes [submitUseCase].
   /// - Emits success or error states accordingly.
-  Future<void> submit(FormEventSubmit event, Emitter<FormBlocState<F, E>> emit) async {
+  Future<void> submit(BlocxFormEventSubmit event, Emitter<BlocxFormState<F, E>> emit) async {
     try {
       bool proceed = await doBeforeSubmit(emit);
       if (!proceed) {
@@ -137,7 +139,7 @@ mixin FormDataMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
         return;
       }
 
-      emit(FormStateSubmittingForm(formData: formData, step: stepIndex));
+      emit(BlocxFormStateSubmittingForm(formData: formData, step: stepIndex));
       var result = await submitUseCase.execute();
 
       if (result.isFailure) {
@@ -148,7 +150,7 @@ mixin FormDataMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
 
       bool shouldEmitSubmittedState = await onFormSubmitted(emit, result);
       if (shouldEmitSubmittedState) {
-        emit(FormStateFormSubmitted(submittedData: result.data, formData: formData));
+        emit(BlocxFormStateFormSubmitted(submittedData: result.data, formData: formData));
       }
 
       emitState(emit);
@@ -161,12 +163,12 @@ mixin FormDataMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
   /// Hook called before form submission.
   ///
   /// Return `false` to cancel submission.
-  Future<bool> doBeforeSubmit(Emitter<FormBlocState<F, E>> emit) async => true;
+  Future<bool> doBeforeSubmit(Emitter<BlocxFormState<F, E>> emit) async => true;
 
   /// Hook called after form submission.
   ///
   /// Return `true` to emit a submitted state, or `false` to skip it.
-  Future<bool> onFormSubmitted(Emitter<FormBlocState<F, E>> emit, UseCaseResult result) async => true;
+  Future<bool> onFormSubmitted(Emitter<BlocxFormState<F, E>> emit, UseCaseResult result) async => true;
 
   /// Whether the form is in update mode.
   bool get isUpdate => _isUpdate;
@@ -186,23 +188,30 @@ mixin FormDataMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
   /// Override this method to implement custom validation logic.
   /// - [formData] is the current form data.
   /// - [key] is optional; if provided, only the corresponding field is validated.
-  void validateForm(F formData, {E? key}) {}
+  void validateForm(F formData, {E? key}) {
+    // logger.w("No validation is set for this form");
+  }
 
-  /// Handles updates when receiving a [FormEventUpdateFormData] event.
+  /// Handles updates when receiving a [BlocxFormEventUpdateFormData] event.
   ///
   /// - Applies the payload to the form data.
   /// - Updates `_isUpdate` flag.
   /// - Emits an initial state with the updated data.
   /// - Triggers validation.
   FutureOr<void> handleUpdateFormDataEvent(
-    FormEventUpdateFormData<P> event,
-    Emitter<FormBlocState<F, E>> emit,
+    BlocxFormEventUpdateFormData<P> event,
+    Emitter<BlocxFormState<F, E>> emit,
   ) async {
     _isUpdate = event.isUpdate;
     formData = await applyPayloadToFormData(event.payload);
 
-    emit(FormStateApplyInitialDataToForm(formData: formData));
+    emit(BlocxFormStateApplyInitialDataToForm(formData: formData));
     validateForm(formData);
     emitState(emit);
   }
+
+  /// Controls when the form validation should occur.
+  ///
+  /// Defaults to [FormValidationMode.onUserInteraction].
+  FormValidationMode get formValidationMode => FormValidationMode.none;
 }

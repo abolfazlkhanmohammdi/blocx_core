@@ -3,8 +3,10 @@ import 'package:blocx_core/src/core/localizations/loc_provider.dart';
 
 /// Validator that ensures a field is not empty or null.
 class BlocxRequiredValidator extends BlocxSingleErrorFieldValidator<dynamic> {
+  BlocxRequiredValidator({super.duration});
+
   @override
-  String? validateSimple(value) {
+  String? validateWithSingleError(value) {
     if (value == null) return loc.thisFieldIsRequired;
 
     bool isEmpty = false;

@@ -7,10 +7,10 @@ class BlocxMatchFieldValidator<T> extends BlocxSingleErrorFieldValidator<dynamic
   final String noMatchMessage;
   final dynamic otherValue;
 
-  BlocxMatchFieldValidator({required this.noMatchMessage, required this.otherValue});
+  BlocxMatchFieldValidator({required this.noMatchMessage, required this.otherValue, super.duration});
 
   @override
-  String? validateSimple(value) {
+  String? validateWithSingleError(value) {
     if (value != otherValue) return noMatchMessage;
     return null;
   }

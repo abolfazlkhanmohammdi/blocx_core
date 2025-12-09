@@ -2,13 +2,13 @@
 import 'package:blocx_core/blocx_core.dart';
 import 'package:meta/meta.dart';
 
-abstract class BaseUseCase<T> {
+abstract class BlocxBaseUseCase<T> {
   @nonVirtual
   Future<UseCaseResult<T>> execute() async {
     try {
       return await perform();
     } catch (e, s) {
-      printError(e,s);
+      printError(e, s);
       return UseCaseResult.failure(e, stackTrace: s);
     }
   }
@@ -17,6 +17,5 @@ abstract class BaseUseCase<T> {
   @protected
   Future<UseCaseResult<T>> perform();
 
-  void printError(Object error, [StackTrace? stackTrace]) {
-  }
+  void printError(Object error, [StackTrace? stackTrace]) {}
 }

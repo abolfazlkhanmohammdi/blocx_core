@@ -5,10 +5,11 @@ import 'package:blocx_core/src/core/localizations/loc_provider.dart';
 class BlocxExactLengthValidator extends BlocxSingleErrorFieldValidator<String> {
   final int length;
 
-  BlocxExactLengthValidator(this.length) : assert(length >= 0, 'Length must be non-negative');
+  BlocxExactLengthValidator(this.length, {super.duration})
+    : assert(length >= 0, 'Length must be non-negative');
 
   @override
-  String? validateSimple(String value) {
+  String? validateWithSingleError(String value) {
     final size = value.length;
 
     return size != length ? loc.exactLengthFieldError(length) : null;

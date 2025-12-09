@@ -12,8 +12,8 @@ import 'package:meta/meta.dart';
 /// - [F] is the concrete subclass type (F-bound polymorphism), allowing methods
 ///   like [updateByKey] to return a strongly typed instance.
 /// - [E] is the enum type representing the unique keys of the form fields.
-abstract class BaseFormEntity<F extends BaseFormEntity<F, E>, E extends Enum>
-    extends BaseEntity {
+abstract class BaseFormEntity<F extends BaseFormEntity<F, E>, E extends Enum> extends BaseEntity {
+  const BaseFormEntity();
 
   /// A safe version of [updateByKey] that performs a debug-mode consistency check.
   ///
@@ -28,24 +28,24 @@ abstract class BaseFormEntity<F extends BaseFormEntity<F, E>, E extends Enum>
   ///
   /// In release mode, the assertion block is removed entirely, so no runtime
   /// overhead or validation occurs.
-  @internal
+  @nonVirtual
   F updateByKeySafe(E key, dynamic value) {
     // Perform the actual update.
     final result = updateByKey(key, value);
 
     // Debug-only validation to ensure correctness of subclass implementations.
     assert(() {
-      final setValue = getValueByKey(key);
+      final setValue = result.getValueByKey(key);
 
       if (setValue != value) {
         throw Exception(
           'Failed to update key $key with value $value.\n'
-              'Either "updateByKey" or "getValueByKey" is incorrectly implemented '
-              'in the subclass. Expected "$value" but got "$setValue".',
+          'Either "updateByKey" or "getValueByKey" is incorrectly implemented '
+          'in the subclass. Expected "$value" but got "$setValue".',
         );
       }
 
-      return true; // Required for assert
+      return true;
     }());
 
     return result;
@@ -64,4 +64,11 @@ abstract class BaseFormEntity<F extends BaseFormEntity<F, E>, E extends Enum>
   /// It is used by the form system for validation, UI updates, and the safety
   /// check inside [updateByKeySafe].
   getValueByKey(E key);
+  getFormattedValueByKey(E key) {
+    return null;
+  }
+
+  getFormattedValueIfNotNullOtherwiseValue(E key) {
+    return getFormattedValueByKey(key) ?? getValueByKey(key);
+  }
 }

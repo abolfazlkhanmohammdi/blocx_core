@@ -12,7 +12,6 @@ abstract class BlocxFormValidator<F extends BaseFormEntity<F, E>, E extends Enum
   ///
   /// Each key in the returned map represents a field, and the value is a list
   /// of timed error messages for that field. Fields with no errors are omitted.
-  @internal
   Map<E, List<TimedErrorMessage>> validate(F formData) {
     final errors = <E, List<TimedErrorMessage>>{};
 
@@ -31,7 +30,7 @@ abstract class BlocxFormValidator<F extends BaseFormEntity<F, E>, E extends Enum
   /// Returns a list of [TimedErrorMessage]. An empty list indicates no errors.
   @internal
   List<TimedErrorMessage> validateField(E key, F formData) {
-    final fieldValidators = validatorsByField(key);
+    final fieldValidators = validatorsByField(key, formData);
     final value = formData.getValueByKey(key);
 
     final List<TimedErrorMessage> errors = [];
@@ -46,7 +45,7 @@ abstract class BlocxFormValidator<F extends BaseFormEntity<F, E>, E extends Enum
   }
 
   /// Returns the list of validators for a specific field.
-  List<BlocxFieldValidator<dynamic>> validatorsByField(E key);
+  List<BlocxFieldValidator<dynamic>> validatorsByField(E key, F formData);
 
   /// Returns the list of all fields to validate.
   List<E> get keys;

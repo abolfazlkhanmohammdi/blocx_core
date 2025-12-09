@@ -7,14 +7,14 @@ class BlocxDateRangeValidator extends BlocxSingleErrorFieldValidator<DateTime> {
   final DateTime maxDate;
 
   /// Creates a validator that enforces the date to be within [minDate] and [maxDate].
-  BlocxDateRangeValidator({required this.minDate, required this.maxDate})
+  BlocxDateRangeValidator({required this.minDate, required this.maxDate, super.duration})
     : assert(
         maxDate.isAfter(minDate) || maxDate.isAtSameMomentAs(minDate),
         'maxDate must be after or equal to minDate',
       );
 
   @override
-  String? validateSimple(DateTime value) {
+  String? validateWithSingleError(DateTime value) {
     if (value.isBefore(minDate) || value.isAfter(maxDate)) {
       return loc.dateRangeError(minDate, maxDate); // localized error message
     }

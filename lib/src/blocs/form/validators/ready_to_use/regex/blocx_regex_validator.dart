@@ -6,10 +6,10 @@ class BlocxRegexValidator extends BlocxSingleErrorFieldValidator<String> {
   final String errorMessage;
 
   /// Creates a validator with the provided [pattern] and [errorMessage].
-  BlocxRegexValidator({required this.pattern, required this.errorMessage});
+  BlocxRegexValidator({required this.pattern, required this.errorMessage, super.duration});
 
   @override
-  String? validateSimple(String value) {
+  String? validateWithSingleError(String value) {
     if (!pattern.hasMatch(value.trim())) {
       return errorMessage;
     }

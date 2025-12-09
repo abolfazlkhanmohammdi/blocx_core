@@ -6,11 +6,11 @@ class BlocxLengthRangeValidator extends BlocxSingleErrorFieldValidator<String> {
   final int minLength;
   final int maxLength;
 
-  BlocxLengthRangeValidator({required this.minLength, required this.maxLength})
+  BlocxLengthRangeValidator({required this.minLength, required this.maxLength, super.duration})
     : assert(maxLength >= minLength, 'maxLength must be >= minLength');
 
   @override
-  String? validateSimple(String value) {
+  String? validateWithSingleError(String value) {
     final length = value.trim().length;
 
     if (length < minLength || length > maxLength) {

@@ -3,14 +3,14 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
 
-/// A mixin that adds **expand/collapse support** to a [ListBloc].
+/// A mixin that adds **expand/collapse support** to a [BlocxListBloc].
 ///
 /// This is useful for UIs where list items can be expanded to show additional
 /// content (e.g. accordions, nested details, expandable rows).
 ///
 /// ### How it works
 /// - Tracks a set of expanded items by their [BaseEntity.identifier].
-/// - Listens to [ListEventExpandItem] and [ListEventCollapseItem].
+/// - Listens to [BlocxListEventExpandItem] and [BlocxListEventCollapseItem].
 /// - Updates [_expandedItemIds] accordingly and emits the latest state via [emitState].
 ///
 /// ### Usage
@@ -33,7 +33,7 @@ import 'package:blocx_core/blocx_core.dart';
 ///   otherwise expansion state cannot be tracked reliably.
 /// - Expansion state is held in-memory; if you rebuild/recreate the bloc,
 ///   expanded state will reset unless you persist it separately.
-mixin ExpandableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
+mixin BlocxExpandableListBlocMixin<T extends BaseEntity, P> on BlocxListBloc<T, P> {
   /// Stores the identifiers of currently expanded items.
   ///
   /// Each item is tracked by its [BaseEntity.identifier].
@@ -48,32 +48,35 @@ mixin ExpandableListBlocMixin<T extends BaseEntity, P> on ListBloc<T, P> {
   /// }
   /// ```
   void initExpandable() {
-    on<ListEventExpandItem<T>>(expandItem);
-    on<ListEventCollapseItem<T>>(collapseItem);
-    on<ListEventToggleItemExpansion<T>>(toggleItemExpansion);
+    on<BlocxListEventExpandItem<T>>(expandItem);
+    on<BlocxListEventCollapseItem<T>>(collapseItem);
+    on<BlocxListEventToggleItemExpansion<T>>(toggleItemExpansion);
   }
 
-  /// Handles [ListEventExpandItem].
+  /// Handles [BlocxListEventExpandItem].
   ///
   /// - Adds the item’s [BaseEntity.identifier] to [_expandedItemIds].
   /// - Emits the updated state so the UI can rebuild accordingly.
-  FutureOr<void> expandItem(ListEventExpandItem<T> event, Emitter<ListState<T>> emit) {
+  FutureOr<void> expandItem(BlocxListEventExpandItem<T> event, Emitter<BlocxListState<T>> emit) {
     _expandedItemIds.add(event.item.identifier);
     emitState(emit);
   }
 
-  /// Handles [ListEventCollapseItem].
+  /// Handles [BlocxListEventCollapseItem].
   ///
   /// - Removes the item’s [BaseEntity.identifier] from [_expandedItemIds].
   /// - Emits the updated state so the UI can rebuild accordingly.
-  FutureOr<void> collapseItem(ListEventCollapseItem<T> event, Emitter<ListState<T>> emit) {
+  FutureOr<void> collapseItem(BlocxListEventCollapseItem<T> event, Emitter<BlocxListState<T>> emit) {
     _expandedItemIds.remove(event.item.identifier);
     emitState(emit);
   }
 
   Set<String> get expandedItemIdsOriginal => _expandedItemIds;
 
-  FutureOr<void> toggleItemExpansion(ListEventToggleItemExpansion<T> event, Emitter<ListState<T>> emit) {
+  FutureOr<void> toggleItemExpansion(
+    BlocxListEventToggleItemExpansion<T> event,
+    Emitter<BlocxListState<T>> emit,
+  ) {
     final isExpanded = _expandedItemIds.contains(event.item.identifier);
     isExpanded ? _expandedItemIds.remove(event.item.identifier) : _expandedItemIds.add(event.item.identifier);
     emitState(emit);

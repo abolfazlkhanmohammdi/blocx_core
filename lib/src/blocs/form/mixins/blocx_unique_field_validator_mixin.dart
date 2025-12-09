@@ -4,19 +4,20 @@ import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/src/core/localizations/loc_provider.dart';
 import 'package:blocx_core/src/core/models/base_form_entity.dart';
 
-mixin UniqueFieldValidatorMixin<F extends BaseFormEntity<F, E>, P, E extends Enum> on FormBloc<F, P, E> {
+mixin BlocxUniqueFieldValidatorMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
+    on BlocxFormBloc<F, P, E> {
   List<E> get uniqueFieldKeys;
   final Map<E, Object> _inFlightTokenByField = {};
 
   void initUniqueFieldChecker() {
-    on<FormEventCheckUniqueValue<E>>(_checkUniqueValue, transformer: concurrent());
+    on<BlocxFormEventCheckUniqueValue<E>>(_checkUniqueValue, transformer: concurrent());
   }
 
-  BaseUseCase<bool> useCaseIsUniqueValueAvailable(E key, dynamic value);
+  BlocxBaseUseCase<bool> useCaseIsUniqueValueAvailable(E key, dynamic value);
 
   Future<void> _checkUniqueValue(
-    FormEventCheckUniqueValue<E> event,
-    Emitter<FormBlocState<F, E>> emit,
+    BlocxFormEventCheckUniqueValue<E> event,
+    Emitter<BlocxFormState<F, E>> emit,
   ) async {
     emitState(emit);
     final token = Object();

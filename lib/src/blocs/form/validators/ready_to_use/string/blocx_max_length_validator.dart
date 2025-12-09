@@ -5,10 +5,11 @@ import 'package:blocx_core/src/core/localizations/loc_provider.dart';
 class BlocxMaxLengthValidator extends BlocxSingleErrorFieldValidator<String> {
   final int maxLength;
 
-  BlocxMaxLengthValidator(this.maxLength) : assert(maxLength >= 0, 'maxLength must be non-negative');
+  BlocxMaxLengthValidator(this.maxLength, {super.duration})
+    : assert(maxLength >= 0, 'maxLength must be non-negative');
 
   @override
-  String? validateSimple(String value) {
+  String? validateWithSingleError(String value) {
     return value.length > maxLength ? loc.maxLengthError(maxLength) : null;
   }
 }
