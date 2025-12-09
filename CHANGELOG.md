@@ -1,3 +1,3 @@
-## 0.5.9-beta
+## 0.6.0-beta
 
 - Initial version.
