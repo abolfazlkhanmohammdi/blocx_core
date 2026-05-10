@@ -1,71 +1,47 @@
 import 'dart:async';
+
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
+import 'package:blocx_core/list_bloc.dart'
+    show
+        BlocxListBloc,
+        BlocxListEventSelectMultipleItems,
+        BlocxListEventSelectItem,
+        BlocxListEventDeselectItem,
+        BlocxListEventDeselectMultipleItems,
+        BlocxListEventClearSelection,
+        BlocxListState,
+        SelectionChangedData,
+        BlocxListStateSelectionChanged;
 
 /// Adds selection behavior to a [BlocxListBloc].
 ///
 /// ### Features
-/// - **Single- or multi-select** via [isSingleSelect].
-/// - **Server sync (preferred via use cases):**
-///   - Provide [selectItemUseCase] / [deselectItemUseCase] (preferred).
-///   - Or override [performRemoteSelection] / [performRemoteDeselection] (fallback).
-/// - **Rollback on failure** when server sync is enabled.
-/// - **Extensible hooks** for UX/telemetry ([onItemSelected], [onItemDeselected], [onSelectionSyncFailed]).
-///
-/// ### Event wiring
-/// Registers:
-/// - [BlocxListEventSelectItem]
-/// - [BlocxListEventDeselectItem]
-mixin BlocxSelectableListBlocMixin<T extends BaseEntity, P> on BlocxListBloc<T, P> {
+/// - Single / multi select support
+/// - Optional server sync
+/// - Rollback on failure
+/// - Hooks for UX / analytics
+mixin BlocxSelectableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBloc<T, P> {
   final Set<String> _selectedItemIds = {};
   final Set<String> _beingSelectedItemIds = {};
+
   // ===========================================================================
   // Configuration
   // ===========================================================================
 
-  /// When `true`, selecting an item clears any existing selection first.
-  ///
-  /// Defaults to `true` (single-select). Override to enable multi-select.
-
   bool get isSingleSelect => true;
-
-  /// When `true`, selection/deselection attempts a remote sync:
-  /// - [selectItem] → uses [selectItemUseCase] if set, else [performRemoteSelection]
-  /// - [deselectItem] → uses [deselectItemUseCase] if set, else [performRemoteDeselection]
-  ///
-  /// On failure/exception, the local change is **rolled back** and
-  /// [onSelectionSyncFailed] is invoked.
   bool get syncWithServerOnSelection => false;
 
   // ===========================================================================
-  // Use cases (preferred)
+  // Use cases (optional)
   // ===========================================================================
 
-  /// Preferred: a use case that performs the remote **selection** side-effect.
-  ///
-  /// Return `bool` inside [UseCaseResult]:
-  /// - `true`  → success
-  /// - `false` → logical failure (triggers rollback)
-  ///
-  /// If `null`, the mixin falls back to [performRemoteSelection].
-
-  BlocxBaseUseCase<bool>? get selectItemUseCase => null;
-
-  /// Preferred: a use case that performs the remote **deselection** side-effect.
-  ///
-  /// Return `bool` inside [UseCaseResult]:
-  /// - `true`  → success
-  /// - `false` → logical failure (triggers rollback)
-  ///
-  /// If `null`, the mixin falls back to [performRemoteDeselection].
-
-  BlocxBaseUseCase<bool>? get deselectItemUseCase => null;
+  BlocxBaseUseCase<T, bool>? get selectItemUseCase => null;
+  BlocxBaseUseCase<T, bool>? get deselectItemUseCase => null;
 
   // ===========================================================================
-  // Initialization
+  // Init
   // ===========================================================================
-
-  /// Registers select/deselect handlers.
 
   void initSelectionMixin() {
     on<BlocxListEventSelectItem<T>>(selectItem);
@@ -76,20 +52,12 @@ mixin BlocxSelectableListBlocMixin<T extends BaseEntity, P> on BlocxListBloc<T, 
   }
 
   // ===========================================================================
-  // Handlers
+  // Select
   // ===========================================================================
-
-  /// Handles [BlocxListEventSelectItem].
-  ///
-  /// Flow:
-  /// 1) If [isSingleSelect], clears existing selection.
-  /// 2) Selects locally; [emitState].
-  /// 3) If [syncWithServerOnSelection]:
-  ///    - Prefer [selectItemUseCase]; else use [performRemoteSelection].
-  ///    - On failure/exception: rollback (deselect), [emitState], then [onSelectionSyncFailed].
 
   Future<void> selectItem(BlocxListEventSelectItem<T> event, Emitter<BlocxListState<T>> emit) async {
     if (isSingleSelect) _selectedItemIds.clear();
+
     _selectedItemIds.add(event.item.identifier);
     emitState(emit);
 
@@ -101,112 +69,104 @@ mixin BlocxSelectableListBlocMixin<T extends BaseEntity, P> on BlocxListBloc<T, 
     try {
       _beingSelectedItemIds.add(event.item.identifier);
       emitState(emit);
-      final ok = await _runSelectRemote();
+
+      final ok = await _runSelectRemote(event.item);
+
       _beingSelectedItemIds.remove(event.item.identifier);
       emitState(emit);
-      if (ok) {
-        emitSelectionChanged(emit, event.item, true);
+
+      if (!ok) {
+        _selectedItemIds.remove(event.item.identifier);
+        emitState(emit);
+        onSelectionSyncFailed(event.item, isSelectOperation: true);
         return;
       }
-      // rollback on failure
-      _selectedItemIds.remove(event.item.identifier);
-      emitState(emit);
-      onSelectionSyncFailed(event.item, isSelectOperation: true);
+
+      emitSelectionChanged(emit, event.item, true);
     } catch (_) {
-      // rollback on exception
       _selectedItemIds.remove(event.item.identifier);
       emitState(emit);
       onSelectionSyncFailed(event.item, isSelectOperation: true);
     }
   }
 
-  /// Handles [BlocxListEventDeselectItem].
-  ///
-  /// Flow:
-  /// 1) Deselects locally; [emitState].
-  /// 2) If [syncWithServerOnSelection]:
-  ///    - Prefer [deselectItemUseCase]; else use [performRemoteDeselection].
-  ///    - On failure/exception: rollback (re-select), [emitState], then [onSelectionSyncFailed].
+  // ===========================================================================
+  // Deselect
+  // ===========================================================================
 
   Future<void> deselectItem(BlocxListEventDeselectItem<T> event, Emitter<BlocxListState<T>> emit) async {
     _selectedItemIds.remove(event.item.identifier);
     emitState(emit);
+
     if (!syncWithServerOnSelection) {
       emitSelectionChanged(emit, event.item, false);
       return;
     }
 
     try {
-      final ok = await _runDeselectRemote();
-      if (ok) {
-        emitSelectionChanged(emit, event.item, false);
+      final ok = await _runDeselectRemote(event.item);
+
+      if (!ok) {
+        _selectedItemIds.add(event.item.identifier);
+        emitState(emit);
+        onSelectionSyncFailed(event.item, isSelectOperation: false);
         return;
       }
-      // rollback on failure
+
+      emitSelectionChanged(emit, event.item, false);
+    } catch (_) {
       _selectedItemIds.add(event.item.identifier);
       emitState(emit);
       onSelectionSyncFailed(event.item, isSelectOperation: false);
-    } catch (_) {
-      // rollback on exception
-      emitState(emit);
-      onSelectionSyncFailed(event.item, isSelectOperation: false);
     }
   }
 
   // ===========================================================================
-  // Remote sync runners (prefer use cases; fallback to methods)
+  // Remote execution (FIXED)
   // ===========================================================================
 
-  Future<bool> _runSelectRemote() async {
+  Future<bool> _runSelectRemote(T item) async {
     final uc = selectItemUseCase;
+
     if (uc != null) {
-      final res = await uc.execute();
+      final res = await uc.execute(item); // ✅ FIXED
       return res.isSuccess && (res.data ?? false);
     }
-    return await performRemoteSelection();
+
+    return performRemoteSelection();
   }
 
-  Future<bool> _runDeselectRemote() async {
+  Future<bool> _runDeselectRemote(T item) async {
     final uc = deselectItemUseCase;
+
     if (uc != null) {
-      final res = await uc.execute();
+      final res = await uc.execute(item); // ✅ FIXED
       return res.isSuccess && (res.data ?? false);
     }
-    return await performRemoteDeselection();
+
+    return performRemoteDeselection();
   }
 
   // ===========================================================================
-  // Remote sync (fallback methods)
+  // Fallbacks
   // ===========================================================================
 
-  /// Fallback for **selection** if [selectItemUseCase] is `null`.
-  ///
-  /// Must be overridden if [syncWithServerOnSelection] is `true` and you do not
-  /// provide a [selectItemUseCase].
-  ///
-  /// Throwing by default ensures you don’t silently ignore server sync.
   Future<bool> performRemoteSelection() {
     throw UnimplementedError(
       "performRemoteSelection() not implemented. "
-      "Either provide a `selectItemUseCase` or override this method in your bloc.",
+      "Provide selectItemUseCase or override this method.",
     );
   }
 
-  /// Fallback for **deselection** if [deselectItemUseCase] is `null`.
-  ///
-  /// Must be overridden if [syncWithServerOnSelection] is `true` and you do not
-  /// provide a [deselectItemUseCase].
-  ///
-  /// Throwing by default ensures you don’t silently ignore server sync.
   Future<bool> performRemoteDeselection() {
     throw UnimplementedError(
       "performRemoteDeselection() not implemented. "
-      "Either provide a `deselectItemUseCase` or override this method in your bloc.",
+      "Provide deselectItemUseCase or override this method.",
     );
   }
 
   // ===========================================================================
-  // Hooks (UX / telemetry)
+  // Emit helpers
   // ===========================================================================
 
   void emitSelectionChanged(Emitter<BlocxListState<T>> emit, T item, bool wasSelected) {
@@ -227,7 +187,10 @@ mixin BlocxSelectableListBlocMixin<T extends BaseEntity, P> on BlocxListBloc<T, 
     );
   }
 
-  /// Called when remote sync fails and the local change has been rolled back.
+  // ===========================================================================
+  // Hooks
+  // ===========================================================================
+
   void onSelectionSyncFailed(T item, {required bool isSelectOperation}) {
     displayWarningSnackbar(
       isSelectOperation
@@ -236,20 +199,28 @@ mixin BlocxSelectableListBlocMixin<T extends BaseEntity, P> on BlocxListBloc<T, 
     );
   }
 
-  Set<String> get beingSelectedItemIdsOriginal => _beingSelectedItemIds;
+  // ===========================================================================
+  // Public state
+  // ===========================================================================
 
+  Set<String> get beingSelectedItemIdsOriginal => _beingSelectedItemIds;
   Set<String> get selectedItemIdsOriginal => _selectedItemIds;
 
   List<T> get selectedItems => list.where((e) => _selectedItemIds.contains(e.identifier)).toList();
+
+  // ===========================================================================
+  // Multi select
+  // ===========================================================================
 
   FutureOr<void> deselectMultipleItems(
     BlocxListEventDeselectMultipleItems<T> event,
     Emitter<BlocxListState<T>> emit,
   ) {
-    for (T item in event.items) {
-      selectedItemIds.remove(item.identifier);
+    for (final item in event.items) {
+      _selectedItemIds.remove(item.identifier);
     }
-    emitSelectionChanged(emit, list.first, true);
+
+    emitSelectionChanged(emit, event.items.first, true);
     emitState(emit);
   }
 
@@ -257,14 +228,16 @@ mixin BlocxSelectableListBlocMixin<T extends BaseEntity, P> on BlocxListBloc<T, 
     BlocxListEventSelectMultipleItems<T> event,
     Emitter<BlocxListState<T>> emit,
   ) {
-    selectedItemIds.clear();
-    selectedItemIds.addAll(event.items.map((e) => e.identifier));
-    emitSelectionChanged(emit, list.first, false);
+    _selectedItemIds
+      ..clear()
+      ..addAll(event.items.map((e) => e.identifier));
+
+    emitSelectionChanged(emit, event.items.first, false);
     emitState(emit);
   }
 
   FutureOr<void> clearSelection(BlocxListEventClearSelection<T> event, Emitter<BlocxListState<T>> emit) {
-    selectedItemIds.clear();
+    _selectedItemIds.clear();
     emitState(emit);
   }
 }

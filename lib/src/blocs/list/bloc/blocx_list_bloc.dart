@@ -1,14 +1,28 @@
 import 'package:blocx_core/blocx_core.dart';
+import 'package:blocx_core/list_bloc.dart'
+    show
+    BlocxInfiniteListBloc,
+    BlocxHighlightableListBlocMixin,
+    BlocxSelectableListBlocMixin,
+    BlocxSearchableListBlocMixin,
+    BlocxRefreshableListBlocMixin,
+    BlocxInfiniteListBlocMixin,
+    BlocxDeletableListBlocMixin,
+    BlocxScrollableListBlocMixin,
+    BlocxExpandableListBlocMixin,
+    BlocxListBlocSyncStreamMixin,
+    SelectionChangedData;
 import 'package:blocx_core/src/blocs/list/mixins/blocx_list_bloc_data_mixin.dart';
 part 'lis_state_extension.dart';
 part 'blocx_list_event.dart';
 part 'blocx_list_state.dart';
 
-abstract class BlocxListBloc<T extends BaseEntity, P> extends BaseBloc<BlocxListEvent<T>, BlocxListState<T>>
+abstract class BlocxListBloc<T extends BlocxBaseEntity, P>
+    extends BaseBloc<BlocxListEvent<T>, BlocxListState<T>>
     with ListBlocDataMixin<T, P> {
   final BlocxInfiniteListBloc _infiniteListBloc;
   BlocxListBloc(ScreenManagerCubit screenManagerCubit, this._infiniteListBloc)
-    : super(BlocxListStateLoading(), screenManagerCubit) {
+      : super(BlocxListStateLoading(), screenManagerCubit) {
     initDataMixin();
     if (isSelectable) (this as BlocxSelectableListBlocMixin<T, P>).initSelectionMixin();
     if (isHighlightable) (this as BlocxHighlightableListBlocMixin<T, P>).initHighlightMixin();
@@ -44,7 +58,7 @@ abstract class BlocxListBloc<T extends BaseEntity, P> extends BaseBloc<BlocxList
 
   @override
   Set<String> get beingRemovedItemIds =>
-      isDeletable ? (this as BlocxDeletableListBlocMixin<T, P>).beingRemovedItemIdsOriginal : {};
+      isDeletable ? (this as BlocxDeletableListBlocMixin<T, P>).beingRemovedItemIds : {};
   @override
   Set<String> get selectedItemIds =>
       isSelectable ? (this as BlocxSelectableListBlocMixin<T, P>).selectedItemIdsOriginal : const {};

@@ -2,6 +2,15 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
+import 'package:blocx_core/list_bloc.dart'
+    show
+        BlocxListBloc,
+        BlocxListEventScrollToItem,
+        BlocxListEventScrollToIdentifier,
+        BlocxListEventHighlightScrolledToItems,
+        BlocxListState,
+        BlocxListStateScrollToItem,
+        BlocxListEventHighlightItem;
 import 'package:blocx_core/src/core/models/base_entity_extensions.dart';
 import 'package:blocx_core/src/core/logger.dart';
 import 'package:blocx_core/src/blocs/list/misc/event_transformers.dart';
@@ -10,7 +19,7 @@ import 'package:blocx_core/src/blocs/list/misc/event_transformers.dart';
 ///
 /// This mixin enables your [BlocxListBloc] to:
 /// - Scroll directly to a concrete [item] ([BlocxListEventScrollToItem]).
-/// - Scroll to an item by its stable [BaseEntity.identifier]
+/// - Scroll to an item by its stable [BlocxBaseEntity.identifier]
 ///   ([BlocxListEventScrollToIdentifier]).
 /// - Optionally highlight the item (if [BlocxHighlightableListBlocMixin] is also applied).
 ///
@@ -32,7 +41,7 @@ import 'package:blocx_core/src/blocs/list/misc/event_transformers.dart';
 ///
 /// States:
 /// - [ListStateScrollToItem] is emitted with the resolved item and target index.
-mixin BlocxScrollableListBlocMixin<T extends BaseEntity, P> on BlocxListBloc<T, P> {
+mixin BlocxScrollableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBloc<T, P> {
   final List<T> _toBeHighlightedItems = [];
 
   /// Initializes the mixin by registering its event handlers.
@@ -64,7 +73,7 @@ mixin BlocxScrollableListBlocMixin<T extends BaseEntity, P> on BlocxListBloc<T, 
   }
 
   /// Handles [BlocxListEventScrollToIdentifier]:
-  /// - Finds the item whose [BaseEntity.identifier] matches [event.identifier].
+  /// - Finds the item whose [BlocxBaseEntity.identifier] matches [event.identifier].
   /// - If found, optionally highlights it and emits [ListStateScrollToItem].
   /// - If not found, no state is emitted (no-op).
   FutureOr<void> scrollToIdentifier(

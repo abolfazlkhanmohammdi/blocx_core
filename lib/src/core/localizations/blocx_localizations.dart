@@ -15,6 +15,13 @@ abstract class BlocXLocalizations {
   String get loadingText;
   String get emptyListText;
   String get thisFieldIsRequired;
+  String get invalidEmail;
+  String get onlyNumbersAllowed;
+  String get onlyAlphanumericAllowed;
+  String get invalidUrl;
+  String get valuesDoNotMatch;
+  String get invalidPhoneNumber;
+  String get selectedItemsMustBeUnique;
 
   String errorCodeMessage(BlocXErrorCode errorCode);
 
@@ -30,6 +37,20 @@ abstract class BlocXLocalizations {
   String maxDateError(DateTime maxDate);
 
   String dateRangeError(DateTime minDate, DateTime maxDate);
+
+  String lessThanFieldError(int otherValue);
+
+  String greaterThanFieldError(int otherValue);
+
+  String mustBeAfterDateField(String otherFieldName);
+
+  String mustBeBeforeDateField(String otherFieldName);
+
+  String minNumberOfItemsMustBeSelected(int min);
+
+  String maxNumberOfItemsCanBeSelected(int max);
+
+  String fileSizeMustBeSmallerThan(String format);
 }
 
 class _DefaultLocalizations extends BlocXLocalizations {
@@ -58,17 +79,36 @@ class _DefaultLocalizations extends BlocXLocalizations {
 
   @override
   String get details => "Details";
+
   @override
   String get errorDetailsCopied => "Error details were copied!";
+
   @override
-  String get somethingWentWrong => 'Something went wrong';
+  String get somethingWentWrong => "Something went wrong";
+
   @override
   String get loadingText => "Loading data, please wait";
+
   @override
   String get emptyListText => "No data, Empty list...";
 
   @override
   String get thisFieldIsRequired => "This field is required";
+
+  @override
+  String get invalidEmail => "Invalid email address";
+
+  @override
+  String get invalidUrl => "Invalid URL";
+
+  @override
+  String get onlyNumbersAllowed => "Only numbers are allowed";
+
+  @override
+  String get onlyAlphanumericAllowed => "Only letters and numbers are allowed";
+
+  @override
+  String get valuesDoNotMatch => "Values do not match";
 
   @override
   String maxLengthError(maxLength) => "This field cannot exceed $maxLength characters";
@@ -93,23 +133,59 @@ class _DefaultLocalizations extends BlocXLocalizations {
   String numberRangeError(num minValue, num maxValue) => "This value must be between $minValue and $maxValue";
 
   @override
-  String dateRangeError(DateTime minDate, DateTime maxDate) {
-    return "Date must be between ${_formatDate(minDate)} and ${_formatDate(maxDate)}";
-  }
+  String minDateError(DateTime minDate) => "Date must be after ${_formatDate(minDate)}";
 
   @override
-  String maxDateError(DateTime maxDate) {
-    return "Date must be before ${_formatDate(maxDate)}";
-  }
+  String maxDateError(DateTime maxDate) => "Date must be before ${_formatDate(maxDate)}";
 
   @override
-  String minDateError(DateTime minDate) {
-    return "Date must be after ${_formatDate(minDate)}";
-  }
+  String dateRangeError(DateTime minDate, DateTime maxDate) =>
+      "Date must be between ${_formatDate(minDate)} and ${_formatDate(maxDate)}";
 
-  /// Helper to format dates in a user-friendly way.
   String _formatDate(DateTime date) {
-    // Customize format if needed, here using yyyy-MM-dd
-    return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+    return "${date.year}-"
+        "${date.month.toString().padLeft(2, '0')}-"
+        "${date.day.toString().padLeft(2, '0')}";
+  }
+
+  @override
+  String greaterThanFieldError(int otherValue) {
+    return "This value must be greater than or equal to $otherValue + 1";
+  }
+
+  @override
+  String lessThanFieldError(int otherValue) {
+    return "This value must be less than or equal to $otherValue - 1";
+  }
+
+  @override
+  String mustBeAfterDateField(String otherFieldName) {
+    return "This date must be after $otherFieldName";
+  }
+
+  @override
+  String mustBeBeforeDateField(String otherFieldName) {
+    return "This date must be before $otherFieldName";
+  }
+
+  @override
+  String get invalidPhoneNumber => "Invalid phone number";
+
+  @override
+  String minNumberOfItemsMustBeSelected(int min) {
+    return "At least $min item(s) must be selected";
+  }
+
+  @override
+  String maxNumberOfItemsCanBeSelected(int max) {
+    return "At most $max item(s) can be selected";
+  }
+
+  @override
+  String get selectedItemsMustBeUnique => "Selected items must be unique";
+
+  @override
+  String fileSizeMustBeSmallerThan(String format) {
+    return "This file's size must be smaller than $format";
   }
 }

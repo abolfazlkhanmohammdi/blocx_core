@@ -1,7 +1,6 @@
 import 'package:blocx_core/blocx_core.dart';
-import 'package:blocx_core/src/blocs/form/validators/blocx_form_validator.dart';
-import 'package:blocx_core/src/blocs/form/validators/timed_error_message.dart';
-import 'package:blocx_core/src/core/models/base_form_entity.dart';
+import 'package:blocx_core/form_bloc.dart';
+import 'package:blocx_core/src/blocs/form/validation/blocx_form_validator.dart';
 
 /// A mixin that adds form validation capabilities to a [BlocxFormBloc].
 ///
@@ -18,18 +17,37 @@ mixin BlocxFormValidationMixin<F extends BaseFormEntity<F, E>, P, E extends Enum
   ///   [key] **must** be provided to validate a specific field.
   /// - Otherwise, the entire form is validated.
   @override
-  void validateForm(F formData, {E? key}) {
+  Future<void> validateForm(F formData, {E? key}) async {
     var validationErrors = <E, List<TimedErrorMessage>>{};
 
-    if (formValidationMode == FormValidationMode.onUserInteraction && key != null) {
-      var errors = validator.validateField(key, formData);
-      validationErrors[key] = errors;
-    } else if (formValidationMode == FormValidationMode.always) {
-      validationErrors = validator.validate(formData);
+    switch (formValidationMode) {
+      case FormValidationMode.onUserInteraction:
+        if (key != null) {
+          validationErrors[key] = await _validateField(key, formData);
+        }
+        // If key is null, do nothing (expected)
+        break;
+
+      case FormValidationMode.onSubmit:
+      case FormValidationMode.always:
+        validationErrors = await _validateForm(formData);
+        break;
+
+      case FormValidationMode.none:
+        return;
     }
 
-    // Apply the errors to the form state
     _applyValidationErrors(validationErrors);
+  }
+
+  Future<Map<E, List<TimedErrorMessage>>> _validateForm(F formData) async {
+    var errors = await validator.validateForm(formData);
+    return errors;
+  }
+
+  Future<List<TimedErrorMessage>> _validateField(E key, F formData) async {
+    var errors = validator.validateField(formData, key);
+    return errors;
   }
 
   /// Applies the validation errors to the form's state.
@@ -49,10 +67,20 @@ mixin BlocxFormValidationMixin<F extends BaseFormEntity<F, E>, P, E extends Enum
       if (errorMessage.duration == null) {
         setFieldError(key, errorMessage.error);
       } else {
-        add(BlocxFormEventSetTimedErrorToField(message: errorMessage.error, key: key));
+        add(
+          BlocxFormEventSetTimedErrorToField(
+            message: errorMessage.error,
+            duration: errorMessage.duration,
+            key: key,
+          ),
+        );
       }
     }
   }
+
+  Duration? get fieldErrorDuration => null;
+
+  List<E> get formKeysList;
 }
 
 /// Determines when the form should validate.

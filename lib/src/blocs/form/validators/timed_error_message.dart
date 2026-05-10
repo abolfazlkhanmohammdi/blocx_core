@@ -12,5 +12,5 @@ class TimedErrorMessage {
   final Duration? duration;
 
   /// Creates a new [TimedErrorMessage] with the given [error] and optional [duration].
-  TimedErrorMessage({required this.error, required this.duration});
+  TimedErrorMessage({required this.error, this.duration});
 }

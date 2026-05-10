@@ -8,6 +8,7 @@ import 'package:blocx_core/src/core/models/base_form_entity.dart';
 mixin BlocxFormErrorsMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
     on BaseBloc<BlocxFormEvent, BlocxFormState<F, E>> {
   final Map<E, Set<String>> _errors = <E, Set<String>>{};
+  final Map<E, List<Timer>> _timers = {};
 
   void initErrors() {
     on<BlocxFormEventSetTimedErrorToField<E>>(setTimedErrorToField);
@@ -58,9 +59,16 @@ mixin BlocxFormErrorsMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
   ) async {
     setFieldError(event.key, event.message);
     emitState(emit);
-    await Future.delayed(event.duration ?? Duration(seconds: 2));
-    clearFieldError(event.key, errorMessage: event.message);
-    emitState(emit);
+
+    late final Timer timer;
+    timer = Timer(event.duration ?? Duration(seconds: 3), () {
+      clearFieldError(event.key, errorMessage: event.message);
+      emitState(emit);
+      _timers[event.key]?.remove(timer);
+      if (_timers[event.key]?.isEmpty == true) _timers.remove(event.key);
+    });
+
+    _timers.putIfAbsent(event.key, () => []).add(timer);
   }
 
   void emitState(Emitter<BlocxFormState<F, E>> emit);
@@ -70,8 +78,20 @@ mixin BlocxFormErrorsMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
     emitState(emit);
   }
 
-  FutureOr<void> clearFieldErrors(BlocxFormEventClearFieldError<E> event, Emitter<BlocxFormState<F, E>> emit) {
+  FutureOr<void> clearFieldErrors(
+    BlocxFormEventClearFieldError<E> event,
+    Emitter<BlocxFormState<F, E>> emit,
+  ) {
     event.clearAll ? clearFieldError(event.key) : clearFieldError(event.key, errorMessage: event.message!);
     emitState(emit);
+  }
+
+  void clearTimers() {
+    for (var timers in _timers.values) {
+      for (var timer in timers) {
+        timer.cancel();
+      }
+    }
+    _timers.clear();
   }
 }

@@ -1,8 +1,15 @@
 import 'dart:async';
 
 import 'package:blocx_core/blocx_core.dart';
+import 'package:blocx_core/list_bloc.dart'
+    show
+        BlocxListEvent,
+        BlocxListState,
+        BlocxListEventAddItem,
+        BlocxListEventUpdateItem,
+        BlocxListEventRemoveItemById;
 
-mixin BlocxListBlocSyncStreamMixin<T extends BaseEntity, P>
+mixin BlocxListBlocSyncStreamMixin<T extends BlocxBaseEntity, P>
     on BaseBloc<BlocxListEvent<T>, BlocxListState<T>> {
   StreamSubscription<T>? _createSub;
   StreamSubscription<T>? _updateSub;

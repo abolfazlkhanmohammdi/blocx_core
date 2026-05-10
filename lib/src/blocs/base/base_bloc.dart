@@ -2,9 +2,11 @@ import 'dart:async';
 import 'dart:developer' as dev;
 
 import 'package:bloc/bloc.dart';
+import 'package:blocx_core/src/blocs/base/error_translator.dart';
 import 'package:blocx_core/src/blocs/base/readable_error.dart';
 import 'package:blocx_core/src/blocs/screen_manager/screen_manager_cubit.dart';
 import 'package:blocx_core/src/core/enum_error_codes.dart';
+import 'package:blocx_core/src/core/localizations/loc_provider.dart';
 import 'package:meta/meta.dart';
 
 part 'base_bloc_event.dart';
@@ -32,7 +34,8 @@ abstract class BaseBloc<E extends BaseEvent, S extends BaseState> extends Bloc<E
   FutureOr<void> handleError(Object error, Emitter<BaseState> emit, {StackTrace? stacktrace}) {
     dev.log(error.toString());
     if (stacktrace != null) dev.log(stacktrace.toString());
-    ReadableError readableError = makeErrorReadable(error, stackTrace: stacktrace);
+    ReadableError readableError =
+        errorTranslator?.makeErrorReadable(error, stackTrace: stacktrace) ?? defaultError;
     if (errorDisplayPolicy == ErrorDisplayPolicy.snackBar) {
       displayErrorSnackbar(readableError.message, title: readableError.title);
     } else {
@@ -50,7 +53,7 @@ abstract class BaseBloc<E extends BaseEvent, S extends BaseState> extends Bloc<E
 
   ScreenManagerCubit get screenManagerCubit => _screenManagerCubit;
 
-  ReadableError makeErrorReadable(Object error, {StackTrace? stackTrace});
+  ReadableError get defaultError => ReadableError(message: loc.somethingWentWrong);
 }
 
 enum ErrorDisplayPolicy { snackBar, page }

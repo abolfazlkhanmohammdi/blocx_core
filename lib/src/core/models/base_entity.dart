@@ -1,6 +1,6 @@
 /// The base contract for all entities used with blocx.
 ///
-/// Every [BaseEntity] must expose a unique, constant [identifier].
+/// Every [BlocxBaseEntity] must expose a unique, constant [identifier].
 /// This identifier is the **sole basis for equality and hashCode** comparisons,
 /// meaning two entities of the same type are considered equal if they share
 /// the same [identifier].
@@ -31,8 +31,8 @@
 /// // Even though the `name` differs, equality is based only on `id`.
 /// assert(u1 == u2);
 /// ```
-abstract class BaseEntity {
-  const BaseEntity();
+abstract class BlocxBaseEntity {
+  const BlocxBaseEntity();
 
   /// A globally unique and constant identifier for the entity.
   ///
@@ -42,7 +42,7 @@ abstract class BaseEntity {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is BaseEntity && other.runtimeType == runtimeType && other.identifier == identifier;
+    return other is BlocxBaseEntity && other.runtimeType == runtimeType && other.identifier == identifier;
   }
 
   @override

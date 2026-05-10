@@ -1,6 +1,6 @@
 part of './blocx_list_bloc.dart';
 
-extension ListStateExtensions<T extends BaseEntity> on BlocxListState<T> {
+extension ListStateExtensions<T extends BlocxBaseEntity> on BlocxListState<T> {
   // --- Selection ---
   bool isSelected(T item) => selectedItemIds.contains(item.identifier);
   bool isSelectedId(String id) => selectedItemIds.contains(id);

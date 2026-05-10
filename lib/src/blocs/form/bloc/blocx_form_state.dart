@@ -22,21 +22,24 @@ class BlocxFormState<F, E extends Enum> extends BaseState {
     return fieldsFetchingInfo.contains(key);
   }
 
-  bool get isValid => errors.isEmpty;
+  bool get isValid => errors.isEmpty && fieldsFetchingInfo.isEmpty && checkingUniqueFields.isEmpty;
+
   String? errorByKey(E key) {
     var errors = this.errors[key];
     if (errors == null || errors.isEmpty) return null;
-    return errors.first;
+    return errors.last;
   }
 
   String allErrors(FieldNameProvider<E> nameProvider) {
-    List<String> errors = [];
-    for (var entry in this.errors.entries) {
-      var fieldName = nameProvider(entry.key);
-      var fieldErrors = entry.value;
-      errors.add("$fieldName:\n${fieldErrors.join(".\n")}.\n");
-    }
-    return errors.join('\n');
+    if (errors.isEmpty) return '';
+
+    return errors.entries
+        .map((entry) {
+          final fieldName = nameProvider(entry.key);
+          final fieldErrors = entry.value.join(', ');
+          return '$fieldName: $fieldErrors';
+        })
+        .join('\n');
   }
 }
 

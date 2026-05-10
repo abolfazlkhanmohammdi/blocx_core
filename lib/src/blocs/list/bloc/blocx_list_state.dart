@@ -1,7 +1,7 @@
 // lib/src/blocs/list/bloc/list_state.dart
 part of 'blocx_list_bloc.dart';
 
-abstract class BlocxListState<T extends BaseEntity> extends BaseState {
+abstract class BlocxListState<T extends BlocxBaseEntity> extends BaseState {
   final List<T> list;
   final bool hasReachedEnd;
   final bool isLoadingNextPage;
@@ -33,7 +33,7 @@ abstract class BlocxListState<T extends BaseEntity> extends BaseState {
   bool get isEmpty => list.isEmpty;
 }
 
-class BlocxListStateLoading<T extends BaseEntity> extends BlocxListState<T> {
+class BlocxListStateLoading<T extends BlocxBaseEntity> extends BlocxListState<T> {
   const BlocxListStateLoading({
     super.list = const [],
     super.hasReachedEnd = false,
@@ -47,7 +47,7 @@ class BlocxListStateLoading<T extends BaseEntity> extends BlocxListState<T> {
   }) : super(shouldRebuild: true, shouldListen: false);
 }
 
-class BlocxListStateLoaded<T extends BaseEntity> extends BlocxListState<T> {
+class BlocxListStateLoaded<T extends BlocxBaseEntity> extends BlocxListState<T> {
   const BlocxListStateLoaded({
     required super.list,
     required super.hasReachedEnd,
@@ -88,7 +88,7 @@ class BlocxListStateLoaded<T extends BaseEntity> extends BlocxListState<T> {
   }
 }
 
-class BlocxListStateError<T extends BaseEntity> extends BlocxListState<T> {
+class BlocxListStateError<T extends BlocxBaseEntity> extends BlocxListState<T> {
   final String message;
 
   const BlocxListStateError({
@@ -105,7 +105,7 @@ class BlocxListStateError<T extends BaseEntity> extends BlocxListState<T> {
   }) : super(shouldRebuild: true, shouldListen: false);
 }
 
-class BlocxListStateScrollToItem<T extends BaseEntity> extends BlocxListState<T> {
+class BlocxListStateScrollToItem<T extends BlocxBaseEntity> extends BlocxListState<T> {
   final T item;
   final int index;
 
@@ -121,7 +121,7 @@ class BlocxListStateScrollToItem<T extends BaseEntity> extends BlocxListState<T>
       );
 }
 
-class BlocxListStateSelectionChanged<T extends BaseEntity> extends BlocxListState<T> {
+class BlocxListStateSelectionChanged<T extends BlocxBaseEntity> extends BlocxListState<T> {
   final SelectionChangedData<T> selectionData;
   const BlocxListStateSelectionChanged({
     required this.selectionData,

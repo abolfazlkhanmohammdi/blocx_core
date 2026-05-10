@@ -3,131 +3,115 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:blocx_core/blocx_core.dart';
+import 'package:blocx_core/list_bloc.dart'
+    show
+    BlocxListEventSearch,
+    BlocxListBloc,
+    BlocxListEventSearchRefresh,
+    BlocxListEventClearSearch,
+    BlocxListEventSearchNextPage,
+    BlocxListState,
+    BlocxInfiniteListEventSetReachedEnd,
+    BlocxListEventLoadInitialPage,
+    DataInsertSource,
+    BlocxInfiniteListEventChangeLoadBottomDataStatus;
 import 'package:blocx_core/src/blocs/list/misc/event_transformers.dart';
+import 'package:blocx_core/src/core/use_cases/blocx_use_case_task.dart';
 
-/// Adds **search** behavior to a [BlocxListBloc].
+/// Adds **search capability** to a [BlocxListBloc] using a **task-based execution model**.
 ///
-/// ### How it works
-/// - Debounces [`BlocxListEventSearch`] with [searchDebounceDuration] and uses a
-///   *restartable* transformer so only the **latest** query runs.
-/// - Handles [`BlocxListEventSearchRefresh`] and [`BlocxListEventSearchNextPage`] with
-///   *droppable* transformers (prevents overlapping executions).
-/// - When a search begins, it resets pagination end-state via
-///   `BlocxInfiniteListEventSetReachedEnd(false)` and toggles [isSearching] while
-///   asynchronous work is in flight.
-/// - Results are applied immutably using [clearList] + [insertToList], then
-///   [emitState] to notify listeners/UI.
+/// ## Architecture
+/// This mixin uses `BlocxUseCaseTask` instead of direct use cases:
 ///
-/// ### Important notes
-/// - **Unmodifiable list:** [list] is read-only; never mutate it directly.
-/// - **Empty search text:** falls back to [`BlocxListEventLoadInitialPage`] to
-///   restore the base list if [loadInitialPageUseCase] is available.
-/// - **Race guard:** after awaiting the search use case, the mixin checks if
-///   [searchText] became empty during the await and bails out to avoid
-///   overwriting an already-cleared search.
-/// - **Use cases:** Provide [searchUseCase] (and optionally
-///   [loadInitialPageUseCase]) or override [search]/[searchRefresh] yourself.
+/// - Task = (UseCase + Input builder)
+/// - Execution happens at runtime via `task.useCase.execute(task.inputBuilder())`
 ///
-/// If you don’t supply [searchUseCase], you must override [search] yourself.
-mixin BlocxSearchableListBlocMixin<T extends BaseEntity, P> on BlocxListBloc<T, P> {
-  /// The current search query text.
-  ///
-  /// Updated on each [BlocxListEventSearch] and used by refresh/next-page paths.
+/// ## Features
+/// - debounced search
+/// - restartable execution (latest query wins)
+/// - pagination (next page search)
+/// - refresh support
+/// - safe race-condition handling
+///
+/// ## State behavior
+/// - `isSearching` controls UI loading state
+/// - list updates are immutable (clear + insert pattern)
+/// - infinite scroll state is synced with `infiniteListBloc`
+mixin BlocxSearchableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBloc<T, P> {
+  /// Current active search query.
   String searchText = "";
 
-  /// Wire up search events:
-  /// - [`BlocxListEventSearch`]: debounced, restartable execution
-  /// - [`BlocxListEventSearchRefresh`]: droppable (ignores overlap)
-  /// - [`BlocxListEventClearSearch`]: droppable (ignores overlap)
-  /// - [`BlocxListEventSearchNextPage`]: droppable (ignores overlap)
+  /// Registers search-related event handlers.
   void initSearch() {
     on<BlocxListEventSearch<T>>(_search, transformer: debounceRestartable(searchDebounceDuration));
+
     on<BlocxListEventSearchRefresh<T>>(searchRefresh, transformer: droppable());
+
     on<BlocxListEventClearSearch<T>>(_clearSearch, transformer: droppable());
+
     on<BlocxListEventSearchNextPage<T>>(searchNextPage, transformer: droppable());
   }
 
-  /// Handles a debounced search request.
-  ///
-  /// Sets [searchText] and delegates to [search]. Override [search] if you need
-  /// custom behavior, or provide [searchUseCase] to use the default flow.
+  /// Handles incoming search event.
   Future<void> _search(BlocxListEventSearch<T> event, Emitter<BlocxListState<T>> emit) async {
     searchText = event.searchText;
     await search(event, emit);
   }
 
-  /// Entry point for performing a search.
+  /// Entry point for search execution.
   ///
-  /// Default implementation requires a non-null [searchUseCase] for the given
-  /// query; otherwise throws [UnimplementedError]. Override to customize.
+  /// Override this OR provide `searchUseCase(...)`.
   Future<void> search(BlocxListEventSearch<T> event, Emitter<BlocxListState<T>> emit) async {
-    if (searchUseCase(event.searchText) != null) {
+    final task = searchUseCase(event.searchText);
+
+    if (task != null) {
       return _fetchSearchResult(event, emit);
     }
-    throw UnimplementedError(
-      'Search is not configured. Either provide `searchUseCase` or override '
-      '`search(...)` in your bloc.',
-    );
+
+    throw UnimplementedError('Search is not configured. Provide `searchUseCase` or override `search()`.');
   }
 
-  /// Executes the current search (or restores the initial list on empty query),
-  /// updates [isSearching], and replaces the list with the results.
-  ///
-  /// Behavior:
-  /// - Resets `hasReachedEnd` and syncs the InfiniteList footer before starting.
-  /// - If [searchText] is empty:
-  ///   - Clears list, sets [isSearching] to false, and dispatches
-  ///     [`BlocxListEventLoadInitialPage`] to reload base data.
-  /// - Otherwise:
-  ///   - Sets [isSearching] to true, runs [searchUseCase], applies results via
-  ///     [clearList] + [insertToList] with [DataInsertSource.search].
-  /// - On failure, delegates to [handleError].
-  /// - Always resets [isSearching] in `finally`.
-  ///
-  /// Includes a **race guard**: if [searchText] becomes empty while awaiting
-  /// the use case, the method returns early to avoid stale updates.
+  /// Executes search and replaces list with results.
   Future<void> _fetchSearchResult(BlocxListEventSearch<T> event, Emitter<BlocxListState<T>> emit) async {
     hasReachedEnd = false;
+
     infiniteListBloc.add(BlocxInfiniteListEventSetReachedEnd(hasReachedEnd: false));
+
     if (searchText.isEmpty) {
       isSearching = false;
       clearList();
       add(BlocxListEventLoadInitialPage(payload: payload));
       return;
     }
+
     try {
       isSearching = true;
       emitState(emit);
-      final useCase = searchUseCase(event.searchText);
-      final result = await useCase!.execute();
-      // Race guard:
-      // The user might clear the query while this await is in flight, which enqueues
-      // BlocxListEventLoadInitialPage(...). If we continue, these stale search results
-      // would overwrite the freshly restored base list. Bail out if the current
-      // query is now empty (i.e., search mode ended).
+
+      final task = searchUseCase(event.searchText)!;
+
+      final result = await task.useCase.execute(task.inputBuilder());
+
+      /// Race condition guard
       if (searchText != event.searchText) return;
+
       if (result.isFailure) {
         await handleError(result.error!, emit, stacktrace: result.stackTrace);
         return;
       }
-      // Replace data immutably
+
       clearList();
+
       await insertToList(result.data!.items, !result.data!.hasNext, DataInsertSource.search);
+
       emitState(emit);
     } finally {
-      // Make sure the flag is reset even on failures
       isSearching = false;
       emitState(emit);
     }
   }
 
-  /// Clears search: resets the list and re-loads the initial page with the
-  /// current [payload] via [clearSearch].
-  ///
-  /// Notes:
-  /// - Resets [searchText] and clears the in-memory list.
-  /// - The default [clearSearch] implementation dispatches
-  ///   [`BlocxListEventLoadInitialPage`].
+  /// Clears search state and reloads base list.
   FutureOr<void> _clearSearch(BlocxListEventClearSearch<T> event, Emitter<BlocxListState<T>> emit) {
     searchText = "";
     hasReachedEnd = false;
@@ -135,96 +119,85 @@ mixin BlocxSearchableListBlocMixin<T extends BaseEntity, P> on BlocxListBloc<T, 
     clearSearch(event, emit);
   }
 
-  /// Provides a use case to run searches.
+  /// TASK-BASED SEARCH PROVIDER
   ///
-  /// Return `null` if you plan to override [search] / [searchRefresh] yourself.
+  /// Returns a [BlocxUseCaseTask] that contains:
+  /// - UseCase
+  /// - Input builder
   ///
-  /// - [searchText]: the query string.
-  /// - [loadCount]: optional page size to request.
-  /// - [offset]: optional offset for paginated searches.
-  SearchUseCase<T>? searchUseCase(String searchText, {int? loadCount, int? offset}) => null;
+  /// Return null if overriding behavior manually.
+  BlocxUseCaseTask? searchUseCase(String searchText, {int? loadCount, int? offset}) => null;
 
-  /// Debounce duration applied to [`BlocxListEventSearch`].
-  ///
-  /// Default: 300ms.
+  /// Search debounce duration.
   Duration get searchDebounceDuration => const Duration(milliseconds: 300);
 
-  /// Restores the base list after a clear.
-  ///
-  /// Default implementation enqueues [`BlocxListEventLoadInitialPage`] with
-  /// the current [payload]. Override to customize.
+  /// Restores initial list.
   FutureOr<void> clearSearch(BlocxListEventClearSearch<T> event, Emitter<BlocxListState<T>> emit) {
     add(BlocxListEventLoadInitialPage<T, P>(payload: payload));
   }
 
-  /// Hook to implement **search pagination** (next page).
-  ///
-  /// Default: no-op. Override to fetch more search results using your
-  /// [searchUseCase] with updated `loadCount`/`offset`, and append via
-  /// [insertToList] with [DataInsertSource.search].
+  /// Loads next page of search results.
   FutureOr<void> searchNextPage(
-    BlocxListEventSearchNextPage<T> event,
-    Emitter<BlocxListState<T>> emit,
-  ) async {
-    var result = await searchUseCase(searchText, offset: list.length)!.execute();
+      BlocxListEventSearchNextPage<T> event,
+      Emitter<BlocxListState<T>> emit,
+      ) async {
+    final task = searchUseCase(searchText, offset: list.length)!;
+
+    final result = await task.useCase.execute(task.inputBuilder());
+
     if (result.isFailure) {
       handleError(result.error!, emit, stacktrace: result.stackTrace);
       return;
     }
+
     await insertToList(result.data!.items, !result.data!.hasNext, DataInsertSource.nextPage);
+
     infiniteListBloc.add(BlocxInfiniteListEventChangeLoadBottomDataStatus(false, hasReachedEnd));
+
     emitState(emit);
   }
 
-  /// Refreshes the current search results (same [searchText]).
-  ///
-  /// Default implementation requires [searchUseCase]; otherwise throws
-  /// [UnimplementedError]. Override to customize behavior.
+  /// Refreshes current search results.
   FutureOr<void> searchRefresh(BlocxListEventSearchRefresh<T> event, Emitter<BlocxListState<T>> emit) {
-    if (searchUseCase(searchText) != null) {
+    final task = searchUseCase(searchText);
+
+    if (task != null) {
       return _fetchSearchRefreshResult(event, emit);
     }
+
     throw UnimplementedError(
-      'Search is not configured. Either provide `searchUseCase` or override '
-      '`search(...)` in your bloc.',
+      'Search is not configured. Provide `searchUseCase` or override `searchRefresh()`.',
     );
   }
 
-  /// Internal helper to re-fetch the **current** search for refresh.
-  ///
-  /// Calls [searchUseCase] with `loadCount = list.length` and `offset = 0`
-  /// to rebuild the visible results, then replaces the list immutably and
-  /// resets [isSearching] in `finally`.
+  /// Refresh implementation.
   Future<void> _fetchSearchRefreshResult(
-    BlocxListEventSearchRefresh<T> event,
-    Emitter<BlocxListState<T>> emit,
-  ) async {
+      BlocxListEventSearchRefresh<T> event,
+      Emitter<BlocxListState<T>> emit,
+      ) async {
     isSearching = true;
     emitState(emit);
 
     try {
-      final useCase = searchUseCase(searchText, loadCount: list.length, offset: 0);
+      final task = searchUseCase(searchText, loadCount: list.length, offset: 0);
 
-      if (useCase == null) {
-        throw UnimplementedError(
-          'No use case available for this search path. '
-          'Empty query requires `loadInitialPageUseCase`; non-empty query requires `searchUseCase`.',
-        );
+      if (task == null) {
+        throw UnimplementedError('Missing search use case configuration.');
       }
 
-      final result = await useCase.execute();
+      final result = await task.useCase.execute(task.inputBuilder());
 
       if (result.isFailure) {
         await handleError(result.error!, emit, stacktrace: result.stackTrace);
         return;
       }
 
-      // Replace data immutably
       clearList();
+
       await insertToList(result.data!.items, !result.data!.hasNext, DataInsertSource.search);
+
       emitState(emit);
     } finally {
-      // Make sure the flag is reset even on failures
       isSearching = false;
       emitState(emit);
     }

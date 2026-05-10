@@ -2,13 +2,15 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
+import 'package:blocx_core/list_bloc.dart'
+    show BlocxListBloc, BlocxListEventClearHighlightedItem, BlocxListEventHighlightItem, BlocxListState;
 
 /// Adds highlight behavior to a [BlocxListBloc].
 ///
 /// ### Events wired
 /// - [BlocxListEventHighlightItem] → sets `isHighlighted = true` for the item
 /// - [BlocxListEventClearHighlightedItem] → clears highlight (usually after a delay)
-mixin BlocxHighlightableListBlocMixin<T extends BaseEntity, P> on BlocxListBloc<T, P> {
+mixin BlocxHighlightableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBloc<T, P> {
   final Set<String> _highlightedItemIds = {};
 
   /// Whether the highlight should auto-clear after [highlightDuration].

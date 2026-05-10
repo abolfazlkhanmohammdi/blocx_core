@@ -2,6 +2,13 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
+import 'package:blocx_core/list_bloc.dart'
+    show
+        BlocxListBloc,
+        BlocxListEventCollapseItem,
+        BlocxListEventExpandItem,
+        BlocxListEventToggleItemExpansion,
+        BlocxListState;
 
 /// A mixin that adds **expand/collapse support** to a [BlocxListBloc].
 ///
@@ -9,7 +16,7 @@ import 'package:blocx_core/blocx_core.dart';
 /// content (e.g. accordions, nested details, expandable rows).
 ///
 /// ### How it works
-/// - Tracks a set of expanded items by their [BaseEntity.identifier].
+/// - Tracks a set of expanded items by their [BlocxBaseEntity.identifier].
 /// - Listens to [BlocxListEventExpandItem] and [BlocxListEventCollapseItem].
 /// - Updates [_expandedItemIds] accordingly and emits the latest state via [emitState].
 ///
@@ -29,14 +36,14 @@ import 'package:blocx_core/blocx_core.dart';
 /// ```
 ///
 /// ### Notes
-/// - [BaseEntity.identifier] must be **unique and stable** per entity,
+/// - [BlocxBaseEntity.identifier] must be **unique and stable** per entity,
 ///   otherwise expansion state cannot be tracked reliably.
 /// - Expansion state is held in-memory; if you rebuild/recreate the bloc,
 ///   expanded state will reset unless you persist it separately.
-mixin BlocxExpandableListBlocMixin<T extends BaseEntity, P> on BlocxListBloc<T, P> {
+mixin BlocxExpandableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBloc<T, P> {
   /// Stores the identifiers of currently expanded items.
   ///
-  /// Each item is tracked by its [BaseEntity.identifier].
+  /// Each item is tracked by its [BlocxBaseEntity.identifier].
   final Set<String> _expandedItemIds = {};
 
   /// Registers the event handlers for expansion/collapse.
@@ -55,7 +62,7 @@ mixin BlocxExpandableListBlocMixin<T extends BaseEntity, P> on BlocxListBloc<T, 
 
   /// Handles [BlocxListEventExpandItem].
   ///
-  /// - Adds the item’s [BaseEntity.identifier] to [_expandedItemIds].
+  /// - Adds the item’s [BlocxBaseEntity.identifier] to [_expandedItemIds].
   /// - Emits the updated state so the UI can rebuild accordingly.
   FutureOr<void> expandItem(BlocxListEventExpandItem<T> event, Emitter<BlocxListState<T>> emit) {
     _expandedItemIds.add(event.item.identifier);
@@ -64,7 +71,7 @@ mixin BlocxExpandableListBlocMixin<T extends BaseEntity, P> on BlocxListBloc<T, 
 
   /// Handles [BlocxListEventCollapseItem].
   ///
-  /// - Removes the item’s [BaseEntity.identifier] from [_expandedItemIds].
+  /// - Removes the item’s [BlocxBaseEntity.identifier] from [_expandedItemIds].
   /// - Emits the updated state so the UI can rebuild accordingly.
   FutureOr<void> collapseItem(BlocxListEventCollapseItem<T> event, Emitter<BlocxListState<T>> emit) {
     _expandedItemIds.remove(event.item.identifier);

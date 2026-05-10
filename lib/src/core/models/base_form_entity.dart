@@ -12,7 +12,7 @@ import 'package:meta/meta.dart';
 /// - [F] is the concrete subclass type (F-bound polymorphism), allowing methods
 ///   like [updateByKey] to return a strongly typed instance.
 /// - [E] is the enum type representing the unique keys of the form fields.
-abstract class BaseFormEntity<F extends BaseFormEntity<F, E>, E extends Enum> extends BaseEntity {
+abstract class BaseFormEntity<F extends BaseFormEntity<F, E>, E extends Enum> extends BlocxBaseEntity {
   const BaseFormEntity();
 
   /// A safe version of [updateByKey] that performs a debug-mode consistency check.

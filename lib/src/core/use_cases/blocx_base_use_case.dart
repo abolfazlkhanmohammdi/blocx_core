@@ -1,21 +1,38 @@
-// core/use_cases/base_use_case.dart
-import 'package:blocx_core/blocx_core.dart';
+import 'package:blocx_core/src/core/use_cases/blocx_use_case_result.dart';
 import 'package:meta/meta.dart';
 
-abstract class BlocxBaseUseCase<T> {
+/// Base abstraction for all use cases.
+///
+/// A use case represents a single unit of business logic that transforms
+/// an [Input] into an [Output].
+///
+/// This enforces:
+/// - explicit dependencies (via input)
+/// - predictable execution flow
+/// - consistent error handling
+abstract class BlocxBaseUseCase<Input, Output> {
+  /// Executes the use case with the given [input].
+  ///
+  /// All exceptions are caught and converted into a failure result.
   @nonVirtual
-  Future<UseCaseResult<T>> execute() async {
+  Future<BlocxUseCaseResult<Output>> execute(Input input) async {
     try {
-      return await perform();
-    } catch (e, s) {
-      printError(e, s);
-      return UseCaseResult.failure(e, stackTrace: s);
+      return await perform(input);
+    } catch (error, stackTrace) {
+      handleError(error, stackTrace);
+      return failureResult(error,stackTrace);
     }
   }
 
-  /// Subclasses must implement this. Public so it can be overridden.
+  /// Internal implementation of the use case.
   @protected
-  Future<UseCaseResult<T>> perform();
+  Future<BlocxUseCaseResult<Output>> perform(Input input);
 
-  void printError(Object error, [StackTrace? stackTrace]) {}
+  /// Optional hook for logging / analytics / crash reporting.
+  ///
+  /// Must NOT affect control flow.
+  @protected
+  void handleError(Object error, StackTrace stackTrace) {}
+
+  Future<BlocxUseCaseResult<Output>> failureResult(Object error, StackTrace stackTrace);
 }
