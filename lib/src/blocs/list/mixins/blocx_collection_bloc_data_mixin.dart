@@ -5,23 +5,22 @@ import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/list_bloc.dart'
     show
-        BlocxListEvent,
-        BlocxListState,
-        BlocxListEventLoadInitialPage,
-        BlocxListEventAddItem,
-        BlocxListEventUpdateItem,
-        BlocxListEventReplaceList,
+        BlocxCollectionEvent,
+        BlocxCollectionState,
+        BlocxCollectionEventLoadInitialPage,
+        BlocxCollectionEventAddItem,
+        BlocxCollectionEventUpdateItem,
+        BlocxCollectionEventReplaceList,
         DataInsertSource,
         BlocxInfiniteListBloc,
-        BlocxListStateLoading,
-        BlocxListStateLoaded,
+        BlocxCollectionStateLoading,
+        BlocxCollectionStateLoaded,
         BlocxInfiniteListEventSetReachedEnd,
         BlocxInfiniteListEventChangeLoadBottomDataStatus,
         BlocxInfiniteListEventCloseRefresh,
-        BlocxListEventHighlightItem;
+        BlocxCollectionEventHighlightItem;
 import 'package:blocx_core/src/blocs/list/use_cases/blocx_pagination_use_case.dart';
 import 'package:blocx_core/src/core/models/base_entity_extensions.dart';
-import 'package:blocx_core/src/core/use_cases/blocx_use_case_task.dart';
 
 /// Mixin that provides **core list state management and data orchestration**
 /// for a [BlocxListBloc].
@@ -32,7 +31,7 @@ import 'package:blocx_core/src/core/use_cases/blocx_use_case_task.dart';
 /// - Inserting, updating, and replacing items
 /// - Coordinating infinite scroll events
 /// - Tracking UI flags (loading, refreshing, searching)
-/// - Emitting consistent [BlocxListStateLoaded] updates
+/// - Emitting consistent [BlocxCollectionStateLoaded] updates
 ///
 /// ## Architecture role
 /// This mixin acts as the **data layer backbone** of list-based blocs.
@@ -51,7 +50,8 @@ import 'package:blocx_core/src/core/use_cases/blocx_use_case_task.dart';
 ///
 /// ## State emission strategy
 /// All updates go through [emitState], ensuring consistent state shape.
-mixin ListBlocDataMixin<T extends BlocxBaseEntity, P> on BaseBloc<BlocxListEvent<T>, BlocxListState<T>> {
+mixin ListBlocDataMixin<T extends BlocxBaseEntity, P>
+    on BaseBloc<BlocxCollectionEvent<T>, BlocxCollectionState<T>> {
   /// Optional external payload used for initial loading.
   P? payload;
 
@@ -103,7 +103,10 @@ mixin ListBlocDataMixin<T extends BlocxBaseEntity, P> on BaseBloc<BlocxListEvent
   /// - Emits loading and loaded states accordingly
   ///
   /// Throws [UnimplementedError] if no loading strategy is provided.
-  Future loadInitialPage(BlocxListEventLoadInitialPage<T, P> event, Emitter<BlocxListState<T>> emit) async {
+  Future loadInitialPage(
+    BlocxCollectionEventLoadInitialPage<T, P> event,
+    Emitter<BlocxCollectionState<T>> emit,
+  ) async {
     payload = event.payload;
 
     if (loadInitialPageTask != null) {
@@ -115,13 +118,13 @@ mixin ListBlocDataMixin<T extends BlocxBaseEntity, P> on BaseBloc<BlocxListEvent
 
   /// Internal handler that executes the initial load task.
   ///
-  /// Emits [BlocxListStateLoading] before execution and updates state
+  /// Emits [BlocxCollectionStateLoading] before execution and updates state
   /// upon success or failure.
   Future<void> _fetchInitialPage(
-    BlocxListEventLoadInitialPage<T, P> event,
-    Emitter<BlocxListState<T>> emit,
+    BlocxCollectionEventLoadInitialPage<T, P> event,
+    Emitter<BlocxCollectionState<T>> emit,
   ) async {
-    emit(BlocxListStateLoading<T>());
+    emit(BlocxCollectionStateLoading<T>());
 
     final task = loadInitialPageTask!;
 
@@ -150,18 +153,18 @@ mixin ListBlocDataMixin<T extends BlocxBaseEntity, P> on BaseBloc<BlocxListEvent
 
   /// Registers all internal event handlers for this mixin.
   void initDataMixin() {
-    on<BlocxListEventLoadInitialPage<T, P>>(loadInitialPage);
-    on<BlocxListEventAddItem<T>>(addItem);
-    on<BlocxListEventUpdateItem<T>>(updateItem);
-    on<BlocxListEventReplaceList<T>>(handleReplaceList);
+    on<BlocxCollectionEventLoadInitialPage<T, P>>(loadInitialPage);
+    on<BlocxCollectionEventAddItem<T>>(addItem);
+    on<BlocxCollectionEventUpdateItem<T>>(updateItem);
+    on<BlocxCollectionEventReplaceList<T>>(handleReplaceList);
   }
 
   /// Emits the current list state to listeners.
   ///
   /// This is the single source of truth for UI updates.
-  void emitState(Emitter<BlocxListState<T>> emit) {
+  void emitState(Emitter<BlocxCollectionState<T>> emit) {
     emit(
-      BlocxListStateLoaded(
+      BlocxCollectionStateLoaded(
         additionalInfo: additionalInfo,
         list: list,
         hasReachedEnd: hasReachedEnd,
@@ -244,13 +247,13 @@ mixin ListBlocDataMixin<T extends BlocxBaseEntity, P> on BaseBloc<BlocxListEvent
   bool get isHighlightable;
 
   /// Adds a new item to the list.
-  Future<void> addItem(BlocxListEventAddItem<T> event, Emitter<BlocxListState<T>> emit) async {
+  Future<void> addItem(BlocxCollectionEventAddItem<T> event, Emitter<BlocxCollectionState<T>> emit) async {
     _list.insert(event.index, event.item);
     emitState(emit);
   }
 
   /// Updates an existing item in the list.
-  FutureOr<void> updateItem(BlocxListEventUpdateItem<T> event, Emitter<BlocxListState<T>> emit) {
+  FutureOr<void> updateItem(BlocxCollectionEventUpdateItem<T> event, Emitter<BlocxCollectionState<T>> emit) {
     final index = _list.indexById(event.item);
 
     if (index == -1) {
@@ -260,7 +263,7 @@ mixin ListBlocDataMixin<T extends BlocxBaseEntity, P> on BaseBloc<BlocxListEvent
     _list[index] = event.item;
 
     if (isHighlightable) {
-      add(BlocxListEventHighlightItem(item: event.item));
+      add(BlocxCollectionEventHighlightItem(item: event.item));
     }
 
     emitState(emit);
@@ -280,7 +283,10 @@ mixin ListBlocDataMixin<T extends BlocxBaseEntity, P> on BaseBloc<BlocxListEvent
   void doAfterInsert() {}
 
   /// Handles full list replacement event.
-  FutureOr<void> handleReplaceList(BlocxListEventReplaceList<T> event, Emitter<BlocxListState<T>> emit) {
+  FutureOr<void> handleReplaceList(
+    BlocxCollectionEventReplaceList<T> event,
+    Emitter<BlocxCollectionState<T>> emit,
+  ) {
     replaceList(event.newItems);
     emitState(emit);
   }

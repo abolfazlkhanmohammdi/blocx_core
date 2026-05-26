@@ -4,14 +4,14 @@ import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/list_bloc.dart'
     show
-        BlocxListBloc,
-        BlocxListEventRemoveItem,
-        BlocxListEventRemoveMultipleItems,
-        BlocxListEventRemoveItemById,
-        BlocxListState,
-        BlocxListEventDeselectMultipleItems;
+        BlocxCollectionBloc,
+        BlocxCollectionEventRemoveItem,
+        BlocxCollectionEventRemoveMultipleItems,
+        BlocxCollectionEventRemoveItemById,
+        BlocxCollectionState,
+        BlocxCollectionEventDeselectMultipleItems;
 
-/// A mixin that adds delete & bulk-delete capabilities to a [BlocxListBloc].
+/// A mixin that adds delete & bulk-delete capabilities to a [BlocxCollectionBloc].
 ///
 /// ## IMPORTANT (updated architecture)
 /// Use cases are now:
@@ -20,7 +20,7 @@ import 'package:blocx_core/list_bloc.dart'
 /// So:
 /// - single delete → Input = T
 /// - bulk delete → Input = List<T>
-mixin BlocxDeletableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBloc<T, P> {
+mixin BlocxCollectionBlocDeletableMixin<T extends BlocxBaseEntity, P> on BlocxCollectionBloc<T, P> {
   final Set<String> _beingRemovedItemIds = {};
 
   // ---------------------------------------------------------------------------
@@ -32,16 +32,19 @@ mixin BlocxDeletableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBloc
   BlocxBaseUseCase<List<T>, bool>? deleteMultipleItemsUseCase(List<T> items) => null;
 
   void initDeletable() {
-    on<BlocxListEventRemoveItem<T>>(removeItem);
-    on<BlocxListEventRemoveMultipleItems<T>>(removeMultipleItems);
-    on<BlocxListEventRemoveItemById<T>>(removeItemById);
+    on<BlocxCollectionEventRemoveItem<T>>(removeItem);
+    on<BlocxCollectionEventRemoveMultipleItems<T>>(removeMultipleItems);
+    on<BlocxCollectionEventRemoveItemById<T>>(removeItemById);
   }
 
   // ---------------------------------------------------------------------------
   // SINGLE DELETE
   // ---------------------------------------------------------------------------
 
-  Future<void> removeItem(BlocxListEventRemoveItem<T> event, Emitter<BlocxListState<T>> emit) async {
+  Future<void> removeItem(
+    BlocxCollectionEventRemoveItem<T> event,
+    Emitter<BlocxCollectionState<T>> emit,
+  ) async {
     _beingRemovedItemIds.add(event.item.identifier);
     emitState(emit);
 
@@ -62,7 +65,7 @@ mixin BlocxDeletableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBloc
         removeItemFromList(event.item);
 
         if (isSelectable) {
-          add(BlocxListEventDeselectMultipleItems(items: [event.item]));
+          add(BlocxCollectionEventDeselectMultipleItems(items: [event.item]));
         }
       }
 
@@ -80,8 +83,8 @@ mixin BlocxDeletableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBloc
   // ---------------------------------------------------------------------------
 
   Future<void> removeMultipleItems(
-    BlocxListEventRemoveMultipleItems<T> event,
-    Emitter<BlocxListState<T>> emit,
+    BlocxCollectionEventRemoveMultipleItems<T> event,
+    Emitter<BlocxCollectionState<T>> emit,
   ) async {
     final items = event.items;
 
@@ -142,7 +145,7 @@ mixin BlocxDeletableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBloc
               removeItemFromList(it);
 
               if (isSelectable) {
-                add(BlocxListEventDeselectMultipleItems(items: [it]));
+                add(BlocxCollectionEventDeselectMultipleItems(items: [it]));
               }
             }
 
@@ -194,7 +197,7 @@ mixin BlocxDeletableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBloc
       displayInfoSnackbar("Deleted $success item(s).");
 
       if (isSelectable && wasMultipleDelete) {
-        add(BlocxListEventDeselectMultipleItems(items: items));
+        add(BlocxCollectionEventDeselectMultipleItems(items: items));
       }
     } else if (success == 0) {
       displayWarningSnackbar("Failed to delete $fail item(s).");
@@ -211,8 +214,8 @@ mixin BlocxDeletableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBloc
   Set<String> get beingRemovedItemIds => _beingRemovedItemIds;
 
   FutureOr<void> removeItemById(
-    BlocxListEventRemoveItemById<T> event,
-    Emitter<BlocxListState<T>> emit,
+    BlocxCollectionEventRemoveItemById<T> event,
+    Emitter<BlocxCollectionState<T>> emit,
   ) async {
     final index = list.indexWhere((item) => item.identifier == event.identifier);
 

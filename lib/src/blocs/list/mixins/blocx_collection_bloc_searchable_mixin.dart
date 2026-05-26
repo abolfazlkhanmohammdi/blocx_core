@@ -5,20 +5,19 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/list_bloc.dart'
     show
-    BlocxListEventSearch,
-    BlocxListBloc,
-    BlocxListEventSearchRefresh,
-    BlocxListEventClearSearch,
-    BlocxListEventSearchNextPage,
-    BlocxListState,
-    BlocxInfiniteListEventSetReachedEnd,
-    BlocxListEventLoadInitialPage,
-    DataInsertSource,
-    BlocxInfiniteListEventChangeLoadBottomDataStatus;
+        BlocxCollectionEventSearch,
+        BlocxCollectionBloc,
+        BlocxCollectionEventSearchRefresh,
+        BlocxCollectionEventClearSearch,
+        BlocxCollectionEventSearchNextPage,
+        BlocxCollectionState,
+        BlocxInfiniteListEventSetReachedEnd,
+        BlocxCollectionEventLoadInitialPage,
+        DataInsertSource,
+        BlocxInfiniteListEventChangeLoadBottomDataStatus;
 import 'package:blocx_core/src/blocs/list/misc/event_transformers.dart';
-import 'package:blocx_core/src/core/use_cases/blocx_use_case_task.dart';
 
-/// Adds **search capability** to a [BlocxListBloc] using a **task-based execution model**.
+/// Adds **search capability** to a [BlocxCollectionBloc] using a **task-based execution model**.
 ///
 /// ## Architecture
 /// This mixin uses `BlocxUseCaseTask` instead of direct use cases:
@@ -37,23 +36,23 @@ import 'package:blocx_core/src/core/use_cases/blocx_use_case_task.dart';
 /// - `isSearching` controls UI loading state
 /// - list updates are immutable (clear + insert pattern)
 /// - infinite scroll state is synced with `infiniteListBloc`
-mixin BlocxSearchableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBloc<T, P> {
+mixin BlocxCollectionBlocSearchableMixin<T extends BlocxBaseEntity, P> on BlocxCollectionBloc<T, P> {
   /// Current active search query.
   String searchText = "";
 
   /// Registers search-related event handlers.
   void initSearch() {
-    on<BlocxListEventSearch<T>>(_search, transformer: debounceRestartable(searchDebounceDuration));
+    on<BlocxCollectionEventSearch<T>>(_search, transformer: debounceRestartable(searchDebounceDuration));
 
-    on<BlocxListEventSearchRefresh<T>>(searchRefresh, transformer: droppable());
+    on<BlocxCollectionEventSearchRefresh<T>>(searchRefresh, transformer: droppable());
 
-    on<BlocxListEventClearSearch<T>>(_clearSearch, transformer: droppable());
+    on<BlocxCollectionEventClearSearch<T>>(_clearSearch, transformer: droppable());
 
-    on<BlocxListEventSearchNextPage<T>>(searchNextPage, transformer: droppable());
+    on<BlocxCollectionEventSearchNextPage<T>>(searchNextPage, transformer: droppable());
   }
 
   /// Handles incoming search event.
-  Future<void> _search(BlocxListEventSearch<T> event, Emitter<BlocxListState<T>> emit) async {
+  Future<void> _search(BlocxCollectionEventSearch<T> event, Emitter<BlocxCollectionState<T>> emit) async {
     searchText = event.searchText;
     await search(event, emit);
   }
@@ -61,7 +60,7 @@ mixin BlocxSearchableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBlo
   /// Entry point for search execution.
   ///
   /// Override this OR provide `searchUseCase(...)`.
-  Future<void> search(BlocxListEventSearch<T> event, Emitter<BlocxListState<T>> emit) async {
+  Future<void> search(BlocxCollectionEventSearch<T> event, Emitter<BlocxCollectionState<T>> emit) async {
     final task = searchUseCase(event.searchText);
 
     if (task != null) {
@@ -72,7 +71,10 @@ mixin BlocxSearchableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBlo
   }
 
   /// Executes search and replaces list with results.
-  Future<void> _fetchSearchResult(BlocxListEventSearch<T> event, Emitter<BlocxListState<T>> emit) async {
+  Future<void> _fetchSearchResult(
+    BlocxCollectionEventSearch<T> event,
+    Emitter<BlocxCollectionState<T>> emit,
+  ) async {
     hasReachedEnd = false;
 
     infiniteListBloc.add(BlocxInfiniteListEventSetReachedEnd(hasReachedEnd: false));
@@ -80,7 +82,7 @@ mixin BlocxSearchableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBlo
     if (searchText.isEmpty) {
       isSearching = false;
       clearList();
-      add(BlocxListEventLoadInitialPage(payload: payload));
+      add(BlocxCollectionEventLoadInitialPage(payload: payload));
       return;
     }
 
@@ -112,7 +114,10 @@ mixin BlocxSearchableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBlo
   }
 
   /// Clears search state and reloads base list.
-  FutureOr<void> _clearSearch(BlocxListEventClearSearch<T> event, Emitter<BlocxListState<T>> emit) {
+  FutureOr<void> _clearSearch(
+    BlocxCollectionEventClearSearch<T> event,
+    Emitter<BlocxCollectionState<T>> emit,
+  ) {
     searchText = "";
     hasReachedEnd = false;
     clearList();
@@ -132,15 +137,18 @@ mixin BlocxSearchableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBlo
   Duration get searchDebounceDuration => const Duration(milliseconds: 300);
 
   /// Restores initial list.
-  FutureOr<void> clearSearch(BlocxListEventClearSearch<T> event, Emitter<BlocxListState<T>> emit) {
-    add(BlocxListEventLoadInitialPage<T, P>(payload: payload));
+  FutureOr<void> clearSearch(
+    BlocxCollectionEventClearSearch<T> event,
+    Emitter<BlocxCollectionState<T>> emit,
+  ) {
+    add(BlocxCollectionEventLoadInitialPage<T, P>(payload: payload));
   }
 
   /// Loads next page of search results.
   FutureOr<void> searchNextPage(
-      BlocxListEventSearchNextPage<T> event,
-      Emitter<BlocxListState<T>> emit,
-      ) async {
+    BlocxCollectionEventSearchNextPage<T> event,
+    Emitter<BlocxCollectionState<T>> emit,
+  ) async {
     final task = searchUseCase(searchText, offset: list.length)!;
 
     final result = await task.useCase.execute(task.inputBuilder());
@@ -158,7 +166,10 @@ mixin BlocxSearchableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBlo
   }
 
   /// Refreshes current search results.
-  FutureOr<void> searchRefresh(BlocxListEventSearchRefresh<T> event, Emitter<BlocxListState<T>> emit) {
+  FutureOr<void> searchRefresh(
+    BlocxCollectionEventSearchRefresh<T> event,
+    Emitter<BlocxCollectionState<T>> emit,
+  ) {
     final task = searchUseCase(searchText);
 
     if (task != null) {
@@ -172,9 +183,9 @@ mixin BlocxSearchableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBlo
 
   /// Refresh implementation.
   Future<void> _fetchSearchRefreshResult(
-      BlocxListEventSearchRefresh<T> event,
-      Emitter<BlocxListState<T>> emit,
-      ) async {
+    BlocxCollectionEventSearchRefresh<T> event,
+    Emitter<BlocxCollectionState<T>> emit,
+  ) async {
     isSearching = true;
     emitState(emit);
 

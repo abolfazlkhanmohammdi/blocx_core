@@ -2,28 +2,27 @@ import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/list_bloc.dart'
     show
-        BlocxSearchableListBlocMixin,
-        BlocxListEventSearchNextPage,
-        BlocxListBloc,
-        BlocxListEventLoadNextPage,
-        BlocxListState,
+        BlocxCollectionBlocSearchableMixin,
+        BlocxCollectionEventSearchNextPage,
+        BlocxCollectionBloc,
+        BlocxCollectionEventLoadNextPage,
+        BlocxCollectionState,
         BlocxInfiniteListEventChangeLoadBottomDataStatus,
         DataInsertSource;
 import 'package:blocx_core/src/blocs/list/use_cases/blocx_pagination_use_case.dart';
-import 'package:blocx_core/src/core/use_cases/blocx_use_case_task.dart';
 
-/// Adds infinite pagination (next-page loading) to a [BlocxListBloc].
+/// Adds infinite pagination (next-page loading) to a [BlocxCollectionBloc].
 ///
 /// Uses [BlocxUseCaseTask] + [BlocxPaginationInput] for explicit pagination control.
-mixin BlocxInfiniteListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBloc<T, P> {
+mixin BlocxCollectionBlocInfiniteMixin<T extends BlocxBaseEntity, P> on BlocxCollectionBloc<T, P> {
   /// Task responsible for loading the next page.
   BlocxUseCaseTask<BlocxBaseUseCase, BlocxPaginationInput>? get loadNextPageTask => null;
 
   /// Entry point for next-page loading.
-  Future<void> loadNextPage(BlocxListEventLoadNextPage<T> event, Emitter<BlocxListState<T>> emit) async {
+  Future<void> loadNextPage(BlocxCollectionEventLoadNextPage<T> event, Emitter<BlocxCollectionState<T>> emit) async {
     // Delegate to search pagination if in search mode
-    if (isSearchable && (this as BlocxSearchableListBlocMixin<T, P>).searchText.isNotEmpty) {
-      add(BlocxListEventSearchNextPage());
+    if (isSearchable && (this as BlocxCollectionBlocSearchableMixin<T, P>).searchText.isNotEmpty) {
+      add(BlocxCollectionEventSearchNextPage());
       return;
     }
 
@@ -39,7 +38,7 @@ mixin BlocxInfiniteListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBloc<
   }
 
   /// Executes next-page request using task-based API.
-  Future<void> _fetchNextPage(BlocxListEventLoadNextPage<T> event, Emitter<BlocxListState<T>> emit) async {
+  Future<void> _fetchNextPage(BlocxCollectionEventLoadNextPage<T> event, Emitter<BlocxCollectionState<T>> emit) async {
     try {
       final task = loadNextPageTask!;
 
@@ -64,6 +63,6 @@ mixin BlocxInfiniteListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBloc<
 
   /// Registers event handler.
   void initInfiniteList() {
-    on<BlocxListEventLoadNextPage<T>>(loadNextPage);
+    on<BlocxCollectionEventLoadNextPage<T>>(loadNextPage);
   }
 }

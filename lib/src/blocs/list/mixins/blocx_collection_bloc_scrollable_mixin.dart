@@ -4,23 +4,23 @@ import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/list_bloc.dart'
     show
-        BlocxListBloc,
-        BlocxListEventScrollToItem,
-        BlocxListEventScrollToIdentifier,
-        BlocxListEventHighlightScrolledToItems,
-        BlocxListState,
-        BlocxListStateScrollToItem,
-        BlocxListEventHighlightItem;
+        BlocxCollectionBloc,
+        BlocxCollectionEventScrollToItem,
+        BlocxCollectionEventScrollToIdentifier,
+        BlocxCollectionEventHighlightScrolledToItems,
+        BlocxCollectionState,
+        BlocxCollectionStateScrollToItem,
+        BlocxCollectionEventHighlightItem;
 import 'package:blocx_core/src/core/models/base_entity_extensions.dart';
 import 'package:blocx_core/src/core/logger.dart';
 import 'package:blocx_core/src/blocs/list/misc/event_transformers.dart';
 
 /// A mixin that adds **scroll-to-item** capabilities for list-based blocs.
 ///
-/// This mixin enables your [BlocxListBloc] to:
-/// - Scroll directly to a concrete [item] ([BlocxListEventScrollToItem]).
+/// This mixin enables your [BlocxCollectionBloc] to:
+/// - Scroll directly to a concrete [item] ([BlocxCollectionEventScrollToItem]).
 /// - Scroll to an item by its stable [BlocxBaseEntity.identifier]
-///   ([BlocxListEventScrollToIdentifier]).
+///   ([BlocxCollectionEventScrollToIdentifier]).
 /// - Optionally highlight the item (if [BlocxHighlightableListBlocMixin] is also applied).
 ///
 /// Usage:
@@ -36,12 +36,12 @@ import 'package:blocx_core/src/blocs/list/misc/event_transformers.dart';
 /// ```
 ///
 /// Events:
-/// - [BlocxListEventScrollToItem]
-/// - [BlocxListEventScrollToIdentifier]
+/// - [BlocxCollectionEventScrollToItem]
+/// - [BlocxCollectionEventScrollToIdentifier]
 ///
 /// States:
 /// - [ListStateScrollToItem] is emitted with the resolved item and target index.
-mixin BlocxScrollableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBloc<T, P> {
+mixin BlocxCollectionBlocScrollableMixin<T extends BlocxBaseEntity, P> on BlocxCollectionBloc<T, P> {
   final List<T> _toBeHighlightedItems = [];
 
   /// Initializes the mixin by registering its event handlers.
@@ -53,32 +53,35 @@ mixin BlocxScrollableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBlo
   /// }
   /// ```
   void initScrollable() {
-    on<BlocxListEventScrollToItem<T>>(scrollToItem);
-    on<BlocxListEventScrollToIdentifier<T>>(scrollToIdentifier);
-    on<BlocxListEventHighlightScrolledToItems<T>>(
+    on<BlocxCollectionEventScrollToItem<T>>(scrollToItem);
+    on<BlocxCollectionEventScrollToIdentifier<T>>(scrollToIdentifier);
+    on<BlocxCollectionEventHighlightScrolledToItems<T>>(
       highlightScrolledToItems,
       transformer: debounceRestartable(Duration(milliseconds: 500)),
     );
   }
 
-  /// Handles [BlocxListEventScrollToItem]:
+  /// Handles [BlocxCollectionEventScrollToItem]:
   /// - Resolves the index of [event.item] in the current list.
   /// - Optionally highlights it.
   /// - Emits [ListStateScrollToItem] so the UI can perform the scroll.
-  FutureOr<void> scrollToItem(BlocxListEventScrollToItem<T> event, Emitter<BlocxListState<T>> emit) {
+  FutureOr<void> scrollToItem(
+    BlocxCollectionEventScrollToItem<T> event,
+    Emitter<BlocxCollectionState<T>> emit,
+  ) {
     final index = list.indexById(event.item);
     if (event.highlightItem) _toBeHighlightedItems.add(event.item);
-    emit(BlocxListStateScrollToItem(item: event.item, index: index));
+    emit(BlocxCollectionStateScrollToItem(item: event.item, index: index));
     emitState(emit);
   }
 
-  /// Handles [BlocxListEventScrollToIdentifier]:
+  /// Handles [BlocxCollectionEventScrollToIdentifier]:
   /// - Finds the item whose [BlocxBaseEntity.identifier] matches [event.identifier].
   /// - If found, optionally highlights it and emits [ListStateScrollToItem].
   /// - If not found, no state is emitted (no-op).
   FutureOr<void> scrollToIdentifier(
-    BlocxListEventScrollToIdentifier<T> event,
-    Emitter<BlocxListState<T>> emit,
+    BlocxCollectionEventScrollToIdentifier<T> event,
+    Emitter<BlocxCollectionState<T>> emit,
   ) async {
     // If you have an extension like `indexByIdentifier`, use that.
     // Fallback to a simple search to avoid tight coupling.
@@ -86,17 +89,17 @@ mixin BlocxScrollableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBlo
     if (index < 0) return; // not found -> ignore (or emit a dedicated error state if you prefer)
     final item = list[index];
     if (event.highlightItem) _toBeHighlightedItems.add(item);
-    emit(BlocxListStateScrollToItem(item: item, index: index));
+    emit(BlocxCollectionStateScrollToItem(item: item, index: index));
     emitState(emit);
   }
 
   FutureOr<void> highlightScrolledToItems(
-    BlocxListEventHighlightScrolledToItems<T> event,
-    Emitter<BlocxListState<T>> emit,
+    BlocxCollectionEventHighlightScrolledToItems<T> event,
+    Emitter<BlocxCollectionState<T>> emit,
   ) {
     logger.i("BlocxListEventHighlightScrollToItems");
     for (T item in _toBeHighlightedItems) {
-      add(BlocxListEventHighlightItem(item: item));
+      add(BlocxCollectionEventHighlightItem(item: item));
     }
     _toBeHighlightedItems.clear();
   }

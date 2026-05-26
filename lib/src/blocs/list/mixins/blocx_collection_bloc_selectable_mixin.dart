@@ -4,24 +4,24 @@ import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/list_bloc.dart'
     show
-        BlocxListBloc,
-        BlocxListEventSelectMultipleItems,
-        BlocxListEventSelectItem,
-        BlocxListEventDeselectItem,
-        BlocxListEventDeselectMultipleItems,
-        BlocxListEventClearSelection,
-        BlocxListState,
+        BlocxCollectionBloc,
+        BlocxCollectionEventSelectMultipleItems,
+        BlocxCollectionEventSelectItem,
+        BlocxCollectionEventDeselectItem,
+        BlocxCollectionEventDeselectMultipleItems,
+        BlocxCollectionEventClearSelection,
+        BlocxCollectionState,
         SelectionChangedData,
-        BlocxListStateSelectionChanged;
+        BlocxCollectionStateSelectionChanged;
 
-/// Adds selection behavior to a [BlocxListBloc].
+/// Adds selection behavior to a [BlocxCollectionBloc].
 ///
 /// ### Features
 /// - Single / multi select support
 /// - Optional server sync
 /// - Rollback on failure
 /// - Hooks for UX / analytics
-mixin BlocxSelectableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBloc<T, P> {
+mixin BlocxCollectionBlocSelectableMixin<T extends BlocxBaseEntity, P> on BlocxCollectionBloc<T, P> {
   final Set<String> _selectedItemIds = {};
   final Set<String> _beingSelectedItemIds = {};
 
@@ -44,18 +44,21 @@ mixin BlocxSelectableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBlo
   // ===========================================================================
 
   void initSelectionMixin() {
-    on<BlocxListEventSelectItem<T>>(selectItem);
-    on<BlocxListEventDeselectItem<T>>(deselectItem);
-    on<BlocxListEventDeselectMultipleItems<T>>(deselectMultipleItems);
-    on<BlocxListEventSelectMultipleItems<T>>(selectMultipleItems);
-    on<BlocxListEventClearSelection<T>>(clearSelection);
+    on<BlocxCollectionEventSelectItem<T>>(selectItem);
+    on<BlocxCollectionEventDeselectItem<T>>(deselectItem);
+    on<BlocxCollectionEventDeselectMultipleItems<T>>(deselectMultipleItems);
+    on<BlocxCollectionEventSelectMultipleItems<T>>(selectMultipleItems);
+    on<BlocxCollectionEventClearSelection<T>>(clearSelection);
   }
 
   // ===========================================================================
   // Select
   // ===========================================================================
 
-  Future<void> selectItem(BlocxListEventSelectItem<T> event, Emitter<BlocxListState<T>> emit) async {
+  Future<void> selectItem(
+    BlocxCollectionEventSelectItem<T> event,
+    Emitter<BlocxCollectionState<T>> emit,
+  ) async {
     if (isSingleSelect) _selectedItemIds.clear();
 
     _selectedItemIds.add(event.item.identifier);
@@ -94,7 +97,10 @@ mixin BlocxSelectableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBlo
   // Deselect
   // ===========================================================================
 
-  Future<void> deselectItem(BlocxListEventDeselectItem<T> event, Emitter<BlocxListState<T>> emit) async {
+  Future<void> deselectItem(
+    BlocxCollectionEventDeselectItem<T> event,
+    Emitter<BlocxCollectionState<T>> emit,
+  ) async {
     _selectedItemIds.remove(event.item.identifier);
     emitState(emit);
 
@@ -169,9 +175,9 @@ mixin BlocxSelectableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBlo
   // Emit helpers
   // ===========================================================================
 
-  void emitSelectionChanged(Emitter<BlocxListState<T>> emit, T item, bool wasSelected) {
+  void emitSelectionChanged(Emitter<BlocxCollectionState<T>> emit, T item, bool wasSelected) {
     emit(
-      BlocxListStateSelectionChanged(
+      BlocxCollectionStateSelectionChanged(
         list: list,
         hasReachedEnd: hasReachedEnd,
         isLoadingNextPage: isLoadingNextPage,
@@ -213,8 +219,8 @@ mixin BlocxSelectableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBlo
   // ===========================================================================
 
   FutureOr<void> deselectMultipleItems(
-    BlocxListEventDeselectMultipleItems<T> event,
-    Emitter<BlocxListState<T>> emit,
+    BlocxCollectionEventDeselectMultipleItems<T> event,
+    Emitter<BlocxCollectionState<T>> emit,
   ) {
     for (final item in event.items) {
       _selectedItemIds.remove(item.identifier);
@@ -225,8 +231,8 @@ mixin BlocxSelectableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBlo
   }
 
   FutureOr<void> selectMultipleItems(
-    BlocxListEventSelectMultipleItems<T> event,
-    Emitter<BlocxListState<T>> emit,
+    BlocxCollectionEventSelectMultipleItems<T> event,
+    Emitter<BlocxCollectionState<T>> emit,
   ) {
     _selectedItemIds
       ..clear()
@@ -236,7 +242,10 @@ mixin BlocxSelectableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBlo
     emitState(emit);
   }
 
-  FutureOr<void> clearSelection(BlocxListEventClearSelection<T> event, Emitter<BlocxListState<T>> emit) {
+  FutureOr<void> clearSelection(
+    BlocxCollectionEventClearSelection<T> event,
+    Emitter<BlocxCollectionState<T>> emit,
+  ) {
     _selectedItemIds.clear();
     emitState(emit);
   }

@@ -3,14 +3,18 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/list_bloc.dart'
-    show BlocxListBloc, BlocxListEventClearHighlightedItem, BlocxListEventHighlightItem, BlocxListState;
+    show
+        BlocxCollectionBloc,
+        BlocxCollectionEventClearHighlightedItem,
+        BlocxCollectionEventHighlightItem,
+        BlocxCollectionState;
 
-/// Adds highlight behavior to a [BlocxListBloc].
+/// Adds highlight behavior to a [BlocxCollectionBloc].
 ///
 /// ### Events wired
-/// - [BlocxListEventHighlightItem] → sets `isHighlighted = true` for the item
-/// - [BlocxListEventClearHighlightedItem] → clears highlight (usually after a delay)
-mixin BlocxHighlightableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxListBloc<T, P> {
+/// - [BlocxCollectionEventHighlightItem] → sets `isHighlighted = true` for the item
+/// - [BlocxCollectionEventClearHighlightedItem] → clears highlight (usually after a delay)
+mixin BlocxCollectionBlocHighlightableMixin<T extends BlocxBaseEntity, P> on BlocxCollectionBloc<T, P> {
   final Set<String> _highlightedItemIds = {};
 
   /// Whether the highlight should auto-clear after [highlightDuration].
@@ -24,32 +28,35 @@ mixin BlocxHighlightableListBlocMixin<T extends BlocxBaseEntity, P> on BlocxList
   /// Register highlight event handlers.
 
   void initHighlightMixin() {
-    on<BlocxListEventHighlightItem<T>>(highlightItem);
-    on<BlocxListEventClearHighlightedItem<T>>(clearHighlightedItem);
+    on<BlocxCollectionEventHighlightItem<T>>(highlightItem);
+    on<BlocxCollectionEventClearHighlightedItem<T>>(clearHighlightedItem);
   }
 
-  /// Handles [BlocxListEventHighlightItem]:
+  /// Handles [BlocxCollectionEventHighlightItem]:
   /// - Sets `isHighlighted = true` for the given item (immutable update).
   /// - Emits the new state.
   /// - If [autoClearHighlight] is `true`, schedules a clear via
-  ///   [BlocxListEventClearHighlightedItem].
+  ///   [BlocxCollectionEventClearHighlightedItem].
 
-  FutureOr<void> highlightItem(BlocxListEventHighlightItem<T> event, Emitter<BlocxListState<T>> emit) async {
+  FutureOr<void> highlightItem(
+    BlocxCollectionEventHighlightItem<T> event,
+    Emitter<BlocxCollectionState<T>> emit,
+  ) async {
     _highlightedItemIds.add(event.item.identifier);
     emitState(emit);
     if (autoClearHighlight) {
-      add(BlocxListEventClearHighlightedItem<T>(item: event.item));
+      add(BlocxCollectionEventClearHighlightedItem<T>(item: event.item));
     }
   }
 
-  /// Handles [BlocxListEventClearHighlightedItem]:
+  /// Handles [BlocxCollectionEventClearHighlightedItem]:
   /// - Waits [highlightDuration].
   /// - Sets `isHighlighted = false` for the given item (immutable update).
   /// - Emits the new state.
 
   Future<void> clearHighlightedItem(
-    BlocxListEventClearHighlightedItem<T> event,
-    Emitter<BlocxListState<T>> emit,
+    BlocxCollectionEventClearHighlightedItem<T> event,
+    Emitter<BlocxCollectionState<T>> emit,
   ) async {
     await Future.delayed(highlightDuration);
     _highlightedItemIds.remove(event.item.identifier);

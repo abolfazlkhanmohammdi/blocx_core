@@ -1,7 +1,7 @@
 // lib/src/blocs/list/bloc/list_state.dart
-part of 'blocx_list_bloc.dart';
+part of 'blocx_collection_bloc.dart';
 
-abstract class BlocxListState<T extends BlocxBaseEntity> extends BaseState {
+abstract class BlocxCollectionState<T extends BlocxBaseEntity> extends BaseState {
   final List<T> list;
   final bool hasReachedEnd;
   final bool isLoadingNextPage;
@@ -14,7 +14,7 @@ abstract class BlocxListState<T extends BlocxBaseEntity> extends BaseState {
   final Set<String> beingRemovedItemIds;
   final Set<String> expandedItemIds;
 
-  const BlocxListState({
+  const BlocxCollectionState({
     required this.list,
     required this.hasReachedEnd,
     required this.isLoadingNextPage,
@@ -33,8 +33,8 @@ abstract class BlocxListState<T extends BlocxBaseEntity> extends BaseState {
   bool get isEmpty => list.isEmpty;
 }
 
-class BlocxListStateLoading<T extends BlocxBaseEntity> extends BlocxListState<T> {
-  const BlocxListStateLoading({
+class BlocxCollectionStateLoading<T extends BlocxBaseEntity> extends BlocxCollectionState<T> {
+  const BlocxCollectionStateLoading({
     super.list = const [],
     super.hasReachedEnd = false,
     super.isLoadingNextPage = false,
@@ -47,8 +47,8 @@ class BlocxListStateLoading<T extends BlocxBaseEntity> extends BlocxListState<T>
   }) : super(shouldRebuild: true, shouldListen: false);
 }
 
-class BlocxListStateLoaded<T extends BlocxBaseEntity> extends BlocxListState<T> {
-  const BlocxListStateLoaded({
+class BlocxCollectionStateLoaded<T extends BlocxBaseEntity> extends BlocxCollectionState<T> {
+  const BlocxCollectionStateLoaded({
     required super.list,
     required super.hasReachedEnd,
     required super.isLoadingNextPage,
@@ -62,7 +62,7 @@ class BlocxListStateLoaded<T extends BlocxBaseEntity> extends BlocxListState<T> 
     super.additionalInfo,
   }) : super(shouldRebuild: true, shouldListen: false);
 
-  BlocxListStateLoaded<T> copyWith({
+  BlocxCollectionStateLoaded<T> copyWith({
     List<T>? list,
     bool? hasReachedEnd,
     bool? isLoadingNextPage,
@@ -73,7 +73,7 @@ class BlocxListStateLoaded<T extends BlocxBaseEntity> extends BlocxListState<T> 
     Set<String>? highlightedItemIds,
     Set<String>? beingRemovedItemIds,
   }) {
-    return BlocxListStateLoaded<T>(
+    return BlocxCollectionStateLoaded<T>(
       list: list ?? this.list,
       hasReachedEnd: hasReachedEnd ?? this.hasReachedEnd,
       isLoadingNextPage: isLoadingNextPage ?? this.isLoadingNextPage,
@@ -88,10 +88,10 @@ class BlocxListStateLoaded<T extends BlocxBaseEntity> extends BlocxListState<T> 
   }
 }
 
-class BlocxListStateError<T extends BlocxBaseEntity> extends BlocxListState<T> {
+class BlocxCollectionStateError<T extends BlocxBaseEntity> extends BlocxCollectionState<T> {
   final String message;
 
-  const BlocxListStateError({
+  const BlocxCollectionStateError({
     required this.message,
     super.list = const [],
     super.hasReachedEnd = false,
@@ -105,11 +105,11 @@ class BlocxListStateError<T extends BlocxBaseEntity> extends BlocxListState<T> {
   }) : super(shouldRebuild: true, shouldListen: false);
 }
 
-class BlocxListStateScrollToItem<T extends BlocxBaseEntity> extends BlocxListState<T> {
+class BlocxCollectionStateScrollToItem<T extends BlocxBaseEntity> extends BlocxCollectionState<T> {
   final T item;
   final int index;
 
-  const BlocxListStateScrollToItem({required this.item, required this.index})
+  const BlocxCollectionStateScrollToItem({required this.item, required this.index})
     : super(
         list: const [],
         hasReachedEnd: false,
@@ -121,9 +121,9 @@ class BlocxListStateScrollToItem<T extends BlocxBaseEntity> extends BlocxListSta
       );
 }
 
-class BlocxListStateSelectionChanged<T extends BlocxBaseEntity> extends BlocxListState<T> {
+class BlocxCollectionStateSelectionChanged<T extends BlocxBaseEntity> extends BlocxCollectionState<T> {
   final SelectionChangedData<T> selectionData;
-  const BlocxListStateSelectionChanged({
+  const BlocxCollectionStateSelectionChanged({
     required this.selectionData,
     required super.list,
     required super.hasReachedEnd,

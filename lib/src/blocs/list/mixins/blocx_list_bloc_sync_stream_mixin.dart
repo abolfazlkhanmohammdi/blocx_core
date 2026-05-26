@@ -3,29 +3,29 @@ import 'dart:async';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/list_bloc.dart'
     show
-        BlocxListEvent,
-        BlocxListState,
-        BlocxListEventAddItem,
-        BlocxListEventUpdateItem,
-        BlocxListEventRemoveItemById;
+        BlocxCollectionEvent,
+        BlocxCollectionState,
+        BlocxCollectionEventAddItem,
+        BlocxCollectionEventUpdateItem,
+        BlocxCollectionEventRemoveItemById;
 
 mixin BlocxListBlocSyncStreamMixin<T extends BlocxBaseEntity, P>
-    on BaseBloc<BlocxListEvent<T>, BlocxListState<T>> {
+    on BaseBloc<BlocxCollectionEvent<T>, BlocxCollectionState<T>> {
   StreamSubscription<T>? _createSub;
   StreamSubscription<T>? _updateSub;
   StreamSubscription<String>? _deleteSub;
   initStreams() {
     _createSub = itemCreationStream?.listen((T value) {
       int index = getInsertIndexForItem(value);
-      add(BlocxListEventAddItem(item: value, index: index));
+      add(BlocxCollectionEventAddItem(item: value, index: index));
     });
 
     _updateSub = itemUpdateStream?.listen((T value) {
-      add(BlocxListEventUpdateItem(item: value));
+      add(BlocxCollectionEventUpdateItem(item: value));
     });
 
     _deleteSub = itemDeleteStream?.listen((String id) {
-      add(BlocxListEventRemoveItemById(identifier: id));
+      add(BlocxCollectionEventRemoveItemById(identifier: id));
     });
   }
 
