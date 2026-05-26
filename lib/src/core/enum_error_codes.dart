@@ -1,1 +1,7 @@
-enum BlocXErrorCode { checkingUniqueValue, unknown, valueNotAvailable, errorGettingInitialFormData }
+enum BlocXErrorCode {
+  checkingUniqueValue,
+  unknown,
+  valueNotAvailable,
+  errorGettingInitialFormData,
+  fieldCannotBeEmpty,
+}

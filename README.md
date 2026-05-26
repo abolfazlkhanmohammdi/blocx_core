@@ -20,7 +20,7 @@ Add this to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  blocx_core: ^0.5.6-beta
+  blocx_core: ^0.7.0
 ```
 
 Or add via the command line:
@@ -43,7 +43,7 @@ import 'package:blocx_core/blocx_core.dart';
 
 * **Mixins, not monoliths** – compose features: infinite paging, search, refresh, selection, highlight, expand, scroll-to.
 * **Use cases** – `BaseUseCase<T>` returning `UseCaseResult<T>` for uniform success/failure handling.
-* **Pagination primitives** – `Page<T>`, `PaginationUseCase<T, P>`, `SearchUseCase<T>`.
+* **Pagination primitives** – `Page<T>`, `PaginationUseCase<T>`, `SearchUseCase<T>`.
 * **List bloc family** – `ListBloc<T, P>` + mixins for data, infinite, searchable, selectable, refreshable, etc.
 * **Form bloc** – helpers for field state, validation, submit/reset.
 * **Screen manager hooks** – forward snackbars, errors, and navigation intents via `ScreenManagerCubit` (UI layer chooses how to render).
@@ -56,7 +56,7 @@ import 'package:blocx_core/blocx_core.dart';
 * **`UseCase` & `UseCaseResult`** – encapsulate async work; return success with data or failure with error/stack.\\
 * **`Page<T>`** – normalized page of items; used by list/pagination use cases.\\
 * **`ListBloc<T, P>`** – central list state + events; extend it and opt‑in via mixins:
-  `ListBlocDataMixin`, `InfiniteListBlocMixin`, `SearchableListBlocMixin`, `RefreshableListBlocMixin`, `SelectableListBlocMixin` (and helpers like highlight/expand).\\
+  `ListBlocDataMixin`, `BlocxInfiniteListBlocMixin`, `SearchableListBlocMixin`, `RefreshableListBlocMixin`, `SelectableListBlocMixin` (and helpers like highlight/expand).\\
 * **`FormBloc<F, P, E>`** – manage form fields, validation, submit/reset.\\
 * **`ScreenManagerCubit`** – emit “display snackbar/error / pop” intents from your BLoC to the presentation layer.
 
@@ -122,19 +122,19 @@ class SearchTodos extends SearchUseCase<Todo> {
 class TodosBloc extends ListBloc<Todo, void>
     with
         ListBlocDataMixin<Todo, void>,
-        InfiniteListBlocMixin<Todo, void>,
+        BlocxInfiniteListBlocMixin<Todo, void>,
         SearchableListBlocMixin<Todo, void>,
         RefreshableListBlocMixin<Todo, void>,
         SelectableListBlocMixin<Todo, void> {
   final TodoRepo repo;
 
-  TodosBloc({required this.repo, required ScreenManagerCubit screen}) : super(screen, InfiniteListBloc()) {
+  TodosBloc({required this.repo, required ScreenManagerCubit screen}) : super(screen, BlocxInfiniteListBloc()) {
     initDataMixin();      // holds the list, exposes helpers
     initInfiniteList();   // handles next-page logic & flags
     initSearchable();     // debounced search flow
     initRefresh();        // pull-to-refresh semantics
     initSelectable();     // multi/single selection helpers
-    add(ListEventLoadInitialPage<Todo, void>());
+    add(BlocxListEventLoadInitialPage<Todo, void>());
   }
 
   @override
@@ -165,10 +165,10 @@ class TodosBloc extends ListBloc<Todo, void>
 final screen = ScreenManagerCubit();
 final bloc = TodosBloc(repo: repo, screen: screen);
 
-bloc.add(ListEventLoadInitialPage<Todo, void>());
-bloc.add(ListEventLoadNextPage<Todo>());
-bloc.add(ListEventSearch<Todo>(searchText: 'urgent'));
-bloc.add(ListEventClearSearch<Todo>());
+bloc.add(BlocxListEventLoadInitialPage<Todo, void>());
+bloc.add(BlocxListEventLoadNextPage<Todo>());
+bloc.add(BlocxListEventSearch<Todo>(searchText: 'urgent'));
+bloc.add(BlocxListEventClearSearch<Todo>());
 ```
 
 ---

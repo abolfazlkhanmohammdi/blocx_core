@@ -12,9 +12,8 @@ class ScreenManagerCubitStateInitial extends ScreenManagerCubitState {
 
 @immutable
 class ScreenManagerCubitStateDisplayErrorPage extends ScreenManagerCubitState {
-  final Object error;
-  final StackTrace? stackTrace;
-  const ScreenManagerCubitStateDisplayErrorPage({required this.error, this.stackTrace})
+  final ReadableError error;
+  const ScreenManagerCubitStateDisplayErrorPage({required this.error})
     : super(shouldRebuild: true, shouldListen: false);
 }
 

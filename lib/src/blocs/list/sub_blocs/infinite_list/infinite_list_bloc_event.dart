@@ -1,24 +1,24 @@
 part of 'infinite_list_bloc.dart';
 
-class InfiniteListEvent extends BaseEvent {}
+class BlocxInfiniteListEvent extends BaseEvent {}
 
-class InfiniteListEventChangeLoadTopDataStatus extends InfiniteListEvent {
+class BlocxInfiniteListEventChangeLoadTopDataStatus extends BlocxInfiniteListEvent {
   final bool isLoading;
-  InfiniteListEventChangeLoadTopDataStatus(this.isLoading);
+  BlocxInfiniteListEventChangeLoadTopDataStatus(this.isLoading);
 }
 
-class InfiniteListEventChangeLoadBottomDataStatus extends InfiniteListEvent {
+class BlocxInfiniteListEventChangeLoadBottomDataStatus extends BlocxInfiniteListEvent {
   final bool isLoading;
   final bool hasReachedEnd;
-  InfiniteListEventChangeLoadBottomDataStatus(this.isLoading, this.hasReachedEnd);
+  BlocxInfiniteListEventChangeLoadBottomDataStatus(this.isLoading, this.hasReachedEnd);
 }
 
-class InfiniteListEventOnScroll extends InfiniteListEvent {
+class BlocxInfiniteListEventOnScroll extends BlocxInfiniteListEvent {
   final bool isScrollingUp;
   final bool isAtTop;
   final bool isAtBottom;
   final bool isIdle;
-  InfiniteListEventOnScroll({
+  BlocxInfiniteListEventOnScroll({
     required this.isIdle,
     required this.isAtBottom,
     required this.isAtTop,
@@ -26,23 +26,23 @@ class InfiniteListEventOnScroll extends InfiniteListEvent {
   });
 }
 
-class InfiniteListEventVerticalDragStarted extends InfiniteListEvent {
+class BlocxInfiniteListEventVerticalDragStarted extends BlocxInfiniteListEvent {
   final double globalY;
-  InfiniteListEventVerticalDragStarted({required this.globalY});
+  BlocxInfiniteListEventVerticalDragStarted({required this.globalY});
 }
 
-class InfiniteListEventVerticalDragUpdated extends InfiniteListEvent {
+class BlocxInfiniteListEventVerticalDragUpdated extends BlocxInfiniteListEvent {
   final double? globalY;
-  InfiniteListEventVerticalDragUpdated({required this.globalY});
+  BlocxInfiniteListEventVerticalDragUpdated({required this.globalY});
 }
 
-class InfiniteListEventVerticalDragEnded extends InfiniteListEvent {
-  InfiniteListEventVerticalDragEnded();
+class BlocxInfiniteListEventVerticalDragEnded extends BlocxInfiniteListEvent {
+  BlocxInfiniteListEventVerticalDragEnded();
 }
 
-class InfiniteListEventCloseRefresh extends InfiniteListEvent {}
+class BlocxInfiniteListEventCloseRefresh extends BlocxInfiniteListEvent {}
 
-class InfiniteListEventSetReachedEnd extends InfiniteListEvent {
+class BlocxInfiniteListEventSetReachedEnd extends BlocxInfiniteListEvent {
   final bool hasReachedEnd;
-  InfiniteListEventSetReachedEnd({required this.hasReachedEnd});
+  BlocxInfiniteListEventSetReachedEnd({required this.hasReachedEnd});
 }

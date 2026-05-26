@@ -1,6 +1,6 @@
 part of 'infinite_list_bloc.dart';
 
-class InfiniteListState extends BaseState {
+class BlocxInfiniteListState extends BaseState {
   final bool isLoadingMore;
   final bool isRefreshing;
   final bool isIdle;
@@ -9,7 +9,7 @@ class InfiniteListState extends BaseState {
   final bool isAtBottom;
   final bool hasReachedEnd;
   final double swipeRefreshHeight;
-  InfiniteListState({
+  BlocxInfiniteListState({
     required super.shouldRebuild,
     required super.shouldListen,
     required this.isLoadingMore,
@@ -23,8 +23,8 @@ class InfiniteListState extends BaseState {
   });
 }
 
-class InfiniteListStateInitial extends InfiniteListState {
-  InfiniteListStateInitial()
+class BlocxInfiniteListStateInitial extends BlocxInfiniteListState {
+  BlocxInfiniteListStateInitial()
     : super(
         shouldRebuild: false,
         shouldListen: false,
@@ -39,8 +39,8 @@ class InfiniteListStateInitial extends InfiniteListState {
       );
 }
 
-class InfiniteListStateLoaded extends InfiniteListState {
-  InfiniteListStateLoaded({
+class BlocxInfiniteListStateLoaded extends BlocxInfiniteListState {
+  BlocxInfiniteListStateLoaded({
     required super.isAtTop,
     required super.isIdle,
     required super.isLoadingMore,
@@ -52,8 +52,8 @@ class InfiniteListStateLoaded extends InfiniteListState {
   }) : super(shouldListen: false, shouldRebuild: true);
 }
 
-class InfiniteListStateRefresh extends InfiniteListState {
-  InfiniteListStateRefresh({
+class BlocxInfiniteListStateRefresh extends BlocxInfiniteListState {
+  BlocxInfiniteListStateRefresh({
     required super.isAtTop,
     required super.isIdle,
     required super.isLoadingMore,

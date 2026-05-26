@@ -4,12 +4,11 @@ import 'dart:math';
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:blocx_core/src/blocs/base/base_bloc.dart';
-import 'package:blocx_core/src/core/logger.dart';
 
 part './infinite_list_bloc_event.dart';
 part './infinite_list_bloc_state.dart';
 
-class InfiniteListBloc extends Bloc<InfiniteListEvent, InfiniteListState> {
+class BlocxInfiniteListBloc extends Bloc<BlocxInfiniteListEvent, BlocxInfiniteListState> {
   /// --- Tunables -------------------------------------------------------------
 
   /// Pixel distance required to trigger a refresh.
@@ -49,20 +48,20 @@ class InfiniteListBloc extends Bloc<InfiniteListEvent, InfiniteListState> {
   double get swipeRefreshHeight => _swipeRefreshHeight;
   bool get hasReachedEnd => _hasReachedEnd;
 
-  InfiniteListBloc({this.refreshThreshold = 64.0}) : super(InfiniteListStateInitial()) {
-    on<InfiniteListEventChangeLoadTopDataStatus>(_changeLoadTopDataStatus);
-    on<InfiniteListEventChangeLoadBottomDataStatus>(_changeLoadBottomDataStatus);
-    on<InfiniteListEventVerticalDragStarted>(_onDragStarted);
-    on<InfiniteListEventVerticalDragUpdated>(_onDragUpdated, transformer: restartable());
-    on<InfiniteListEventVerticalDragEnded>(_onDragEnded, transformer: restartable());
-    on<InfiniteListEventOnScroll>(_onScroll);
-    on<InfiniteListEventCloseRefresh>(_closeRefresh);
-    on<InfiniteListEventSetReachedEnd>(_setReachedEnd);
+  BlocxInfiniteListBloc({this.refreshThreshold = 64.0}) : super(BlocxInfiniteListStateInitial()) {
+    on<BlocxInfiniteListEventChangeLoadTopDataStatus>(_changeLoadTopDataStatus);
+    on<BlocxInfiniteListEventChangeLoadBottomDataStatus>(_changeLoadBottomDataStatus);
+    on<BlocxInfiniteListEventVerticalDragStarted>(_onDragStarted);
+    on<BlocxInfiniteListEventVerticalDragUpdated>(_onDragUpdated, transformer: restartable());
+    on<BlocxInfiniteListEventVerticalDragEnded>(_onDragEnded, transformer: restartable());
+    on<BlocxInfiniteListEventOnScroll>(_onScroll);
+    on<BlocxInfiniteListEventCloseRefresh>(_closeRefresh);
+    on<BlocxInfiniteListEventSetReachedEnd>(_setReachedEnd);
   }
 
-  void _emitLoaded(Emitter<InfiniteListState> emit) {
+  void _emitLoaded(Emitter<BlocxInfiniteListState> emit) {
     emit(
-      InfiniteListStateLoaded(
+      BlocxInfiniteListStateLoaded(
         isAtTop: _isAtTop,
         isScrollingUp: _isScrollingUp,
         isLoadingMore: _isLoadingBottomData,
@@ -80,23 +79,23 @@ class InfiniteListBloc extends Bloc<InfiniteListEvent, InfiniteListState> {
   // --------------------------------------------------------------------------
 
   void _changeLoadTopDataStatus(
-    InfiniteListEventChangeLoadTopDataStatus event,
-    Emitter<InfiniteListState> emit,
+    BlocxInfiniteListEventChangeLoadTopDataStatus event,
+    Emitter<BlocxInfiniteListState> emit,
   ) {
     _isLoadingTopData = event.isLoading;
     _emitLoaded(emit);
   }
 
   void _changeLoadBottomDataStatus(
-    InfiniteListEventChangeLoadBottomDataStatus event,
-    Emitter<InfiniteListState> emit,
+    BlocxInfiniteListEventChangeLoadBottomDataStatus event,
+    Emitter<BlocxInfiniteListState> emit,
   ) {
     _isLoadingBottomData = event.isLoading;
     _hasReachedEnd = event.hasReachedEnd;
     _emitLoaded(emit);
   }
 
-  void _onScroll(InfiniteListEventOnScroll event, Emitter<InfiniteListState> emit) {
+  void _onScroll(BlocxInfiniteListEventOnScroll event, Emitter<BlocxInfiniteListState> emit) {
     _isIdle = event.isIdle;
     if (!_isIdle) {
       _isAtTop = event.isAtTop;
@@ -110,12 +109,12 @@ class InfiniteListBloc extends Bloc<InfiniteListEvent, InfiniteListState> {
     _emitLoaded(emit);
   }
 
-  void _onDragStarted(InfiniteListEventVerticalDragStarted event, Emitter<InfiniteListState> emit) {
+  void _onDragStarted(BlocxInfiniteListEventVerticalDragStarted event, Emitter<BlocxInfiniteListState> emit) {
     _dragStartY = event.globalY;
     _lastDragUpdateAt = null;
   }
 
-  void _onDragUpdated(InfiniteListEventVerticalDragUpdated event, Emitter<InfiniteListState> emit) {
+  void _onDragUpdated(BlocxInfiniteListEventVerticalDragUpdated event, Emitter<BlocxInfiniteListState> emit) {
     // Lightweight throttle to avoid excessive rebuilds
     final now = DateTime.now();
     if (_lastDragUpdateAt != null && now.difference(_lastDragUpdateAt!) < _dragUpdateMinInterval) {
@@ -137,14 +136,14 @@ class InfiniteListBloc extends Bloc<InfiniteListEvent, InfiniteListState> {
     _emitLoaded(emit);
   }
 
-  void _onDragEnded(InfiniteListEventVerticalDragEnded event, Emitter<InfiniteListState> emit) {
+  void _onDragEnded(BlocxInfiniteListEventVerticalDragEnded event, Emitter<BlocxInfiniteListState> emit) {
     if (_isRefreshing) return;
 
     if (_swipeRefreshHeight >= refreshThreshold) {
       _isRefreshing = true;
 
       emit(
-        InfiniteListStateRefresh(
+        BlocxInfiniteListStateRefresh(
           isAtTop: _isAtTop,
           isScrollingUp: _isScrollingUp,
           isLoadingMore: _isLoadingBottomData,
@@ -174,10 +173,10 @@ class InfiniteListBloc extends Bloc<InfiniteListEvent, InfiniteListState> {
   }
 
   void hideRefreshWidget() {
-    add(InfiniteListEventCloseRefresh());
+    add(BlocxInfiniteListEventCloseRefresh());
   }
 
-  void _closeRefresh(InfiniteListEventCloseRefresh event, Emitter<InfiniteListState> emit) {
+  void _closeRefresh(BlocxInfiniteListEventCloseRefresh event, Emitter<BlocxInfiniteListState> emit) {
     _isRefreshing = false;
     _swipeRefreshHeight = 0;
     _isScrollingUp = false;
@@ -189,17 +188,20 @@ class InfiniteListBloc extends Bloc<InfiniteListEvent, InfiniteListState> {
   // --------------------------------------------------------------------------
 
   void setLoadingBottomStatus(bool status, [bool? hasReachedEnd]) {
-    add(InfiniteListEventChangeLoadBottomDataStatus(status, hasReachedEnd ?? _hasReachedEnd));
+    add(BlocxInfiniteListEventChangeLoadBottomDataStatus(status, hasReachedEnd ?? _hasReachedEnd));
   }
 
   void setLoadingTopStatus(bool status) {
-    add(InfiniteListEventChangeLoadTopDataStatus(status));
+    add(BlocxInfiniteListEventChangeLoadTopDataStatus(status));
   }
 
-  FutureOr<void> _setReachedEnd(InfiniteListEventSetReachedEnd event, Emitter<InfiniteListState> emit) {
+  FutureOr<void> _setReachedEnd(
+    BlocxInfiniteListEventSetReachedEnd event,
+    Emitter<BlocxInfiniteListState> emit,
+  ) {
     _hasReachedEnd = event.hasReachedEnd;
     emit(
-      InfiniteListStateLoaded(
+      BlocxInfiniteListStateLoaded(
         isAtTop: isAtTop,
         isIdle: isIdle,
         isLoadingMore: false,
