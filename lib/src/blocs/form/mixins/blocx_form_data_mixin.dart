@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/form_bloc.dart';
-import 'package:blocx_core/src/core/models/blocx_base_form_entity.dart';
 import 'package:meta/meta.dart';
 
 /// Shorthand for the [BlocxUseCaseTask] type used by [BlocxFormDataMixin.submitUseCaseTask].

@@ -52,7 +52,7 @@ Rather than shipping monolithic blocs that bundle every feature together, `blocx
 - [Error & Screen Management](#error--screen-management)
 - [Quickstart: Paged & Searchable List](#quickstart-paged--searchable-list)
 - [Quickstart: Form with Validation](#quickstart-form-with-validation)
-- [Migrating from 0.6.x](#migrating-from-06x)
+- [Migrating from 0.7.x](#migrating-from-07x)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -64,7 +64,7 @@ Add `blocx_core` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  blocx_core: ^0.7.0
+  blocx_core: ^0.8.0
 ```
 
 Or install via the command line:
@@ -185,11 +185,19 @@ Extend it and compose only the mixins you require. Each mixin is initialized via
 
 ### BlocxFormBloc
 
-`BlocxFormBloc<F, P, E>` manages a form backed by a `BaseFormEntity` subclass (`F`), an optional initialization payload (`P`), and an enum (`E`) that enumerates the form's fields.
+`BlocxFormBloc<F, P, E>` manages a form backed by a `BlocxBaseFormEntity` subclass (`F`), an optional initialization payload (`P`), and an enum (`E`) that enumerates the form's fields.
 
 ---
 
 ### ScreenManagerCubit
+
+`ScreenManagerCubit` is owned and managed internally by `BaseBloc` — you no longer need to construct or pass one explicitly. Simply call `super(initialState)` in your bloc's constructor:
+
+```dart
+class CounterBloc extends BaseBloc<CounterEvent, CounterState> {
+  CounterBloc() : super(CounterStateInitial());
+}
+```
 
 `ScreenManagerCubit` acts as a communication channel between your BLoC layer and the presentation layer. Instead of importing Flutter from within a BLoC, you emit typed intents that the UI listens to and renders.
 
@@ -202,8 +210,6 @@ Available intent methods (callable from any bloc):
 | `displayErrorWidgetByErrorCode(...)` | `ScreenManagerCubitStateDisplayErrorPageByErrorCode` |
 | `pop()` | `ScreenManagerCubitStatePop` |
 
-Every bloc constructed in this library accepts a `ScreenManagerCubit` instance and exposes the above helpers for you to call directly inside your event handlers.
-
 ---
 
 ## List BLoC
@@ -214,15 +220,15 @@ Mix these into your `BlocxListBloc` subclass. Call the corresponding `init*()` m
 
 | Mixin | `init` call | Capability |
 |---|---|---|
-| `BlocxInfiniteListBlocMixin` | `initInfiniteList()` | Next-page loading, reached-end flag, scroll-triggered pagination |
-| `BlocxSearchableListBlocMixin` | `initSearchable()` | Debounced search, search-next-page, search-refresh |
-| `BlocxRefreshableListBlocMixin` | `initRefresh()` | Pull-to-refresh semantics |
-| `BlocxSelectableListBlocMixin` | `initSelectable()` | Single and multi-item selection and deselection |
-| `BlocxHighlightableListBlocMixin` | _(auto)_ | Highlight and clear-highlight on individual items |
-| `BlocxExpandableListBlocMixin` | _(auto)_ | Expand, collapse, and toggle expansion on individual items |
-| `BlocxScrollableListBlocMixin` | _(auto)_ | Programmatic scroll-to-item and scroll-to-identifier |
-| `BlocxDeletableListBlocMixin` | _(auto)_ | Remove single items, remove by ID, remove multiple items |
-| `BlocxListBlocSyncStreamMixin` | _(auto)_ | Sync list state from an external stream |
+| `BlocxCollectionInfiniteMixin` | `initInfiniteList()` | Next-page loading, reached-end flag, scroll-triggered pagination |
+| `BlocxCollectionSearchableMixin` | `initSearchable()` | Debounced search, search-next-page, search-refresh |
+| `BlocxCollectionRefreshableMixin` | `initRefresh()` | Pull-to-refresh semantics |
+| `BlocxCollectionSelectableMixin` | `initSelectable()` | Single and multi-item selection and deselection |
+| `BlocxCollectionHighlightableMixin` | _(auto)_ | Highlight and clear-highlight on individual items |
+| `BlocxCollectionExpandableMixin` | _(auto)_ | Expand, collapse, and toggle expansion on individual items |
+| `BlocxCollectionScrollableMixin` | _(auto)_ | Programmatic scroll-to-item and scroll-to-identifier |
+| `BlocxCollectionDeletableMixin` | _(auto)_ | Remove single items, remove by ID, remove multiple items |
+| `BlocxCollectionSyncStreamMixin` | _(auto)_ | Sync list state from an external stream |
 
 ---
 
@@ -276,12 +282,12 @@ Use the `ListStateExtensions` extension on `BlocxListState<T>` for convenience a
 
 ### BaseFormEntity
 
-Your form's data model must extend `BaseFormEntity<F, E>`, where `F` is the form entity itself and `E` is an enum enumerating the form's fields. The entity must be immutable and implement `copyWith`.
+Your form's data model must extend `BlocxBaseFormEntity<F, E>`, where `F` is the form entity itself and `E` is an enum enumerating the form's fields. The entity must be immutable and implement `copyWith`.
 
 ```dart
 enum ProfileField { name, email, phone }
 
-class ProfileForm extends BaseFormEntity<ProfileForm, ProfileField> {
+class ProfileForm extends BlocxBaseFormEntity<ProfileForm, ProfileField> {
   final String name;
   final String email;
   final String phone;
@@ -365,15 +371,77 @@ Validators extend `BlocxFieldValidator<T>` and are composed per field inside a `
 |---|---|
 | `BlocxFormValidationMixin` | Per-field and whole-form validation |
 | `BlocxFormErrorsMixin` | Programmatic error setting and clearing |
-| `BlocxInfoFetcherFormMixin` | Fetch remote data required before the form is ready |
-| `BlocxSteppedFormMixin` | Multi-step form navigation (next, previous, go-to) |
+| `BlocxFormInfoFetcherMixin` | Fetch remote data required before the form is ready |
+| `BlocxFormSteppedMixin` | Multi-step form navigation (next, previous, go-to) |
 | `BlocxUniqueFieldValidatorMixin` | Async server-side uniqueness validation per field |
+
+---
+
+## Use Case Tasks
+
+`BlocxUseCaseTask` and `BlocxPaginatedUseCaseTask` pair a use case with a lazily evaluated input builder, so input is always constructed from the latest runtime state at execution time rather than at registration time.
+
+### BlocxUseCaseTask
+
+```dart
+BlocxUseCaseTask(
+  useCase: getUserUseCase,
+  inputBuilder: () => GetUserInput(id: currentUserId),
+);
+```
+
+### BlocxPaginatedUseCaseTask
+
+Use this as the standard task type for `BlocxCollectionBloc.paginationTask`. The `inputBuilder` receives the current `limit` (page size) and `offset` (number of already-loaded items) at execution time:
+
+```dart
+@override
+BlocxPaginatedUseCaseTask get paginationTask => BlocxPaginatedUseCaseTask(
+  useCase: _getOrdersUseCase,
+  inputBuilder: ({required limit, required offset}) =>
+      BlocxPaginationInput(limit: limit, offset: offset),
+);
+```
+
+To include extra fields from bloc state:
+
+```dart
+@override
+BlocxPaginatedUseCaseTask get paginationTask => BlocxPaginatedUseCaseTask(
+  useCase: _getOrdersUseCase,
+  inputBuilder: ({required limit, required offset}) => GetOrdersInput(
+    limit: limit,
+    offset: offset,
+    userId: payload!.id,
+    status: currentFilter,
+  ),
+);
+```
+
+If initial load, next-page, and refresh each hit different endpoints, override `BlocxCollectionBloc.loadInitialPageTask` individually instead.
 
 ---
 
 ## Error & Screen Management
 
-Any bloc that receives a `ScreenManagerCubit` can emit UI intents without importing Flutter. The presentation layer listens to the cubit's stream and handles each state:
+Any bloc can emit UI intents without importing Flutter. Error handling is built into `BaseBloc` — call `handleError` from event handlers to log and surface errors via the configured `errorDisplayPolicy` (snackbar by default):
+
+```dart
+} catch (e, st) {
+  handleError(e, emit, stacktrace: st);
+}
+```
+
+To display a full-page error instead, override `errorDisplayPolicy` in your bloc:
+
+```dart
+@override
+ErrorDisplayPolicy get errorDisplayPolicy => ErrorDisplayPolicy.page;
+```
+
+Register a `BlocxErrorTranslator` once at app startup to map raw exceptions to human-readable `ReadableError` instances — blocs pick it up automatically.
+
+The presentation layer listens to `ScreenManagerCubit` and handles each intent:
 
 ```dart
 // Inside a BLoC event handler:
@@ -491,14 +559,13 @@ class SearchTodosUseCase extends SearchUseCase<Todo> {
 ```dart
 class TodosBloc extends BlocxListBloc<Todo, void>
     with
-        BlocxInfiniteListBlocMixin<Todo, void>,
-        BlocxSearchableListBlocMixin<Todo, void>,
-        BlocxRefreshableListBlocMixin<Todo, void>,
-        BlocxSelectableListBlocMixin<Todo, void> {
+        BlocxCollectionInfiniteMixin<Todo, void>,
+        BlocxCollectionSearchableMixin<Todo, void>,
+        BlocxCollectionRefreshableMixin<Todo, void>,
+        BlocxCollectionSelectableMixin<Todo, void> {
   final TodoRepository repo;
 
-  TodosBloc({required this.repo, required ScreenManagerCubit screen})
-      : super(screen, BlocxInfiniteListBloc()) {
+  TodosBloc({required this.repo}) : super(BlocxInfiniteListBloc()) {
     initInfiniteList();
     initSearchable();
     initRefresh();
@@ -533,11 +600,12 @@ class TodosBloc extends BlocxListBloc<Todo, void>
 }
 ```
 
+> **Note:** `ScreenManagerCubit` is now owned internally by `BaseBloc`. The `screen` parameter has been removed from the constructor — just call `super(initialState)`.
+
 ### 5. Drive the BLoC
 
 ```dart
-final screen = ScreenManagerCubit();
-final bloc = TodosBloc(repo: myRepo, screen: screen);
+final bloc = TodosBloc(repo: myRepo);
 
 // Pagination
 bloc.add(BlocxListEventLoadNextPage<Todo>());
@@ -565,7 +633,7 @@ import 'package:blocx_core/form_bloc.dart';
 
 enum SignUpField { email, password, confirmPassword }
 
-class SignUpForm extends BaseFormEntity<SignUpForm, SignUpField> {
+class SignUpForm extends BlocxBaseFormEntity<SignUpForm, SignUpField> {
   final String email;
   final String password;
   final String confirmPassword;
@@ -623,8 +691,7 @@ class SignUpValidator extends BlocxFormValidator<SignUpForm, SignUpField> {
 ```dart
 class SignUpBloc extends BlocxFormBloc<SignUpForm, void, SignUpField>
     with BlocxFormValidationMixin<SignUpForm, void, SignUpField> {
-  SignUpBloc({required ScreenManagerCubit screen})
-      : super(screen, const SignUpForm(), SignUpValidator());
+  SignUpBloc() : super(const SignUpForm(), SignUpValidator());
 
   @override
   Future<void> onSubmit(SignUpForm form) async {
@@ -649,13 +716,52 @@ bloc.add(BlocxFormEventSubmit());
 
 ---
 
-## Migrating from 0.6.x
+## Migrating from 0.7.x
 
-Version 0.7.0 lowers the minimum Dart SDK requirement from `3.10` to `3.5`, broadening compatibility with existing projects. No public API changes are introduced. Upgrade your constraint:
+### Breaking: mixin renames
+
+All collection mixin names have had the redundant `_bloc` segment removed for a cleaner, consistent naming scheme. Update your `with` clauses and any direct imports:
+
+| Before (0.7.x) | After (0.8.0) |
+|---|---|
+| `BlocxInfiniteListBlocMixin` | `BlocxCollectionInfiniteMixin` |
+| `BlocxSelectableListBlocMixin` | `BlocxCollectionSelectableMixin` |
+| `BlocxRefreshableListBlocMixin` | `BlocxCollectionRefreshableMixin` |
+| `BlocxSearchableListBlocMixin` | `BlocxCollectionSearchableMixin` |
+| `BlocxDeletableListBlocMixin` | `BlocxCollectionDeletableMixin` |
+| `BlocxExpandableListBlocMixin` | `BlocxCollectionExpandableMixin` |
+| `BlocxHighlightableListBlocMixin` | `BlocxCollectionHighlightableMixin` |
+| `BlocxScrollableListBlocMixin` | `BlocxCollectionScrollableMixin` |
+| `BlocxListBlocSyncStreamMixin` | `BlocxCollectionSyncStreamMixin` |
+
+Form mixins follow the same `blocx_form_*` prefix pattern:
+
+| Before (0.7.x) | After (0.8.0) |
+|---|---|
+| `BlocxInfoFetcherFormMixin` | `BlocxFormInfoFetcherMixin` |
+| `BlocxSteppedFormMixin` | `BlocxFormSteppedMixin` |
+
+### Breaking: model rename
+
+`BaseFormEntity` is now `BlocxBaseFormEntity`. Update all subclasses and type references.
+
+### Breaking: ScreenManagerCubit ownership
+
+`ScreenManagerCubit` is now owned internally by `BaseBloc`. Remove the `screen` parameter from your bloc constructors and call sites:
+
+```dart
+// Before
+MyBloc({required ScreenManagerCubit screen}) : super(screen, MyStateInitial());
+
+// After
+MyBloc() : super(MyStateInitial());
+```
+
+### pubspec constraint
 
 ```yaml
 dependencies:
-  blocx_core: ^0.7.0
+  blocx_core: ^0.8.0
 ```
 
 ---

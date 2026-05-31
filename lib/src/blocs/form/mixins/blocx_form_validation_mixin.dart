@@ -1,4 +1,3 @@
-import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/form_bloc.dart';
 import 'package:blocx_core/src/blocs/form/validation/blocx_form_validator.dart';
 

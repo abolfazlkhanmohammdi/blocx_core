@@ -4,7 +4,6 @@ import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/form_bloc.dart' show BlocxFormEventCheckUniqueValue, BlocxFormBloc, BlocxFormState;
 import 'package:blocx_core/src/core/localizations/loc_provider.dart';
 import 'package:blocx_core/src/core/models/blocx_base_form_entity.dart';
-import 'package:blocx_core/src/core/use_cases/blocx_use_case_task.dart';
 
 /// Mixin that adds **unique field validation support** to a [BlocxFormBloc].
 ///
