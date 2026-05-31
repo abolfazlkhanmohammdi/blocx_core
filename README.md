@@ -5,26 +5,125 @@
 <h1 align="center">blocx_core</h1>
 
 <p align="center">
-  Composable BLoC building blocks for lists and forms in pure Dart.<br/>
-  Framework-agnostic. Minimal boilerplate. Maximum control.
+  Build production-ready list and form BLoCs with pagination, search, refresh, validation, and selection built in.
 </p>
 
 <p align="center">
-  <a href="https://pub.dev/packages/blocx_core"><img src="https://img.shields.io/pub/v/blocx_core.svg" alt="pub version"/></a>
-  <a href="https://pub.dev/packages/blocx_core"><img src="https://img.shields.io/pub/points/blocx_core" alt="pub points"/></a>
-  <a href="https://pub.dev/packages/blocx_core"><img src="https://img.shields.io/badge/platform-dart%20%7C%20flutter-blue" alt="platform"/></a>
-  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-green" alt="license"/></a>
+  Pure Dart • Composable Mixins • flutter_bloc Compatible
 </p>
 
 ---
 
-## Overview
+# Why BlocX?
 
-`blocx_core` is a Dart-only library that provides composable, mixin-based primitives for building BLoC-pattern state management layers in Dart and Flutter applications.
+Most Flutter applications eventually build the same BLoCs over and over:
 
-Rather than shipping monolithic blocs that bundle every feature together, `blocx_core` lets you opt in to only the capabilities you need — infinite scrolling, search, pull-to-refresh, selection, expansion, highlight, and more — by mixing lightweight, focused mixins into your own domain blocs.
+- Infinite scrolling lists
+- Searchable lists
+- Pull-to-refresh
+- Item selection
+- Expandable rows
+- Form validation
+- Async uniqueness checks
+- Error handling
+
+BlocX extracts these patterns into reusable, composable building blocks so you can focus on business logic instead of infrastructure.
+
+---
+
+# Before vs After
+
+### Traditional flutter_bloc
+
+```dart
+class TodosBloc extends Bloc<TodosEvent, TodosState> {
+  // 200+ lines of infrastructure code
+}
+```
+
+### BlocX
+
+```dart
+class TodosBloc extends BlocxListBloc<Todo, void>
+    with
+        BlocxCollectionInfiniteMixin<Todo, void>,
+        BlocxCollectionSearchableMixin<Todo, void>,
+        BlocxCollectionRefreshableMixin<Todo, void>,
+        BlocxCollectionSelectableMixin<Todo, void> {}
+```
+
+The behavior is provided by the mixins. Your code stays focused on the domain.
+
+---
+
+# What You Get
+
+## Lists
+
+- Infinite scrolling
+- Debounced search
+- Search pagination
+- Pull-to-refresh
+- Selection and multi-selection
+- Highlighting
+- Expansion
+- Scroll-to-item
+- Stream synchronization
+
+## Forms
+
+- Validation
+- Async uniqueness checks
+- Multi-step forms
+- Field-level errors
+- Submission workflows
+
+## Architecture
+
+- Pure Dart
+- No Flutter dependency
+- flutter_bloc compatible
+- Use-case driven
+- Typed error handling
+- Composable feature mixins
 
 > **Framework-agnostic.** `blocx_core` has no Flutter dependency. Pair it with [`flutter_blocx`](https://pub.dev/packages/flutter_blocx) for ready-made UI widgets built on top of this core.
+
+---
+
+# Is BlocX Right For Me?
+
+Use BlocX if:
+
+- You already use flutter_bloc
+- You have many list screens
+- You repeatedly implement pagination and search
+- You want consistency across projects
+
+You may not need BlocX if:
+
+- Your application only contains a few simple screens
+- You prefer Riverpod-style state management
+- You want minimal abstractions
+
+---
+
+# Architecture Philosophy
+
+BlocX is a composable application framework built on top of the BLoC pattern that removes repetitive state-management infrastructure while keeping business logic explicit.
+
+Build only what your screen requires:
+
+- Pagination
+- Search
+- Refresh
+- Selection
+- Highlighting
+- Expansion
+- Forms
+- Validation
+
+Nothing more.
 
 ---
 
@@ -216,7 +315,7 @@ Available intent methods (callable from any bloc):
 
 ### Available List Mixins
 
-Mix these into your `BlocxListBloc` subclass. Call the corresponding `init*()` method in your constructor.
+Mix these into your `BlocxListBloc` subclass.
 
 | Mixin                               | Capability |
 |-------------------------------------|---|
