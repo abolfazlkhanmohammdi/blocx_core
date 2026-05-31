@@ -65,7 +65,8 @@ class BlocxUseCaseTask<UseCase extends BlocxBaseUseCase, Input> {
 ///
 /// If initial load, next-page, and refresh each hit different endpoints,
 /// override [BlocxCollectionBloc.loadInitialPageTask] individually instead.
-class BlocxPaginatedUseCaseTask<UseCase extends BlocxBaseUseCase, Input extends BlocxPaginationInput> {
+class BlocxPaginatedUseCaseTask<UseCase extends BlocxPaginatedUseCase<Input, dynamic>,
+    Input extends BlocxPaginationInput> {
   /// The paginated use case to execute.
   final UseCase useCase;
 

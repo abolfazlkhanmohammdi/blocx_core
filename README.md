@@ -33,7 +33,7 @@ Rather than shipping monolithic blocs that bundle every feature together, `blocx
 - [Installation](#installation)
 - [Architecture Overview](#architecture-overview)
 - [Core Concepts](#core-concepts)
-  - [BaseEntity](#baseentity)
+  - [BlocxBaseEntity](#BlocxBaseEntity)
   - [UseCase & UseCaseResult](#usecase--usecaseresult)
   - [Page\<T\>](#paget)
   - [BlocxListBloc\<T, P\>](#blocxlistbloc)
@@ -101,7 +101,7 @@ import 'package:blocx_core/form_bloc.dart';
 ┌───────────────────▼─────────────────────────────┐
 │               Use Cases                          │
 │  BlocxBaseUseCase → UseCaseResult<T>             │
-│  BlocxPaginationUseCase / SearchUseCase          │
+│  BlocxPaginatedUseCase / SearchUseCase          │
 └───────────────────┬─────────────────────────────┘
                     │ UI intents via
 ┌───────────────────▼─────────────────────────────┐
@@ -115,12 +115,12 @@ import 'package:blocx_core/form_bloc.dart';
 
 ## Core Concepts
 
-### BaseEntity
+### BlocxBaseEntity
 
-All domain objects used with list blocs must extend `BaseEntity`. It provides stable identity and equality semantics based on a unique `id`.
+All domain objects used with list blocs must extend `BlocxBaseEntity`. It provides stable identity and equality semantics based on a unique `id`.
 
 ```dart
-class Product extends BaseEntity {
+class Product extends BlocxBaseEntity {
   @override
   final String id;
 
@@ -131,7 +131,7 @@ class Product extends BaseEntity {
 }
 ```
 
-The `identifier` getter (also on `BaseEntity`) is used internally for scroll-to operations.
+The `identifier` getter (also on `BlocxBaseEntity`) is used internally for scroll-to operations.
 
 ---
 
@@ -156,7 +156,7 @@ class FetchProducts extends BlocxBaseUseCase<List<Product>> {
 }
 ```
 
-For paginated data, extend `BlocxPaginationUseCase<T>` (which adds `loadCount` and `offset` parameters) or `SearchUseCase<T>` (which additionally provides `searchText`).
+For paginated data, extend `BlocxPaginatedUseCase<T>` (which adds `loadCount` and `offset` parameters) or `SearchUseCase<T>` (which additionally provides `searchText`).
 
 ---
 
@@ -165,7 +165,7 @@ For paginated data, extend `BlocxPaginationUseCase<T>` (which adds `loadCount` a
 `Page<T>` is the normalized container for a page of items returned by pagination use cases. It carries the list of items and signals whether the end of the data source has been reached.
 
 ```dart
-// successResult() is a helper on BlocxPaginationUseCase that
+// successResult() is a helper on BlocxPaginatedUseCase that
 // wraps a List<T> into a Page<T> automatically.
 return successResult(items);
 
@@ -218,17 +218,17 @@ Available intent methods (callable from any bloc):
 
 Mix these into your `BlocxListBloc` subclass. Call the corresponding `init*()` method in your constructor.
 
-| Mixin | `init` call | Capability |
-|---|---|---|
-| `BlocxCollectionInfiniteMixin` | `initInfiniteList()` | Next-page loading, reached-end flag, scroll-triggered pagination |
-| `BlocxCollectionSearchableMixin` | `initSearchable()` | Debounced search, search-next-page, search-refresh |
-| `BlocxCollectionRefreshableMixin` | `initRefresh()` | Pull-to-refresh semantics |
-| `BlocxCollectionSelectableMixin` | `initSelectable()` | Single and multi-item selection and deselection |
-| `BlocxCollectionHighlightableMixin` | _(auto)_ | Highlight and clear-highlight on individual items |
-| `BlocxCollectionExpandableMixin` | _(auto)_ | Expand, collapse, and toggle expansion on individual items |
-| `BlocxCollectionScrollableMixin` | _(auto)_ | Programmatic scroll-to-item and scroll-to-identifier |
-| `BlocxCollectionDeletableMixin` | _(auto)_ | Remove single items, remove by ID, remove multiple items |
-| `BlocxCollectionSyncStreamMixin` | _(auto)_ | Sync list state from an external stream |
+| Mixin                               | Capability |
+|-------------------------------------|---|
+| `BlocxCollectionInfiniteMixin`      | Next-page loading, reached-end flag, scroll-triggered pagination |
+| `BlocxCollectionSearchableMixin`    | Debounced search, search-next-page, search-refresh |
+| `BlocxCollectionRefreshableMixin`   | Pull-to-refresh semantics |
+| `BlocxCollectionSelectableMixin`    | Single and multi-item selection and deselection |
+| `BlocxCollectionHighlightableMixin` | Highlight and clear-highlight on individual items |
+| `BlocxCollectionExpandableMixin`    | Expand, collapse, and toggle expansion on individual items |
+| `BlocxCollectionScrollableMixin`    | Programmatic scroll-to-item and scroll-to-identifier |
+| `BlocxCollectionDeletableMixin`     | Remove single items, remove by ID, remove multiple items |
+| `BlocxCollectionSyncStreamMixin`    | Sync list state from an external stream |
 
 ---
 
@@ -486,7 +486,7 @@ The following example wires up a fully paginated, searchable, refreshable, and s
 ```dart
 import 'package:blocx_core/blocx_core.dart';
 
-class Todo extends BaseEntity {
+class Todo extends BlocxBaseEntity {
   @override
   final String id;
   final String title;
@@ -508,7 +508,7 @@ abstract class TodoRepository {
 ### 3. Implement Use Cases
 
 ```dart
-class FetchTodosUseCase extends BlocxPaginationUseCase<Todo> {
+class FetchTodosUseCase extends BlocxPaginatedUseCase<Todo> {
   final TodoRepository repo;
 
   FetchTodosUseCase({
@@ -574,15 +574,15 @@ class TodosBloc extends BlocxListBloc<Todo, void>
   }
 
   @override
-  BlocxPaginationUseCase<Todo>? get loadInitialPageUseCase =>
+  BlocxPaginatedUseCase<Todo>? get loadInitialPageUseCase =>
       FetchTodosUseCase(repo: repo, loadCount: 20, offset: 0);
 
   @override
-  BlocxPaginationUseCase<Todo>? get loadNextPageUseCase =>
+  BlocxPaginatedUseCase<Todo>? get loadNextPageUseCase =>
       FetchTodosUseCase(repo: repo, loadCount: 20, offset: list.length);
 
   @override
-  BlocxPaginationUseCase<Todo>? get refreshPageUseCase =>
+  BlocxPaginatedUseCase<Todo>? get refreshPageUseCase =>
       FetchTodosUseCase(repo: repo, loadCount: list.length, offset: 0);
 
   @override

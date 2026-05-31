@@ -1,9 +1,19 @@
 # Changelog
 
-All notable changes to `blocx_core` will be documented in this file.
+---
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [0.8.1] - 2026-05-31
+
+### Changed
+
+- **README terminology alignment**
+  - Renamed documentation references from `BaseEntity` to `BlocxBaseEntity`.
+  - Renamed documentation references from `BlocxPaginationUseCase` to `BlocxPaginatedUseCase`.
+  - Updated examples and code snippets to use the current API naming.
+  - Simplified the collection mixins capability table and removed outdated `init*()` references.
+
+- **`BlocxPaginatedUseCaseTask` type constraints**
+  - Tightened generic bounds to require a `BlocxPaginatedUseCase<Input, dynamic>` instead of a generic `BlocxBaseUseCase`, improving compile-time type safety and ensuring task/use-case compatibility.
 
 ---
 
@@ -11,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **`BlocxPaginatedUseCaseTask`** — new task class that pairs a paginated `BlocxBaseUseCase` with a `PaginationInputBuilder`, receiving the current `limit` and `offset` at execution time. This is the standard task type for `BlocxCollectionBloc.paginationTask` and supports per-operation overrides via `loadInitialPageTask`.
+- **`BlocxPaginatedUseCaseTask`** — new task class that pairs a paginated `BlocxPaginatedUseCase` with a `PaginationInputBuilder`, receiving the current `limit` and `offset` at execution time. This is the standard task type for `BlocxCollectionBloc.paginationTask` and supports per-operation overrides via `loadInitialPageTask`.
 - **`BaseBloc` documentation** — comprehensive dartdoc covering:
   - Internal `ScreenManagerCubit` ownership (consumers no longer need to construct or pass one).
   - Error handling via `handleError` and `errorDisplayPolicy` (snackbar by default, overridable to full-page).
