@@ -2,7 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/list_bloc.dart'
     show
-        BlocxCollectionBlocSearchableMixin,
+        BlocxCollectionSearchableMixin,
         BlocxCollectionEventSearchNextPage,
         BlocxCollectionBloc,
         BlocxCollectionEventLoadNextPage,
@@ -14,14 +14,20 @@ import 'package:blocx_core/src/blocs/list/use_cases/blocx_pagination_use_case.da
 /// Adds infinite pagination (next-page loading) to a [BlocxCollectionBloc].
 ///
 /// Uses [BlocxUseCaseTask] + [BlocxPaginationInput] for explicit pagination control.
-mixin BlocxCollectionBlocInfiniteMixin<T extends BlocxBaseEntity, P> on BlocxCollectionBloc<T, P> {
+mixin BlocxCollectionInfiniteMixin<T extends BlocxBaseEntity, P> on BlocxCollectionBloc<T, P> {
   /// Task responsible for loading the next page.
-  BlocxUseCaseTask<BlocxBaseUseCase, BlocxPaginationInput>? get loadNextPageTask => null;
+  ///
+  /// Defaults to [paginationTask]. Override this only when next-page loading
+  /// requires a different use case or input shape from the shared pagination
+  /// task.
+  BlocxPaginatedUseCaseTask<BlocxPaginatedUseCase<BlocxPaginationInput, T>, BlocxPaginationInput>?
+      get loadNextPageTask => paginationTask;
 
   /// Entry point for next-page loading.
-  Future<void> loadNextPage(BlocxCollectionEventLoadNextPage<T> event, Emitter<BlocxCollectionState<T>> emit) async {
+  Future<void> loadNextPage(
+      BlocxCollectionEventLoadNextPage<T> event, Emitter<BlocxCollectionState<T>> emit) async {
     // Delegate to search pagination if in search mode
-    if (isSearchable && (this as BlocxCollectionBlocSearchableMixin<T, P>).searchText.isNotEmpty) {
+    if (isSearchable && (this as BlocxCollectionSearchableMixin<T, P>).searchText.isNotEmpty) {
       add(BlocxCollectionEventSearchNextPage());
       return;
     }
@@ -34,15 +40,16 @@ mixin BlocxCollectionBlocInfiniteMixin<T extends BlocxBaseEntity, P> on BlocxCol
       return _fetchNextPage(event, emit);
     }
 
-    throw UnimplementedError("Provide `loadNextPageTask` or override `loadNextPage`.");
+    throw UnimplementedError("Provide `paginationTask` (or `loadNextPageTask`) or override `loadNextPage`.");
   }
 
   /// Executes next-page request using task-based API.
-  Future<void> _fetchNextPage(BlocxCollectionEventLoadNextPage<T> event, Emitter<BlocxCollectionState<T>> emit) async {
+  Future<void> _fetchNextPage(
+      BlocxCollectionEventLoadNextPage<T> event, Emitter<BlocxCollectionState<T>> emit) async {
     try {
       final task = loadNextPageTask!;
 
-      final result = await task.useCase.execute(task.inputBuilder());
+      final result = await task.useCase.execute(task.inputBuilder(list.length, limit));
 
       isLoadingNextPage = false;
 

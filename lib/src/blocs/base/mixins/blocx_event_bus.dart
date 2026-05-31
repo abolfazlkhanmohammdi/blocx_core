@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:uuid/uuid.dart';
 
 import 'blocx_app_event.dart' show BlocxAppEvent;
 

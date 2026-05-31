@@ -5,8 +5,7 @@ import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/form_bloc.dart'
     show BlocxFormEventFetchRequiredInfo, BlocxFormBloc, BlocxFormState;
-import 'package:blocx_core/src/core/models/base_form_entity.dart';
-import 'package:blocx_core/src/core/use_cases/blocx_use_case_task.dart';
+import 'package:blocx_core/src/core/models/blocx_base_form_entity.dart';
 
 /// Mixin responsible for fetching and caching auxiliary form data
 /// required during form initialization.
@@ -32,7 +31,7 @@ import 'package:blocx_core/src/core/use_cases/blocx_use_case_task.dart';
 /// - [F]: form entity type
 /// - [P]: payload type used by the form
 /// - [E]: enum key representing each required dataset
-mixin BlocxInitialInfoFetcherFormMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
+mixin BlocxFormInfoFetcherMixin<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
     on BlocxFormBloc<F, P, E> {
   /// Map of required initial data tasks indexed by enum key.
   ///

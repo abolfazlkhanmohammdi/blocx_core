@@ -50,7 +50,7 @@ import 'package:blocx_core/src/core/models/base_entity_extensions.dart';
 ///
 /// ## State emission strategy
 /// All updates go through [emitState], ensuring consistent state shape.
-mixin ListBlocDataMixin<T extends BlocxBaseEntity, P>
+mixin BlocxCollectionCoreMixin<T extends BlocxBaseEntity, P>
     on BaseBloc<BlocxCollectionEvent<T>, BlocxCollectionState<T>> {
   /// Optional external payload used for initial loading.
   P? payload;
@@ -90,10 +90,37 @@ mixin ListBlocDataMixin<T extends BlocxBaseEntity, P>
   /// IDs of expanded items.
   Set<String> get expandedItemIds;
 
+  /// Single task that drives initial load, next-page, and refresh.
+  ///
+  /// This is the recommended entry point for the common case where all three
+  /// pagination operations share the same use case and input shape.
+  ///
+  /// ## Usage
+  /// ```dart
+  /// @override
+  /// BlocxPaginatedUseCaseTask get paginationTask => BlocxPaginatedUseCaseTask(
+  ///   useCase: _myUseCase,
+  ///   inputBuilder: ({required limit, required offset}) =>
+  ///       MyInput(limit: limit, offset: offset),
+  /// );
+  /// ```
+  ///
+  /// When set, [loadInitialPageTask] automatically delegates to this getter,
+  /// and the infinite and refreshable mixins do the same for their respective
+  /// tasks — so a single override is all that is needed.
+  ///
+  /// If you need different behaviour per operation (e.g. a separate refresh
+  /// endpoint), override [loadInitialPageTask] directly instead.
+  BlocxPaginatedUseCaseTask<BlocxPaginatedUseCase<BlocxPaginationInput, T>, BlocxPaginationInput>?
+      get paginationTask => null;
+
   /// Task responsible for loading the initial page of data.
   ///
-  /// Must return a [BlocxUseCaseTask] configured with pagination input.
-  BlocxUseCaseTask<BlocxBaseUseCase, BlocxPaginationInput>? get loadInitialPageTask => null;
+  /// Defaults to [paginationTask]. Override this only when the initial load
+  /// requires a different use case or input shape from the shared pagination
+  /// task.
+  BlocxPaginatedUseCaseTask<BlocxPaginatedUseCase<BlocxPaginationInput, T>, BlocxPaginationInput>?
+      get loadInitialPageTask => paginationTask;
 
   /// Loads the initial page of data.
   ///
@@ -113,7 +140,8 @@ mixin ListBlocDataMixin<T extends BlocxBaseEntity, P>
       return _fetchInitialPage(event, emit);
     }
 
-    throw UnimplementedError("Provide `loadInitialPageTask` or override `loadInitialPage`.");
+    throw UnimplementedError(
+        "Provide `paginationTask` (or `loadInitialPageTask`) or override `loadInitialPage`.");
   }
 
   /// Internal handler that executes the initial load task.
@@ -128,7 +156,7 @@ mixin ListBlocDataMixin<T extends BlocxBaseEntity, P>
 
     final task = loadInitialPageTask!;
 
-    final result = await task.useCase.execute(task.inputBuilder());
+    final result = await task.useCase.execute(task.inputBuilder(0, limit));
 
     if (result.isFailure) {
       await handleError(result.error!, emit, stacktrace: result.stackTrace);
@@ -141,7 +169,7 @@ mixin ListBlocDataMixin<T extends BlocxBaseEntity, P>
   }
 
   /// Default number of items to load per page.
-  int get loadCount => 20;
+  int get limit => 20;
 
   /// Current offset based on loaded items.
   int get offset => list.length;
@@ -152,7 +180,7 @@ mixin ListBlocDataMixin<T extends BlocxBaseEntity, P>
   Future<List<T>> modifyListBeforeInsert(List<T> data) async => data;
 
   /// Registers all internal event handlers for this mixin.
-  void initDataMixin() {
+  void initCoreMixin() {
     on<BlocxCollectionEventLoadInitialPage<T, P>>(loadInitialPage);
     on<BlocxCollectionEventAddItem<T>>(addItem);
     on<BlocxCollectionEventUpdateItem<T>>(updateItem);

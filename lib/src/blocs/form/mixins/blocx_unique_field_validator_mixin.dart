@@ -3,8 +3,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/form_bloc.dart' show BlocxFormEventCheckUniqueValue, BlocxFormBloc, BlocxFormState;
 import 'package:blocx_core/src/core/localizations/loc_provider.dart';
-import 'package:blocx_core/src/core/models/base_form_entity.dart';
-import 'package:blocx_core/src/core/use_cases/blocx_use_case_task.dart';
+import 'package:blocx_core/src/core/models/blocx_base_form_entity.dart';
 
 /// Mixin that adds **unique field validation support** to a [BlocxFormBloc].
 ///
@@ -28,7 +27,7 @@ import 'package:blocx_core/src/core/use_cases/blocx_use_case_task.dart';
 /// - [F]: form entity type
 /// - [P]: payload type
 /// - [E]: enum field key type
-mixin BlocxUniqueFieldValidatorMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
+mixin BlocxUniqueFieldValidatorMixin<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
     on BlocxFormBloc<F, P, E> {
   /// Fields that require uniqueness validation.
   List<E> get uniqueFieldKeys;
@@ -40,7 +39,7 @@ mixin BlocxUniqueFieldValidatorMixin<F extends BaseFormEntity<F, E>, P, E extend
   /// Use case task responsible for checking uniqueness.
   ///
   /// Must return a boolean indicating whether the value is available.
-  BlocxUseCaseTask<BlocxBaseUseCase<dynamic, bool>, dynamic> useCaseIsUniqueValueAvailable(
+  BlocxUseCaseTask<BlocxBaseUseCase<dynamic, bool>, dynamic>? useCaseIsUniqueValueAvailable(
     E key,
     dynamic value,
   );
@@ -71,7 +70,7 @@ mixin BlocxUniqueFieldValidatorMixin<F extends BaseFormEntity<F, E>, P, E extend
 
     try {
       final task = useCaseIsUniqueValueAvailable(event.key, event.data);
-
+      if (task == null) return;
       final result = await task.useCase.execute(task.inputBuilder());
 
       if (_inFlightTokenByField[event.key] != token) return;

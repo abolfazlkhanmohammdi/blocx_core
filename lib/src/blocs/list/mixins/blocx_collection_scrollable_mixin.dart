@@ -41,7 +41,7 @@ import 'package:blocx_core/src/blocs/list/misc/event_transformers.dart';
 ///
 /// States:
 /// - [ListStateScrollToItem] is emitted with the resolved item and target index.
-mixin BlocxCollectionBlocScrollableMixin<T extends BlocxBaseEntity, P> on BlocxCollectionBloc<T, P> {
+mixin BlocxCollectionScrollableMixin<T extends BlocxBaseEntity, P> on BlocxCollectionBloc<T, P> {
   final List<T> _toBeHighlightedItems = [];
 
   /// Initializes the mixin by registering its event handlers.

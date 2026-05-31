@@ -2,9 +2,10 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/src/blocs/form/bloc/blocx_form_bloc.dart';
-import 'package:blocx_core/src/core/models/base_form_entity.dart';
+import 'package:blocx_core/src/core/models/blocx_base_form_entity.dart';
 
-mixin BlocxSteppedFormMixin<F extends BaseFormEntity<F, E>, P, E extends Enum> on BlocxFormBloc<F, P, E> {
+mixin BlocxFormSteppedMixin<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
+    on BlocxFormBloc<F, P, E> {
   int _stepIndex = 0;
   int _previousStepIndex = 0;
   int get maxStep;

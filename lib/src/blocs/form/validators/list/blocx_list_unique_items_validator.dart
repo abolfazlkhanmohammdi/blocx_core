@@ -1,8 +1,8 @@
 import 'package:blocx_core/form_bloc.dart' show BlocxFieldValidator;
 import 'package:blocx_core/src/core/localizations/loc_provider.dart' show loc;
-import 'package:blocx_core/src/core/models/base_form_entity.dart' show BaseFormEntity;
+import 'package:blocx_core/src/core/models/blocx_base_form_entity.dart' show BlocxBaseFormEntity;
 
-class BlocxListUniqueItemsValidator<F extends BaseFormEntity<F, E>, E extends Enum, T>
+class BlocxListUniqueItemsValidator<F extends BlocxBaseFormEntity<F, E>, E extends Enum, T>
     extends BlocxFieldValidator<F, E, List<T>> {
   const BlocxListUniqueItemsValidator();
 

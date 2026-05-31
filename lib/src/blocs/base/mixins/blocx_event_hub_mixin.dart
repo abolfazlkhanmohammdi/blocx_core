@@ -1,5 +1,4 @@
 import 'package:blocx_core/blocx_core.dart';
-import 'package:blocx_core/src/blocs/base/mixins/blocx_app_event.dart' show BlocxAppEvent;
 
 mixin BlocxEventHubMixin on BaseBloc {
   BlocxEventHub get eventHub;

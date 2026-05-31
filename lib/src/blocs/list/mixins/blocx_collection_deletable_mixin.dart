@@ -20,14 +20,14 @@ import 'package:blocx_core/list_bloc.dart'
 /// So:
 /// - single delete → Input = T
 /// - bulk delete → Input = List<T>
-mixin BlocxCollectionBlocDeletableMixin<T extends BlocxBaseEntity, P> on BlocxCollectionBloc<T, P> {
+mixin BlocxCollectionDeletableMixin<T extends BlocxBaseEntity, P> on BlocxCollectionBloc<T, P> {
   final Set<String> _beingRemovedItemIds = {};
 
   // ---------------------------------------------------------------------------
   // USE CASES (UPDATED SIGNATURES)
   // ---------------------------------------------------------------------------
 
-  BlocxBaseUseCase<T, bool>? deleteItemUseCase(T item) => null;
+  BlocxBaseUseCase<T, bool>? get deleteItemUseCase;
 
   BlocxBaseUseCase<List<T>, bool>? deleteMultipleItemsUseCase(List<T> items) => null;
 
@@ -48,7 +48,7 @@ mixin BlocxCollectionBlocDeletableMixin<T extends BlocxBaseEntity, P> on BlocxCo
     _beingRemovedItemIds.add(event.item.identifier);
     emitState(emit);
 
-    final uc = deleteItemUseCase(event.item);
+    final uc = deleteItemUseCase;
 
     if (uc == null) {
       throw UnimplementedError("Delete not configured for '$T'. Provide `deleteItemUseCase(item)`.");
@@ -98,7 +98,7 @@ mixin BlocxCollectionBlocDeletableMixin<T extends BlocxBaseEntity, P> on BlocxCo
 
     final ucMany = deleteMultipleItemsUseCase(items);
     final hasMany = ucMany != null;
-    final hasSingle = deleteItemUseCase(items.first) != null;
+    final hasSingle = deleteItemUseCase != null;
 
     if (!hasMany && !hasSingle) {
       for (final it in items) {
@@ -134,7 +134,7 @@ mixin BlocxCollectionBlocDeletableMixin<T extends BlocxBaseEntity, P> on BlocxCo
         emitState(emit);
       } else {
         for (final it in items) {
-          final uc = deleteItemUseCase(it)!;
+          final uc = deleteItemUseCase!;
 
           try {
             final BlocxUseCaseResult<bool> r = await uc.execute(it);
