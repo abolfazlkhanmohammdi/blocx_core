@@ -5,14 +5,14 @@ export '/src/blocs/form/mixins/blocx_form_validation_mixin.dart';
 export '/src/blocs/form/validators/blocx_field_validator.dart';
 export '/src/blocs/form/validators/timed_error_message.dart';
 
-export '/src/core/models/base_form_entity.dart';
+export '/src/core/models/blocx_base_form_entity.dart';
 
 //form
 export 'src/blocs/form/bloc/blocx_form_bloc.dart';
 export 'src/blocs/form/mixins/blocx_unique_field_validator_mixin.dart';
 export 'src/blocs/form/mixins/blocx_form_errors_mixin.dart';
-export 'src/blocs/form/mixins/blocx_info_fetcher_form_mixin.dart';
-export 'src/blocs/form/mixins/blocx_stepped_form_mixin.dart';
+export 'src/blocs/form/mixins/blocx_form_info_fetcher_mixin.dart';
+export 'src/blocs/form/mixins/blocx_form_stepped_mixin.dart';
 
 /// STRING VALIDATORS
 export '/src/blocs/form/validators/string/blocx_string_required_validator.dart';

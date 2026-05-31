@@ -3,27 +3,31 @@ import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/list_bloc.dart'
     show
         BlocxCollectionBloc,
-        BlocxCollectionBlocSearchableMixin,
+        BlocxCollectionSearchableMixin,
         BlocxCollectionEventRefreshData,
         BlocxCollectionState,
-        BlocxCollectionBlocSelectableMixin,
+        BlocxCollectionSelectableMixin,
         BlocxCollectionEventClearSelection,
         BlocxCollectionEventSearchRefresh,
         BlocxInfiniteListEventCloseRefresh,
         DataInsertSource;
-import 'package:blocx_core/src/blocs/list/models/page.dart' show BlocxPage;
 
-import '../use_cases/blocx_pagination_use_case.dart' show BlocxPaginationInput;
+import '../use_cases/blocx_pagination_use_case.dart' show BlocxPaginationInput, BlocxPaginatedUseCase;
 
 /// A mixin that adds **pull-to-refresh** capability to a [BlocxCollectionBloc].
 ///
 /// ## Updated architecture note
 /// Refresh use cases now require explicit input:
 /// `BlocxBaseUseCase<Input, Page<T>>`
-mixin BlocxCollectionBlocRefreshableMixin<T extends BlocxBaseEntity, P> on BlocxCollectionBloc<T, P> {
-  /// Refresh use case must now accept an input.
-  /// Typically this is `PaginationInput`.
-  BlocxBaseUseCase<BlocxPaginationInput, BlocxPage<T>>? get refreshPageUseCase => null;
+mixin BlocxCollectionRefreshableMixin<T extends BlocxBaseEntity, P> on BlocxCollectionBloc<T, P> {
+  /// Task responsible for refreshing the list.
+  ///
+  /// Defaults to [paginationTask]. Override this only when refresh requires a
+  /// different use case or input shape from the shared pagination task.
+  BlocxPaginatedUseCaseTask<BlocxPaginatedUseCase<BlocxPaginationInput, T>, BlocxPaginationInput>?
+      get refreshPageUseCaseTask => paginationTask;
+
+  double get refreshThreshold => 64.0;
 
   /// Entry point for refresh events.
   Future<void> refreshPage(
@@ -32,22 +36,23 @@ mixin BlocxCollectionBlocRefreshableMixin<T extends BlocxBaseEntity, P> on Blocx
   ) async {
     if (isRefreshing) return;
 
-    if (event.clearSelection && this is BlocxCollectionBlocSelectableMixin<T, P>) {
+    if (event.clearSelection && this is BlocxCollectionSelectableMixin<T, P>) {
       add(BlocxCollectionEventClearSelection());
     }
 
-    if (isSearchable && (this as BlocxCollectionBlocSearchableMixin<T, P>).searchText.isNotEmpty) {
+    if (isSearchable && (this as BlocxCollectionSearchableMixin<T, P>).searchText.isNotEmpty) {
       add(BlocxCollectionEventSearchRefresh());
       return;
     }
 
-    if (refreshPageUseCase != null) {
+    if (refreshPageUseCaseTask != null) {
       return await _fetchRefreshPage(event, emit);
     }
 
     infiniteListBloc.add(BlocxInfiniteListEventCloseRefresh());
 
-    throw UnimplementedError("Provide `refreshPageUseCase` or override `refreshPage()`");
+    throw UnimplementedError(
+        "Provide `paginationTask` (or `refreshPageUseCaseTask`) or override `refreshPage`()");
   }
 
   /// Executes refresh using the use case with proper input.
@@ -59,9 +64,9 @@ mixin BlocxCollectionBlocRefreshableMixin<T extends BlocxBaseEntity, P> on Blocx
     emitState(emit);
 
     try {
-      final input = BlocxPaginationInput(loadCount: list.length, offset: 0);
+      final input = refreshPageUseCaseTask!.inputBuilder(0, list.length);
 
-      final result = await refreshPageUseCase!.execute(input);
+      final result = await refreshPageUseCaseTask!.useCase.execute(input);
 
       if (result.isFailure) {
         await handleError(result.error!, emit, stacktrace: result.stackTrace);

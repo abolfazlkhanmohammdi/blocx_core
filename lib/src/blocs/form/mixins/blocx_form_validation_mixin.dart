@@ -7,7 +7,8 @@ import 'package:blocx_core/src/blocs/form/validation/blocx_form_validator.dart';
 /// This mixin integrates a [BlocxFormValidator] to perform field-level
 /// and form-level validation based on the current [formValidationMode].
 /// It also handles applying validation errors, including timed errors.
-mixin BlocxFormValidationMixin<F extends BaseFormEntity<F, E>, P, E extends Enum> on BlocxFormBloc<F, P, E> {
+mixin BlocxFormValidationMixin<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
+    on BlocxFormBloc<F, P, E> {
   /// The form validator to use for validating fields and the entire form.
   BlocxFormValidator<F, E> get validator;
 

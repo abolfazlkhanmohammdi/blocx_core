@@ -9,7 +9,7 @@ import 'package:blocx_core/list_bloc.dart'
         BlocxCollectionEventUpdateItem,
         BlocxCollectionEventRemoveItemById;
 
-mixin BlocxListBlocSyncStreamMixin<T extends BlocxBaseEntity, P>
+mixin BlocxCollectionSyncStreamMixin<T extends BlocxBaseEntity, P>
     on BaseBloc<BlocxCollectionEvent<T>, BlocxCollectionState<T>> {
   StreamSubscription<T>? _createSub;
   StreamSubscription<T>? _updateSub;

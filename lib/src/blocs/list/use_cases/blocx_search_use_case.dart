@@ -12,12 +12,12 @@ class BlocxSearchInput extends BlocxPaginationInput {
   /// Raw search query string used to filter results.
   final String searchText;
 
-  const BlocxSearchInput({required this.searchText, required super.loadCount, required super.offset});
+  const BlocxSearchInput({required this.searchText, required super.limit, required super.offset});
 }
 
 /// Base class for paginated search use cases.
 ///
-/// Extends [BlocxPaginationUseCase] to support search-enabled queries.
+/// Extends [BlocxPaginatedUseCase] to support search-enabled queries.
 ///
 /// Key constraints:
 /// - [Input] must extend [BlocxSearchInput]
@@ -27,6 +27,4 @@ class BlocxSearchInput extends BlocxPaginationInput {
 /// This preserves compatibility with the pagination system while
 /// enabling search-specific behavior.
 abstract class BlocxSearchUseCase<Input extends BlocxSearchInput, Output extends BlocxBaseEntity>
-    extends BlocxPaginationUseCase<Input, Output> {
-
-}
+    extends BlocxPaginatedUseCase<Input, Output> {}

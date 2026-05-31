@@ -3,71 +3,87 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/form_bloc.dart';
-import 'package:blocx_core/src/core/use_cases/blocx_use_case_result.dart' show BlocxUseCaseResult;
-import 'package:blocx_core/src/core/use_cases/blocx_use_case_task.dart';
+import 'package:blocx_core/src/core/models/blocx_base_form_entity.dart';
 import 'package:meta/meta.dart';
+
+/// Shorthand for the [BlocxUseCaseTask] type used by [BlocxFormDataMixin.submitUseCaseTask].
+///
+/// Saves consumers from spelling out the full generic each time:
+/// ```dart
+/// @override
+/// FormSubmitTask get submitUseCaseTask => BlocxUseCaseTask(
+///   useCase: _createPostUseCase,
+///   inputBuilder: () => CreatePostInput(title: formData.title),
+/// );
+/// ```
+typedef FormSubmitTask = BlocxUseCaseTask;
 
 /// Core mixin providing full lifecycle form state management for [BlocxFormBloc].
 ///
-/// This mixin orchestrates:
-/// - form initialization
-/// - payload hydration
-/// - field updates
-/// - validation lifecycle
-/// - submission execution via use cases
+/// Orchestrates form initialisation, payload hydration, field updates,
+/// validation, and submission via [BlocxUseCaseTask]. Designed for use with
+/// immutable [BlocxBaseFormEntity] subclasses.
 ///
-/// It is designed for immutable [BaseFormEntity]-based forms.
+/// ## Required overrides
 ///
-/// ## Key Responsibilities
-/// - Maintain form state (`formData`)
-/// - Apply payload transformations
-/// - Handle field updates and validation
-/// - Execute submission via [BlocxUseCaseTask]
-/// - Provide lifecycle hooks for customization
+/// - [submitUseCaseTask]: wires up the use case and input for form submission.
 ///
-/// ## Execution Model
-/// Form submission is executed via:
-/// `BlocxUseCaseTask -> useCase.execute(input)`
-mixin BlocxFormDataMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
+/// ## Optional overrides
+///
+/// | Override | When to use |
+/// |---|---|
+/// | [applyPayloadToFormData] | Edit/update forms that hydrate fields from a payload |
+/// | [validateForm] | Inline field or cross-field validation |
+/// | [doBeforeSubmit] | Pre-submit guards (e.g. show confirmation dialog) |
+/// | [onFormSubmitted] | Post-submit side-effects (e.g. analytics, navigation) |
+/// | [validateOnInit] | Run validation immediately after [BlocxFormEventInit] |
+/// | [emitChangesOnUpdate] | Emit an intermediate state on every field change |
+///
+/// ## Submission flow
+///
+/// 1. [BlocxFormEventSubmit] dispatched
+/// 2. [doBeforeSubmit] called — return `false` to abort
+/// 3. [BlocxFormStateSubmittingForm] emitted
+/// 4. `submitUseCaseTask.useCase.execute(inputBuilder())` called
+/// 5. On failure: [handleError] called, state restored
+/// 6. On success: [onFormSubmitted] called, [BlocxFormStateFormSubmitted] emitted
+mixin BlocxFormDataMixin<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
     on BaseBloc<BlocxFormEvent, BlocxFormState<F, E>> {
   /// Current form state instance.
   late F formData;
 
-  /// Optional payload used for initialization or updates.
   P? _payload;
-
-  /// Whether form is in update mode.
   bool _isUpdate = false;
 
-  /// Use case task responsible for submitting the form.
+  /// The use case task executed on form submission.
   ///
-  /// This replaces direct use-case execution and ensures:
-  /// - input is built at runtime
-  /// - execution is always type-consistent
-  BlocxUseCaseTask get submitUseCaseTask;
+  /// Use the [FormSubmitTask] typedef for brevity:
+  /// ```dart
+  /// @override
+  /// FormSubmitTask get submitUseCaseTask => BlocxUseCaseTask(
+  ///   useCase: _createPostUseCase,
+  ///   inputBuilder: () => CreatePostInput(title: formData.title),
+  /// );
+  /// ```
+  FormSubmitTask get submitUseCaseTask;
 
-  /// Initializes mixin and registers event handlers.
+  /// Initialises the mixin and registers event handlers.
   ///
-  /// Must be called inside bloc constructor.
+  /// Called automatically by [BlocxFormBloc]. Do not call manually.
   @mustCallSuper
   void initData(F formData) {
     this.formData = formData;
-
     on<BlocxFormEventInit<P>>(initForm);
     on<BlocxFormEventUpdateData<E>>(updateData);
     on<BlocxFormEventSubmit>(submit);
     on<BlocxFormEventUpdateFormData<P>>(handleUpdateFormDataEvent);
   }
 
-  /// Handles form initialization.
+  /// Handles [BlocxFormEventInit].
   ///
-  /// Flow:
-  /// - stores payload
-  /// - sets update mode
-  /// - optionally transforms payload into form model
-  /// - emits initial state
-  /// - triggers validation (if enabled)
-  /// - optionally triggers info fetching
+  /// Stores the payload, optionally hydrates [formData] via
+  /// [applyPayloadToFormData], runs optional validation, and triggers
+  /// info-fetching if [isInfoFetcher] is true.
   @mustCallSuper
   FutureOr<void> initForm(BlocxFormEventInit<P> event, Emitter<BlocxFormState<F, E>> emit) async {
     _payload = event.payload;
@@ -79,34 +95,37 @@ mixin BlocxFormDataMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
 
     emit(BlocxFormStateApplyInitialDataToForm(formData: formData));
 
-    if (validateOnInit) {
-      validateForm(formData);
-    }
+    if (validateOnInit) validateForm(formData);
 
     emitState(emit);
 
-    if (isInfoFetcher) {
-      add(BlocxFormEventFetchRequiredInfo());
-    }
+    if (isInfoFetcher) add(BlocxFormEventFetchRequiredInfo());
   }
 
-  /// Converts payload into form model.
+  /// Hydrates [formData] from [payload] for edit/update forms.
   ///
-  /// Must be overridden by implementations that support payload hydration.
-  Future<F> applyPayloadToFormData(P payload) async {
-    throw UnimplementedError();
-  }
+  /// Only called when [BlocxFormEventInit] is dispatched with a non-null
+  /// payload. For create-only forms (`P = void`) this is never invoked —
+  /// no need to override it.
+  ///
+  /// ```dart
+  /// @override
+  /// FutureOr<ProfileForm> applyPayloadToFormData(User payload) =>
+  ///     ProfileForm(name: payload.name, bio: payload.bio);
+  /// ```
+  FutureOr<F> applyPayloadToFormData(P payload) => formData;
 
-  /// Current step index for multi-step forms.
+  /// Current step index for multi-step forms. Defaults to `0`.
   int get stepIndex => 0;
 
-  /// Handles field-level updates.
+  /// Handles [BlocxFormEventUpdateData].
   ///
-  /// Flow:
-  /// - optional unique-field validation check
-  /// - updates form model
-  /// - optionally emits intermediate state
-  FutureOr<void> updateData(BlocxFormEventUpdateData<E> event, Emitter<BlocxFormState<F, E>> emit) async {
+  /// Delegates unique-field checks to [BlocxUniqueFieldValidatorMixin] when
+  /// applicable, then updates [formData] via [updateFormData].
+  FutureOr<void> updateData(
+    BlocxFormEventUpdateData<E> event,
+    Emitter<BlocxFormState<F, E>> emit,
+  ) async {
     if (isUniqueFieldValidator &&
         (this as BlocxUniqueFieldValidatorMixin<F, P, E>).uniqueFieldKeys.contains(event.key)) {
       add(BlocxFormEventCheckUniqueValue(key: event.key, data: event.data));
@@ -116,43 +135,45 @@ mixin BlocxFormDataMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
     formData = updateFormData(event.key, event.data);
 
     if (emitChangesOnUpdate) {
-      emit(
-        BlocxFormStateFormUpdated(
-          step: stepIndex,
-          formData: formData,
-          errors: {},
-          fieldsFetchingInfo: {},
-          checkingUniqueFields: {},
-        ),
-      );
+      emit(BlocxFormStateFormUpdated(
+        step: stepIndex,
+        formData: formData,
+        errors: {},
+        fieldsFetchingInfo: {},
+        checkingUniqueFields: {},
+      ));
     }
 
     emitState(emit);
   }
 
-  /// Whether field updates emit intermediate UI states.
+  /// Whether field updates emit [BlocxFormStateFormUpdated] before the full state.
+  ///
+  /// Useful when the UI needs to react to individual keystrokes.
   bool get emitChangesOnUpdate => false;
 
-  /// Whether unique field validation is enabled.
+  /// Whether [BlocxUniqueFieldValidatorMixin] is applied to this bloc.
   bool get isUniqueFieldValidator;
 
-  /// Whether form fetches additional info on init.
+  /// Whether [BlocxFormInfoFetcherMixin] is applied to this bloc.
   bool get isInfoFetcher;
 
-  /// Updates form field and triggers validation.
+  /// Applies a field update and runs validation.
+  ///
+  /// Returns the updated [F] instance.
   F updateFormData(E key, dynamic data) {
     final result = formData.updateByKeySafe(key, data);
     validateForm(result, key: key);
     return result;
   }
 
-  /// Emits current state (implemented by bloc).
+  /// Emits the current form state. Implemented by [BlocxFormBloc].
   void emitState(Emitter<BlocxFormState<F, E>> emit);
 
-  /// Handles form submission.
+  /// Handles [BlocxFormEventSubmit].
   ///
-  /// FIXED:
-  /// Uses BlocxUseCaseTask instead of raw execute()
+  /// Runs [doBeforeSubmit], emits [BlocxFormStateSubmittingForm], executes the
+  /// use case, then calls [onFormSubmitted] or [handleError] based on the result.
   Future<void> submit(BlocxFormEventSubmit event, Emitter<BlocxFormState<F, E>> emit) async {
     try {
       final proceed = await doBeforeSubmit(emit);
@@ -164,7 +185,6 @@ mixin BlocxFormDataMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
       emit(BlocxFormStateSubmittingForm(formData: formData, step: stepIndex));
 
       final task = submitUseCaseTask;
-
       final result = await task.useCase.execute(task.inputBuilder());
 
       if (result.isFailure) {
@@ -174,7 +194,6 @@ mixin BlocxFormDataMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
       }
 
       final shouldEmit = await onFormSubmitted(emit, result);
-
       if (shouldEmit) {
         emit(BlocxFormStateFormSubmitted(submittedData: result.data, formData: formData));
       }
@@ -186,38 +205,48 @@ mixin BlocxFormDataMixin<F extends BaseFormEntity<F, E>, P, E extends Enum>
     }
   }
 
-  /// Pre-submit hook.
+  /// Called before submission. Return `false` to abort.
+  ///
+  /// Use for confirmation dialogs, final validation gates, or any async
+  /// pre-flight check.
   Future<bool> doBeforeSubmit(Emitter<BlocxFormState<F, E>> emit) async => true;
 
-  /// Post-submit hook.
-  Future<bool> onFormSubmitted(Emitter<BlocxFormState<F, E>> emit, BlocxUseCaseResult result) async => true;
+  /// Called after a successful submission.
+  ///
+  /// Return `false` to suppress [BlocxFormStateFormSubmitted] emission
+  /// (e.g. when you handle navigation directly here).
+  Future<bool> onFormSubmitted(
+    Emitter<BlocxFormState<F, E>> emit,
+    BlocxUseCaseResult result,
+  ) async =>
+      true;
 
-  /// Whether form is currently in update mode.
+  /// Whether the form is in update/edit mode.
   bool get isUpdate => _isUpdate;
 
-  /// Current payload (if any).
+  /// The current payload, if any.
   P? get payload => _payload;
 
-  /// Error presentation strategy.
+  /// Error display strategy. Defaults to snackbar.
   @override
   ErrorDisplayPolicy get errorDisplayPolicy => ErrorDisplayPolicy.snackBar;
 
-  /// Whether validation runs on init.
+  /// Whether validation runs immediately after [BlocxFormEventInit].
   bool get validateOnInit => false;
 
-  /// Validation hook.
+  /// Validation hook. Override to add field or cross-field validation.
+  ///
+  /// [key] is set when a single field changed; `null` on full-form validation.
   void validateForm(F formData, {E? key}) {}
 
-  /// Handles external full-form replacement.
+  /// Handles [BlocxFormEventUpdateFormData] — replaces the entire form.
   FutureOr<void> handleUpdateFormDataEvent(
     BlocxFormEventUpdateFormData<P> event,
     Emitter<BlocxFormState<F, E>> emit,
   ) async {
     _isUpdate = event.isUpdate;
     formData = await applyPayloadToFormData(event.payload);
-
     emit(BlocxFormStateApplyInitialDataToForm(formData: formData));
-
     validateForm(formData);
     emitState(emit);
   }

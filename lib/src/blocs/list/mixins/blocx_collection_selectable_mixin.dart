@@ -21,7 +21,7 @@ import 'package:blocx_core/list_bloc.dart'
 /// - Optional server sync
 /// - Rollback on failure
 /// - Hooks for UX / analytics
-mixin BlocxCollectionBlocSelectableMixin<T extends BlocxBaseEntity, P> on BlocxCollectionBloc<T, P> {
+mixin BlocxCollectionSelectableMixin<T extends BlocxBaseEntity, P> on BlocxCollectionBloc<T, P> {
   final Set<String> _selectedItemIds = {};
   final Set<String> _beingSelectedItemIds = {};
 

@@ -40,7 +40,7 @@ import 'package:blocx_core/list_bloc.dart'
 ///   otherwise expansion state cannot be tracked reliably.
 /// - Expansion state is held in-memory; if you rebuild/recreate the bloc,
 ///   expanded state will reset unless you persist it separately.
-mixin BlocxCollectionBlocExpandableMixin<T extends BlocxBaseEntity, P> on BlocxCollectionBloc<T, P> {
+mixin BlocxCollectionExpandableMixin<T extends BlocxBaseEntity, P> on BlocxCollectionBloc<T, P> {
   /// Stores the identifiers of currently expanded items.
   ///
   /// Each item is tracked by its [BlocxBaseEntity.identifier].
