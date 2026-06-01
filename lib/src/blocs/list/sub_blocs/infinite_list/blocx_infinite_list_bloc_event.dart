@@ -1,4 +1,4 @@
-part of 'infinite_list_bloc.dart';
+part of 'blocx_infinite_list_bloc.dart';
 
 class BlocxInfiniteListEvent extends BaseEvent {}
 

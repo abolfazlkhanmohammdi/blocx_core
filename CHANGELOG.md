@@ -1,8 +1,28 @@
 # Changelog
 
----
+## [0.8.3]
 
-## [0.8.1] - 2026-05-31
+### Fixed
+
+- Fixed invalid public export paths in `form_bloc.dart` by replacing absolute `/src/...` exports with package-relative `src/...` exports.
+- Fixed `BlocxCollectionStateLoaded.copyWith()` to preserve and override `expandedItemIds`.
+- Fixed `BlocxCollectionStateLoaded.copyWith()` to preserve and override `additionalInfo`.
+- Fixed initial search pagination to always start from offset `0`.
+
+### Changed
+
+- Renamed internal infinite-list bloc source files to use the `blocx_` prefix:
+  - `infinite_list_bloc.dart` → `blocx_infinite_list_bloc.dart`
+  - `infinite_list_bloc_event.dart` → `blocx_infinite_list_bloc_event.dart`
+  - `infinite_list_bloc_state.dart` → `blocx_infinite_list_bloc_state.dart`
+- Updated `list_bloc.dart` exports to point to the renamed infinite-list bloc file.
+- Updated README examples and migration notes for the current `BlocxCollectionBloc`, `BlocxUseCaseResult`, `BlocxPage`, and task-based pagination/search APIs.
+- Updated installation docs to reference `blocx_core: ^0.8.3`.
+
+## [0.8.2]
+- Updated CHANGELOG.md
+
+## [0.8.1]
 
 ### Changed
 
@@ -17,7 +37,7 @@
 
 ---
 
-## [0.8.0] - 2026-05-31
+## [0.8.0]
 
 ### Added
 

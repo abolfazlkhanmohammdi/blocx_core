@@ -44,12 +44,12 @@ class TodosBloc extends Bloc<TodosEvent, TodosState> {
 ### BlocX
 
 ```dart
-class TodosBloc extends BlocxListBloc<Todo, void>
-    with
-        BlocxCollectionInfiniteMixin<Todo, void>,
-        BlocxCollectionSearchableMixin<Todo, void>,
-        BlocxCollectionRefreshableMixin<Todo, void>,
-        BlocxCollectionSelectableMixin<Todo, void> {}
+class TodosBloc extends BlocxCollectionBloc<Todo, void>
+        with
+                BlocxCollectionInfiniteMixin<Todo, void>,
+                BlocxCollectionSearchableMixin<Todo, void>,
+                BlocxCollectionRefreshableMixin<Todo, void>,
+                BlocxCollectionSelectableMixin<Todo, void> {}
 ```
 
 The behavior is provided by the mixins. Your code stays focused on the domain.
@@ -135,7 +135,7 @@ Nothing more.
   - [BlocxBaseEntity](#BlocxBaseEntity)
   - [UseCase & UseCaseResult](#usecase--usecaseresult)
   - [Page\<T\>](#paget)
-  - [BlocxListBloc\<T, P\>](#blocxlistbloc)
+  - [BlocxCollectionBloc\<T, P\>](#blocxcollectionbloc)
   - [BlocxFormBloc\<F, P, E\>](#blocxformbloc)
   - [ScreenManagerCubit](#screenmanagercubit)
 - [List BLoC](#list-bloc)
@@ -143,11 +143,12 @@ Nothing more.
   - [Available Events](#available-list-events)
   - [Available States](#available-list-states)
 - [Form BLoC](#form-bloc)
-  - [BaseFormEntity](#baseformentity)
+  - [BlocxBaseFormEntity](#blocxbaseformentity)
   - [Built-in Validators](#built-in-validators)
   - [Form Events](#form-events)
   - [Form States](#form-states)
   - [Form Mixins](#form-mixins)
+- [Use Case Tasks](#use-case-tasks)
 - [Error & Screen Management](#error--screen-management)
 - [Quickstart: Paged & Searchable List](#quickstart-paged--searchable-list)
 - [Quickstart: Form with Validation](#quickstart-form-with-validation)
@@ -163,15 +164,13 @@ Add `blocx_core` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  blocx_core: ^0.8.0
+  blocx_core: ^0.8.3
 ```
 
 Or install via the command line:
 
 ```sh
 dart pub add blocx_core
-# Inside a Flutter project:
-flutter pub add blocx_core
 ```
 
 Import the library:
@@ -193,14 +192,14 @@ import 'package:blocx_core/form_bloc.dart';
 ```
 ┌─────────────────────────────────────────────────┐
 │                  Your Domain BLoC                │
-│  extends BlocxListBloc / BlocxFormBloc           │
+│  extends BlocxCollectionBloc / BlocxFormBloc     │
 │  with  <only the mixins you need>                │
 └───────────────────┬─────────────────────────────┘
                     │ delegates async work to
 ┌───────────────────▼─────────────────────────────┐
 │               Use Cases                          │
-│  BlocxBaseUseCase → UseCaseResult<T>             │
-│  BlocxPaginatedUseCase / SearchUseCase          │
+│  BlocxBaseUseCase → BlocxUseCaseResult<T>        │
+│  BlocxPaginatedUseCase / BlocxSearchUseCase      │
 └───────────────────┬─────────────────────────────┘
                     │ UI intents via
 ┌───────────────────▼─────────────────────────────┐
@@ -236,49 +235,61 @@ The `identifier` getter (also on `BlocxBaseEntity`) is used internally for scrol
 
 ### UseCase & UseCaseResult
 
-Every piece of async business logic is encapsulated in a `BlocxBaseUseCase<T>` subclass. Use cases return a `UseCaseResult<T>`, which is either a success carrying data or a failure carrying an error and optional stack trace.
+Every piece of async business logic is encapsulated in a `BlocxBaseUseCase<Input, Output>` subclass. Use cases return a `BlocxUseCaseResult<Output>`, which is either a success carrying data or a failure carrying an error and stack trace.
 
 ```dart
-class FetchProducts extends BlocxBaseUseCase<List<Product>> {
+class FetchProductUseCase extends BlocxBaseUseCase<String, Product> {
   final ProductRepository repo;
-  FetchProducts({required this.repo});
+  FetchProductUseCase({required this.repo});
 
   @override
-  Future<UseCaseResult<List<Product>>> perform() async {
-    try {
-      final data = await repo.getAll();
-      return UseCaseResult.success(data);
-    } catch (e, s) {
-      return UseCaseResult.failure(e, stackTrace: s);
-    }
+  Future<BlocxUseCaseResult<Product>> perform(String id) async {
+    final data = await repo.getById(id);
+    return success(data);
   }
 }
 ```
 
-For paginated data, extend `BlocxPaginatedUseCase<T>` (which adds `loadCount` and `offset` parameters) or `SearchUseCase<T>` (which additionally provides `searchText`).
+> **Note:** Exception handling is built into `BlocxBaseUseCase.execute()` — you no longer need to wrap `perform()` in a try/catch. Unhandled exceptions are automatically converted to `BlocxUseCaseFailure`.
+
+For paginated data, extend `BlocxPaginatedUseCase<Input, Output>` (where `Input` extends `BlocxPaginationInput`) or `BlocxSearchUseCase<Input, Output>` (where `Input` extends `BlocxSearchInput`, which adds `searchText`).
 
 ---
 
-### Page\<T\>
+### BlocxPage\<T\>
 
-`Page<T>` is the normalized container for a page of items returned by pagination use cases. It carries the list of items and signals whether the end of the data source has been reached.
+`BlocxPage<T>` is the normalized container for a page of items returned by pagination use cases. It carries the list of items and signals whether the end of the data source has been reached.
 
 ```dart
 // successResult() is a helper on BlocxPaginatedUseCase that
-// wraps a List<T> into a Page<T> automatically.
-return successResult(items);
-
-// To signal the last page:
-return successResult(items, isLastPage: true);
+// wraps a List<T> into a BlocxPage<T> automatically.
+return successResult(items: items, input: input);
 ```
+
+`BlocxPage.hasNext` is derived automatically: the end of data is signalled when the number of items returned is less than the requested limit.
 
 ---
 
-### BlocxListBloc
+### BlocxCollectionBloc
 
-`BlocxListBloc<T, P>` is the central class for list state management, where `T` is your entity type and `P` is an optional payload type passed when loading the initial page (use `void` if no payload is needed).
+`BlocxCollectionBloc<T, P>` is the central class for list state management, where `T` is your entity type and `P` is an optional payload type passed when loading the initial page (use `void` if no payload is needed).
 
-Extend it and compose only the mixins you require. Each mixin is initialized via a corresponding `init*()` call in the constructor.
+Extend it and compose only the mixins you require. **Mixin initialization is automatic** — no manual `init*()` calls are needed in the constructor. Simply call `super()`:
+
+```dart
+class OrdersBloc extends BlocxCollectionBloc<Order, void>
+    with BlocxCollectionInfiniteMixin<Order, void>,
+         BlocxCollectionRefreshableMixin<Order, void> {
+  OrdersBloc() : super();
+
+  @override
+  BlocxPaginatedUseCaseTask get paginationTask => BlocxPaginatedUseCaseTask(
+    useCase: _getOrdersUseCase,
+    inputBuilder: (offset, limit) =>
+        BlocxPaginationInput(limit: limit, offset: offset),
+  );
+}
+```
 
 ---
 
@@ -290,7 +301,7 @@ Extend it and compose only the mixins you require. Each mixin is initialized via
 
 ### ScreenManagerCubit
 
-`ScreenManagerCubit` is owned and managed internally by `BaseBloc` — you no longer need to construct or pass one explicitly. Simply call `super(initialState)` in your bloc's constructor:
+`ScreenManagerCubit` is owned and managed internally by `BaseBloc` — you no longer need to construct or pass one explicitly. Simply call `super()` in your bloc's constructor:
 
 ```dart
 class CounterBloc extends BaseBloc<CounterEvent, CounterState> {
@@ -315,7 +326,7 @@ Available intent methods (callable from any bloc):
 
 ### Available List Mixins
 
-Mix these into your `BlocxListBloc` subclass.
+Mix these into your `BlocxCollectionBloc` subclass.
 
 | Mixin                               | Capability |
 |-------------------------------------|---|
@@ -335,31 +346,31 @@ Mix these into your `BlocxListBloc` subclass.
 
 | Event | Description |
 |---|---|
-| `BlocxListEventLoadInitialPage<T, P>` | Load the first page of data |
-| `BlocxListEventLoadNextPage<T>` | Append the next page to the existing list |
-| `BlocxListEventRefreshData<T>` | Reload the list from the source |
-| `BlocxListEventSearch<T>` | Run a debounced search query |
-| `BlocxListEventSearchNextPage<T>` | Load the next page of search results |
-| `BlocxListEventSearchRefresh<T>` | Refresh the current search results |
-| `BlocxListEventClearSearch<T>` | Clear search and restore the base list |
-| `BlocxListEventSelectItem<T>` | Select a single item |
-| `BlocxListEventDeselectItem<T>` | Deselect a single item |
-| `BlocxListEventSelectMultipleItems<T>` | Select multiple items at once |
-| `BlocxListEventDeselectMultipleItems<T>` | Deselect multiple items at once |
-| `BlocxListEventClearSelection<T>` | Clear all selections |
-| `BlocxListEventHighlightItem<T>` | Highlight a specific item |
-| `BlocxListEventClearHighlightedItem<T>` | Clear the highlight on an item |
-| `BlocxListEventExpandItem<T>` | Expand an item's details |
-| `BlocxListEventCollapseItem<T>` | Collapse an item's details |
-| `BlocxListEventToggleItemExpansion<T>` | Toggle expansion state of an item |
-| `BlocxListEventScrollToItem<T>` | Scroll to a given item |
-| `BlocxListEventScrollToIdentifier<T>` | Scroll to an item by its identifier |
-| `BlocxListEventAddItem<T>` | Insert an item into the list |
-| `BlocxListEventUpdateItem<T>` | Replace an item in the list |
-| `BlocxListEventRemoveItem<T>` | Remove a single item |
-| `BlocxListEventRemoveItemById<T>` | Remove an item by its ID |
-| `BlocxListEventRemoveMultipleItems<T>` | Remove multiple items at once |
-| `BlocxListEventReplaceList<T>` | Replace the entire list |
+| `BlocxCollectionEventLoadInitialPage<T, P>` | Load the first page of data |
+| `BlocxCollectionEventLoadNextPage<T>` | Append the next page to the existing list |
+| `BlocxCollectionEventRefreshData<T>` | Reload the list from the source |
+| `BlocxCollectionEventSearch<T>` | Run a debounced search query |
+| `BlocxCollectionEventSearchNextPage<T>` | Load the next page of search results |
+| `BlocxCollectionEventSearchRefresh<T>` | Refresh the current search results |
+| `BlocxCollectionEventClearSearch<T>` | Clear search and restore the base list |
+| `BlocxCollectionEventSelectItem<T>` | Select a single item |
+| `BlocxCollectionEventDeselectItem<T>` | Deselect a single item |
+| `BlocxCollectionEventSelectMultipleItems<T>` | Select multiple items at once |
+| `BlocxCollectionEventDeselectMultipleItems<T>` | Deselect multiple items at once |
+| `BlocxCollectionEventClearSelection<T>` | Clear all selections |
+| `BlocxCollectionEventHighlightItem<T>` | Highlight a specific item |
+| `BlocxCollectionEventClearHighlightedItem<T>` | Clear the highlight on an item |
+| `BlocxCollectionEventExpandItem<T>` | Expand an item's details |
+| `BlocxCollectionEventCollapseItem<T>` | Collapse an item's details |
+| `BlocxCollectionEventToggleItemExpansion<T>` | Toggle expansion state of an item |
+| `BlocxCollectionEventScrollToItem<T>` | Scroll to a given item |
+| `BlocxCollectionEventScrollToIdentifier<T>` | Scroll to an item by its identifier |
+| `BlocxCollectionEventAddItem<T>` | Insert an item into the list |
+| `BlocxCollectionEventUpdateItem<T>` | Replace an item in the list |
+| `BlocxCollectionEventRemoveItem<T>` | Remove a single item |
+| `BlocxCollectionEventRemoveItemById<T>` | Remove an item by its ID |
+| `BlocxCollectionEventRemoveMultipleItems<T>` | Remove multiple items at once |
+| `BlocxCollectionEventReplaceList<T>` | Replace the entire list |
 
 ---
 
@@ -367,21 +378,24 @@ Mix these into your `BlocxListBloc` subclass.
 
 | State | Description |
 |---|---|
-| `BlocxListStateLoading<T>` | Initial load or refresh in progress |
-| `BlocxListStateLoaded<T>` | Data is available |
-| `BlocxListStateError<T>` | An error occurred while loading |
-| `BlocxListStateSelectionChanged<T>` | Selection has been updated |
-| `BlocxListStateScrollToItem<T>` | Scroll-to intent emitted |
+| `BlocxCollectionStateLoading<T>` | Initial load or refresh in progress |
+| `BlocxCollectionStateLoaded<T>` | Data is available |
+| `BlocxCollectionStateError<T>` | An error occurred while loading |
+| `BlocxCollectionStateSelectionChanged<T>` | Selection has been updated |
+| `BlocxCollectionStateScrollToItem<T>` | Scroll-to intent emitted |
 
-Use the `ListStateExtensions` extension on `BlocxListState<T>` for convenience accessors.
+Use the `ListStateExtensions` extension on `BlocxCollectionState<T>` for convenience accessors.
 
 ---
 
 ## Form BLoC
 
-### BaseFormEntity
+### BlocxBaseFormEntity
 
-Your form's data model must extend `BlocxBaseFormEntity<F, E>`, where `F` is the form entity itself and `E` is an enum enumerating the form's fields. The entity must be immutable and implement `copyWith`.
+Your form's data model must extend `BlocxBaseFormEntity<F, E>`, where `F` is the form entity itself and `E` is an enum enumerating the form's fields. The entity must be immutable and implement two methods:
+
+- **`updateByKey(E key, dynamic value)`** — returns a new instance with the named field updated. Typically delegates to `copyWith`.
+- **`getValueByKey(E key)`** — returns the current value for the given field. Used for cross-field validation and debug-mode consistency checks.
 
 ```dart
 enum ProfileField { name, email, phone }
@@ -398,6 +412,19 @@ class ProfileForm extends BlocxBaseFormEntity<ProfileForm, ProfileField> {
   });
 
   @override
+  ProfileForm updateByKey(ProfileField key, dynamic value) => switch (key) {
+    ProfileField.name  => copyWith(name: value),
+    ProfileField.email => copyWith(email: value),
+    ProfileField.phone => copyWith(phone: value),
+  };
+
+  @override
+  dynamic getValueByKey(ProfileField key) => switch (key) {
+    ProfileField.name  => name,
+    ProfileField.email => email,
+    ProfileField.phone => phone,
+  };
+
   ProfileForm copyWith({String? name, String? email, String? phone}) =>
       ProfileForm(
         name: name ?? this.name,
@@ -406,6 +433,8 @@ class ProfileForm extends BlocxBaseFormEntity<ProfileForm, ProfileField> {
       );
 }
 ```
+
+> **Tip — `freezed` integration:** `BlocxBaseFormEntity` works naturally with the [`freezed`](https://pub.dev/packages/freezed) package. Generate `copyWith`, `==`, and `hashCode` with `@freezed`, then implement only `updateByKey` and `getValueByKey` on top. This eliminates nearly all boilerplate for form entities.
 
 ---
 
@@ -491,13 +520,13 @@ BlocxUseCaseTask(
 
 ### BlocxPaginatedUseCaseTask
 
-Use this as the standard task type for `BlocxCollectionBloc.paginationTask`. The `inputBuilder` receives the current `limit` (page size) and `offset` (number of already-loaded items) at execution time:
+Use this as the standard task type for `BlocxCollectionBloc.paginationTask`. The `inputBuilder` receives the current `offset` and `limit` (page size) at execution time:
 
 ```dart
 @override
 BlocxPaginatedUseCaseTask get paginationTask => BlocxPaginatedUseCaseTask(
   useCase: _getOrdersUseCase,
-  inputBuilder: ({required limit, required offset}) =>
+  inputBuilder: (offset, limit) =>
       BlocxPaginationInput(limit: limit, offset: offset),
 );
 ```
@@ -508,7 +537,7 @@ To include extra fields from bloc state:
 @override
 BlocxPaginatedUseCaseTask get paginationTask => BlocxPaginatedUseCaseTask(
   useCase: _getOrdersUseCase,
-  inputBuilder: ({required limit, required offset}) => GetOrdersInput(
+  inputBuilder: (offset, limit) => GetOrdersInput(
     limit: limit,
     offset: offset,
     userId: payload!.id,
@@ -580,6 +609,8 @@ BlocListener<ScreenManagerCubit, ScreenManagerCubitState>(
 
 The following example wires up a fully paginated, searchable, refreshable, and selectable list for a `Todo` entity.
 
+> **See a complete runnable example** in the [`flutter_blocx` example app](https://pub.dev/packages/flutter_blocx/example).
+
 ### 1. Define the Entity
 
 ```dart
@@ -607,48 +638,29 @@ abstract class TodoRepository {
 ### 3. Implement Use Cases
 
 ```dart
-class FetchTodosUseCase extends BlocxPaginatedUseCase<Todo> {
+class FetchTodosUseCase extends BlocxPaginatedUseCase<BlocxPaginationInput, Todo> {
   final TodoRepository repo;
-
-  FetchTodosUseCase({
-    required this.repo,
-    required super.loadCount,
-    required super.offset,
-  });
+  FetchTodosUseCase({required this.repo});
 
   @override
-  Future<UseCaseResult<Page<Todo>>> perform() async {
-    try {
-      final items = await repo.fetchPage(limit: loadCount, offset: offset);
-      return successResult(items);
-    } catch (e, s) {
-      return UseCaseResult.failure(e, stackTrace: s);
-    }
+  Future<BlocxUseCaseResult<BlocxPage<Todo>>> perform(BlocxPaginationInput input) async {
+    final items = await repo.fetchPage(limit: input.limit, offset: input.offset);
+    return successResult(items: items, input: input);
   }
 }
 
-class SearchTodosUseCase extends SearchUseCase<Todo> {
+class SearchTodosUseCase extends BlocxSearchUseCase<BlocxSearchInput, Todo> {
   final TodoRepository repo;
-
-  SearchTodosUseCase({
-    required this.repo,
-    required super.searchText,
-    required super.loadCount,
-    required super.offset,
-  });
+  SearchTodosUseCase({required this.repo});
 
   @override
-  Future<UseCaseResult<Page<Todo>>> perform() async {
-    try {
-      final items = await repo.search(
-        query: searchText,
-        limit: loadCount,
-        offset: offset,
-      );
-      return successResult(items);
-    } catch (e, s) {
-      return UseCaseResult.failure(e, stackTrace: s);
-    }
+  Future<BlocxUseCaseResult<BlocxPage<Todo>>> perform(BlocxSearchInput input) async {
+    final items = await repo.search(
+      query: input.searchText,
+      limit: input.limit,
+      offset: input.offset,
+    );
+    return successResult(items: items, input: input);
   }
 }
 ```
@@ -656,50 +668,43 @@ class SearchTodosUseCase extends SearchUseCase<Todo> {
 ### 4. Compose the BLoC
 
 ```dart
-class TodosBloc extends BlocxListBloc<Todo, void>
+class TodosBloc extends BlocxCollectionBloc<Todo, void>
     with
         BlocxCollectionInfiniteMixin<Todo, void>,
         BlocxCollectionSearchableMixin<Todo, void>,
         BlocxCollectionRefreshableMixin<Todo, void>,
         BlocxCollectionSelectableMixin<Todo, void> {
   final TodoRepository repo;
+  final FetchTodosUseCase _fetchUseCase;
+  final SearchTodosUseCase _searchUseCase;
 
-  TodosBloc({required this.repo}) : super(BlocxInfiniteListBloc()) {
-    initInfiniteList();
-    initSearchable();
-    initRefresh();
-    initSelectable();
-    add(BlocxListEventLoadInitialPage<Todo, void>());
+  TodosBloc({required this.repo})
+      : _fetchUseCase = FetchTodosUseCase(repo: repo),
+        _searchUseCase = SearchTodosUseCase(repo: repo),
+        super() {
+    add(BlocxCollectionEventLoadInitialPage<Todo, void>(payload: null));
   }
 
   @override
-  BlocxPaginatedUseCase<Todo>? get loadInitialPageUseCase =>
-      FetchTodosUseCase(repo: repo, loadCount: 20, offset: 0);
+  BlocxPaginatedUseCaseTask get paginationTask => BlocxPaginatedUseCaseTask(
+    useCase: _fetchUseCase,
+    inputBuilder: (offset, limit) =>
+        BlocxPaginationInput(limit: limit, offset: offset),
+  );
 
   @override
-  BlocxPaginatedUseCase<Todo>? get loadNextPageUseCase =>
-      FetchTodosUseCase(repo: repo, loadCount: 20, offset: list.length);
-
-  @override
-  BlocxPaginatedUseCase<Todo>? get refreshPageUseCase =>
-      FetchTodosUseCase(repo: repo, loadCount: list.length, offset: 0);
-
-  @override
-  SearchUseCase<Todo>? searchUseCase(String q, {int? loadCount, int? offset}) =>
-      SearchTodosUseCase(
-        repo: repo,
-        searchText: q,
-        loadCount: loadCount ?? 20,
-        offset: offset ?? 0,
-      );
-
-  @override
-  (String, String?) convertErrorToMessageAndTitle(Object error) =>
-      ('Failed to load todos. Please try again.', null);
+  BlocxPaginatedUseCaseTask? get searchUseCaseTask => BlocxPaginatedUseCaseTask(
+    useCase: _searchUseCase,
+    inputBuilder: (offset, limit) => BlocxSearchInput(
+      searchText: currentSearchText,
+      limit: limit,
+      offset: offset,
+    ),
+  );
 }
 ```
 
-> **Note:** `ScreenManagerCubit` is now owned internally by `BaseBloc`. The `screen` parameter has been removed from the constructor — just call `super(initialState)`.
+> **Note:** `ScreenManagerCubit` is now owned internally by `BaseBloc`. The `screen` parameter has been removed from all constructors — just call `super()`. Mixin initialization is also automatic; no `initInfiniteList()`, `initSearch()`, or similar calls are needed.
 
 ### 5. Drive the BLoC
 
@@ -707,18 +712,18 @@ class TodosBloc extends BlocxListBloc<Todo, void>
 final bloc = TodosBloc(repo: myRepo);
 
 // Pagination
-bloc.add(BlocxListEventLoadNextPage<Todo>());
+bloc.add(BlocxCollectionEventLoadNextPage<Todo>());
 
 // Search
-bloc.add(BlocxListEventSearch<Todo>(searchText: 'urgent'));
-bloc.add(BlocxListEventClearSearch<Todo>());
+bloc.add(BlocxCollectionEventSearch<Todo>(searchText: 'urgent'));
+bloc.add(BlocxCollectionEventClearSearch<Todo>());
 
 // Selection
-bloc.add(BlocxListEventSelectItem<Todo>(item: someTodo));
-bloc.add(BlocxListEventClearSelection<Todo>());
+bloc.add(BlocxCollectionEventSelectItem<Todo>(item: someTodo));
+bloc.add(BlocxCollectionEventClearSelection<Todo>());
 
 // Refresh
-bloc.add(BlocxListEventRefreshData<Todo>());
+bloc.add(BlocxCollectionEventRefreshData<Todo>());
 ```
 
 ---
@@ -744,6 +749,19 @@ class SignUpForm extends BlocxBaseFormEntity<SignUpForm, SignUpField> {
   });
 
   @override
+  SignUpForm updateByKey(SignUpField key, dynamic value) => switch (key) {
+    SignUpField.email           => copyWith(email: value),
+    SignUpField.password        => copyWith(password: value),
+    SignUpField.confirmPassword => copyWith(confirmPassword: value),
+  };
+
+  @override
+  dynamic getValueByKey(SignUpField key) => switch (key) {
+    SignUpField.email           => email,
+    SignUpField.password        => password,
+    SignUpField.confirmPassword => confirmPassword,
+  };
+
   SignUpForm copyWith({
     String? email,
     String? password,
@@ -756,6 +774,8 @@ class SignUpForm extends BlocxBaseFormEntity<SignUpForm, SignUpField> {
       );
 }
 ```
+
+> **Tip — `freezed` integration:** The `copyWith`, `==`, and `hashCode` methods above can be generated automatically by [`freezed`](https://pub.dev/packages/freezed). Annotate your form class with `@freezed` and implement only `updateByKey` and `getValueByKey` manually to eliminate the rest of the boilerplate.
 
 ### 2. Define the Validator
 
@@ -817,6 +837,18 @@ bloc.add(BlocxFormEventSubmit());
 
 ## Migrating from 0.7.x
 
+### Breaking: list bloc rename
+
+`BlocxListBloc` has been renamed to `BlocxCollectionBloc`. Update your class declarations:
+
+```dart
+// Before
+class TodosBloc extends BlocxListBloc<Todo, void> { ... }
+
+// After
+class TodosBloc extends BlocxCollectionBloc<Todo, void> { ... }
+```
+
 ### Breaking: mixin renames
 
 All collection mixin names have had the redundant `_bloc` segment removed for a cleaner, consistent naming scheme. Update your `with` clauses and any direct imports:
@@ -840,9 +872,65 @@ Form mixins follow the same `blocx_form_*` prefix pattern:
 | `BlocxInfoFetcherFormMixin` | `BlocxFormInfoFetcherMixin` |
 | `BlocxSteppedFormMixin` | `BlocxFormSteppedMixin` |
 
-### Breaking: model rename
+### Breaking: event and state renames
+
+All list events and states have been renamed from `BlocxList*` to `BlocxCollection*`:
+
+| Before (0.7.x) | After (0.8.0) |
+|---|---|
+| `BlocxListEventLoadInitialPage` | `BlocxCollectionEventLoadInitialPage` |
+| `BlocxListEventLoadNextPage` | `BlocxCollectionEventLoadNextPage` |
+| `BlocxListEventSearch` | `BlocxCollectionEventSearch` |
+| `BlocxListEventRefreshData` | `BlocxCollectionEventRefreshData` |
+| `BlocxListStateLoading` | `BlocxCollectionStateLoading` |
+| `BlocxListStateLoaded` | `BlocxCollectionStateLoaded` |
+| `BlocxListStateError` | `BlocxCollectionStateError` |
+| *(and all remaining `BlocxList*` events/states)* | *(same pattern: replace `List` with `Collection`)* |
+
+### Breaking: automatic mixin initialization
+
+Manual `init*()` calls in bloc constructors are no longer needed. `BlocxCollectionBloc` detects which mixins are applied and initializes them automatically. Remove all `initInfiniteList()`, `initSearchable()`, `initRefresh()`, `initSelectable()`, and similar calls from your constructors.
+
+### Breaking: constructor signature
+
+The constructor no longer accepts `BlocxInfiniteListBloc` as a parameter. Remove it from your `super(...)` call:
+
+```dart
+// Before
+TodosBloc({required this.repo}) : super(BlocxInfiniteListBloc()) { ... }
+
+// After
+TodosBloc({required this.repo}) : super() { ... }
+```
+
+### Breaking: use case API
+
+`BlocxBaseUseCase` now takes two type parameters (`Input` and `Output`) and a `perform(Input)` method instead of a zero-argument `perform()`. Replace old use case patterns:
+
+```dart
+// Before
+class FetchTodosUseCase extends BlocxPaginatedUseCase<Todo> {
+  FetchTodosUseCase({required super.loadCount, required super.offset, ...});
+
+  @override
+  Future<UseCaseResult<Page<Todo>>> perform() async { ... }
+}
+
+// After
+class FetchTodosUseCase extends BlocxPaginatedUseCase<BlocxPaginationInput, Todo> {
+  @override
+  Future<BlocxUseCaseResult<BlocxPage<Todo>>> perform(BlocxPaginationInput input) async {
+    final items = await repo.fetchPage(limit: input.limit, offset: input.offset);
+    return successResult(items: items, input: input);
+  }
+}
+```
+
+### Breaking: model renames
 
 `BaseFormEntity` is now `BlocxBaseFormEntity`. Update all subclasses and type references.
+
+`Page<T>` is now `BlocxPage<T>` and `UseCaseResult<T>` is now `BlocxUseCaseResult<T>`.
 
 ### Breaking: ScreenManagerCubit ownership
 
@@ -854,13 +942,6 @@ MyBloc({required ScreenManagerCubit screen}) : super(screen, MyStateInitial());
 
 // After
 MyBloc() : super(MyStateInitial());
-```
-
-### pubspec constraint
-
-```yaml
-dependencies:
-  blocx_core: ^0.8.0
 ```
 
 ---

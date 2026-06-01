@@ -5,8 +5,8 @@ import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:blocx_core/src/blocs/base/base_bloc.dart';
 
-part './infinite_list_bloc_event.dart';
-part './infinite_list_bloc_state.dart';
+part './blocx_infinite_list_bloc_event.dart';
+part './blocx_infinite_list_bloc_state.dart';
 
 class BlocxInfiniteListBloc extends Bloc<BlocxInfiniteListEvent, BlocxInfiniteListState> {
   /// --- Tunables -------------------------------------------------------------

@@ -1,4 +1,4 @@
-part of 'infinite_list_bloc.dart';
+part of 'blocx_infinite_list_bloc.dart';
 
 class BlocxInfiniteListState extends BaseState {
   final bool isLoadingMore;
@@ -25,18 +25,18 @@ class BlocxInfiniteListState extends BaseState {
 
 class BlocxInfiniteListStateInitial extends BlocxInfiniteListState {
   BlocxInfiniteListStateInitial()
-    : super(
-        shouldRebuild: false,
-        shouldListen: false,
-        isIdle: true,
-        isLoadingMore: false,
-        isRefreshing: false,
-        isScrollingUp: false,
-        isAtTop: true,
-        isAtBottom: false,
-        swipeRefreshHeight: 0,
-        hasReachedEnd: false,
-      );
+      : super(
+          shouldRebuild: false,
+          shouldListen: false,
+          isIdle: true,
+          isLoadingMore: false,
+          isRefreshing: false,
+          isScrollingUp: false,
+          isAtTop: true,
+          isAtBottom: false,
+          swipeRefreshHeight: 0,
+          hasReachedEnd: false,
+        );
 }
 
 class BlocxInfiniteListStateLoaded extends BlocxInfiniteListState {
