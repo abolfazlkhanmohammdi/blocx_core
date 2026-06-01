@@ -164,7 +164,7 @@ mixin BlocxCollectionSearchableMixin<T extends BlocxBaseEntity, P> on BlocxColle
       }
 
       final result = await task.useCase.execute(
-        task.inputBuilder(offset, limit),
+        task.inputBuilder(0, limit),
       );
 
       /// Prevent stale results overwriting newer searches.

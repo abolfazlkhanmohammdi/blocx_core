@@ -1,8 +1,20 @@
 # Changelog
 
----
+## [0.8.3]
 
-## [0.8.1] - 2026-05-31
+### Fixed
+
+- Improved package stability by fixing public exports, collection state copying, and initial search pagination behavior.
+
+### Changed
+
+- Updated documentation and migration guidance to reflect the current `BlocxCollectionBloc`, task-based use case APIs, renamed infinite-list internals, and `0.8.3` usage.
+
+
+## [0.8.2]
+- Updated CHANGELOG.md
+
+## [0.8.1]
 
 ### Changed
 
@@ -17,7 +29,7 @@
 
 ---
 
-## [0.8.0] - 2026-05-31
+## [0.8.0]
 
 ### Added
 

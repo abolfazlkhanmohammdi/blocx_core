@@ -72,6 +72,8 @@ class BlocxCollectionStateLoaded<T extends BlocxBaseEntity> extends BlocxCollect
     Set<String>? beingSelectedItemIds,
     Set<String>? highlightedItemIds,
     Set<String>? beingRemovedItemIds,
+    Set<String>? expandedItemIds,
+    Object? additionalInfo,
   }) {
     return BlocxCollectionStateLoaded<T>(
       list: list ?? this.list,
@@ -83,7 +85,8 @@ class BlocxCollectionStateLoaded<T extends BlocxBaseEntity> extends BlocxCollect
       beingSelectedItemIds: beingSelectedItemIds ?? this.beingSelectedItemIds,
       highlightedItemIds: highlightedItemIds ?? this.highlightedItemIds,
       beingRemovedItemIds: beingRemovedItemIds ?? this.beingRemovedItemIds,
-      expandedItemIds: expandedItemIds,
+      expandedItemIds: expandedItemIds ?? this.expandedItemIds,
+      additionalInfo: additionalInfo ?? this.additionalInfo,
     );
   }
 }
@@ -110,15 +113,15 @@ class BlocxCollectionStateScrollToItem<T extends BlocxBaseEntity> extends BlocxC
   final int index;
 
   const BlocxCollectionStateScrollToItem({required this.item, required this.index})
-    : super(
-        list: const [],
-        hasReachedEnd: false,
-        isLoadingNextPage: false,
-        isRefreshing: false,
-        isSearching: false,
-        shouldRebuild: false,
-        shouldListen: true,
-      );
+      : super(
+          list: const [],
+          hasReachedEnd: false,
+          isLoadingNextPage: false,
+          isRefreshing: false,
+          isSearching: false,
+          shouldRebuild: false,
+          shouldListen: true,
+        );
 }
 
 class BlocxCollectionStateSelectionChanged<T extends BlocxBaseEntity> extends BlocxCollectionState<T> {
