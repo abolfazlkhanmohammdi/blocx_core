@@ -16,14 +16,14 @@ import 'package:meta/meta.dart';
 ///   const SearchUsersInput({required this.query, required super.limit, required super.offset});
 /// }
 /// ```
-class BlocxPaginationInput {
+class BlocxPaginatedInput {
   /// Number of items to load per request.
   final int limit;
 
   /// Zero-based index of the first item to fetch.
   final int offset;
 
-  const BlocxPaginationInput({required this.limit, required this.offset});
+  const BlocxPaginatedInput({required this.limit, required this.offset});
 }
 
 /// Base use case for paginated list operations.
@@ -50,16 +50,16 @@ class BlocxPaginationInput {
 ///
 /// ## Custom input
 ///
-/// Pass a subclass of [BlocxPaginationInput] to attach filters or sorting:
+/// Pass a subclass of [BlocxPaginatedInput] to attach filters or sorting:
 /// ```dart
 /// class GetFilteredOrdersUseCase
 ///     extends BlocxPaginationUseCase<OrderFilterInput, Order> { ... }
 /// ```
-abstract class BlocxPaginatedUseCase<Input extends BlocxPaginationInput, Output extends BlocxBaseEntity>
+abstract class BlocxPaginatedUseCase<Input extends BlocxPaginatedInput, Output extends BlocxBaseEntity>
     extends BlocxBaseUseCase<Input, BlocxPage<Output>> {
   /// Builds a successful paginated result from [items] and the originating [input].
   ///
-  /// Constructs [BlocxPage] with the correct [offset] and [loadCount], then
+  /// Constructs [BlocxPage] with the correct [offset] and [limit], then
   /// wraps it in [BlocxUseCaseSuccess]. [BlocxPage.hasNext] is derived
   /// automatically from `loadCount == limit`.
   ///
@@ -71,13 +71,13 @@ abstract class BlocxPaginatedUseCase<Input extends BlocxPaginationInput, Output 
   @protected
   BlocxUseCaseResult<BlocxPage<Output>> successResult({
     required List<Output> items,
-    required BlocxPaginationInput input,
+    required BlocxPaginatedInput input,
   }) =>
       success(
         BlocxPage(
           items: items,
           offset: input.offset,
-          loadCount: items.length,
+          limit: input.limit,
         ),
       );
 }

@@ -3,7 +3,7 @@ export './src/blocs/list/mixins/blocx_collection_infinite_mixin.dart';
 export './src/blocs/list/mixins/blocx_collection_selectable_mixin.dart';
 export './src/blocs/list/models/page.dart';
 export './src/blocs/list/sub_blocs/infinite_list/blocx_infinite_list_bloc.dart';
-export './src/blocs/list/use_cases/blocx_pagination_use_case.dart';
+export './src/blocs/list/use_cases/blocx_paginated_use_case.dart';
 export 'src/blocs/list/models/selection_changed_data.dart';
 export 'src/blocs/list/mixins/blocx_collection_sync_stream_mixin.dart';
 export 'src/blocs/list/mixins/blocx_collection_deletable_mixin.dart';

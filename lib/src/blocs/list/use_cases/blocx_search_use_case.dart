@@ -3,12 +3,12 @@ import 'package:blocx_core/list_bloc.dart';
 
 /// Input model for search + pagination use cases.
 ///
-/// Extends [BlocxPaginationInput] by adding a search constraint.
+/// Extends [BlocxPaginatedInput] by adding a search constraint.
 ///
 /// Used in use cases that combine:
 /// - pagination (loadCount, offset)
 /// - search filtering (searchText)
-class BlocxSearchInput extends BlocxPaginationInput {
+class BlocxSearchInput extends BlocxPaginatedInput {
   /// Raw search query string used to filter results.
   final String searchText;
 

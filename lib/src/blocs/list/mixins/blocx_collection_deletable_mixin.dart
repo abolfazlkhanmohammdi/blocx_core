@@ -5,83 +5,85 @@ import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/list_bloc.dart'
     show
         BlocxCollectionBloc,
+        BlocxCollectionEventDeselectMultipleItems,
         BlocxCollectionEventRemoveItem,
-        BlocxCollectionEventRemoveMultipleItems,
         BlocxCollectionEventRemoveItemById,
-        BlocxCollectionState,
-        BlocxCollectionEventDeselectMultipleItems;
+        BlocxCollectionEventRemoveMultipleItems,
+        BlocxCollectionState;
 
-/// A mixin that adds delete & bulk-delete capabilities to a [BlocxCollectionBloc].
+/// Adds single-item and bulk-delete behavior to a [BlocxCollectionBloc].
 ///
-/// ## IMPORTANT (updated architecture)
-/// Use cases are now:
-/// `BlocxBaseUseCase<Input, bool>`
+/// Deletion can be configured with [deleteItemTask] and
+/// [deleteMultipleItemsTask]. Both are task factories so each feature can build
+/// whatever input its API requires.
 ///
-/// So:
-/// - single delete → Input = T
-/// - bulk delete → Input = List<T>
+/// Example:
+///
+/// ```dart
+/// @override
+/// BlocxUseCaseTask<DeleteCategoryInput, bool>? deleteItemTask(
+///   CategoryEntity item,
+/// ) {
+///   return BlocxUseCaseTask<DeleteCategoryInput, bool>(
+///     useCase: deleteCategoryUseCase,
+///     inputBuilder: () => DeleteCategoryInput(id: item.id),
+///   );
+/// }
+/// ```
 mixin BlocxCollectionDeletableMixin<T extends BlocxBaseEntity, P> on BlocxCollectionBloc<T, P> {
-  final Set<String> _beingRemovedItemIds = {};
+  final Set<String> _beingRemovedItemIds = <String>{};
 
-  // ---------------------------------------------------------------------------
-  // USE CASES (UPDATED SIGNATURES)
-  // ---------------------------------------------------------------------------
+  /// Creates the task used to delete a single [item].
+  ///
+  /// Return `null` to use [performDeleteItem] instead.
+  BlocxUseCaseTask<Object?, bool>? deleteItemTask(T item) => null;
 
-  BlocxBaseUseCase<T, bool>? get deleteItemUseCase;
+  /// Creates the task used to delete multiple [items] at once.
+  ///
+  /// Return `null` to fall back to deleting each item individually through
+  /// [deleteItemTask] or [performDeleteItem].
+  BlocxUseCaseTask<Object?, bool>? deleteMultipleItemsTask(List<T> items) => null;
 
-  BlocxBaseUseCase<List<T>, bool>? deleteMultipleItemsUseCase(List<T> items) => null;
-
+  /// Registers delete event handlers.
   void initDeletable() {
     on<BlocxCollectionEventRemoveItem<T>>(removeItem);
     on<BlocxCollectionEventRemoveMultipleItems<T>>(removeMultipleItems);
     on<BlocxCollectionEventRemoveItemById<T>>(removeItemById);
   }
 
-  // ---------------------------------------------------------------------------
-  // SINGLE DELETE
-  // ---------------------------------------------------------------------------
-
+  /// Removes one item from the remote source and then from the local list.
   Future<void> removeItem(
     BlocxCollectionEventRemoveItem<T> event,
     Emitter<BlocxCollectionState<T>> emit,
   ) async {
-    _beingRemovedItemIds.add(event.item.identifier);
+    final item = event.item;
+
+    _beingRemovedItemIds.add(item.identifier);
     emitState(emit);
 
-    final uc = deleteItemUseCase;
-
-    if (uc == null) {
-      throw UnimplementedError("Delete not configured for '$T'. Provide `deleteItemUseCase(item)`.");
-    }
-
     try {
-      final BlocxUseCaseResult<bool> result = await uc.execute(event.item);
+      final deleted = await _deleteItem(item, emit);
 
-      final ok = result.isSuccess && (result.data ?? false);
-
-      _beingRemovedItemIds.remove(event.item.identifier);
-
-      if (ok) {
-        removeItemFromList(event.item);
+      if (deleted) {
+        removeItemFromList(item);
 
         if (isSelectable) {
-          add(BlocxCollectionEventDeselectMultipleItems(items: [event.item]));
+          add(BlocxCollectionEventDeselectMultipleItems<T>(items: <T>[item]));
         }
       }
 
+      _beingRemovedItemIds.remove(item.identifier);
       emitState(emit);
-      _onItemDeletedResult(result);
-    } catch (e, s) {
-      _beingRemovedItemIds.remove(event.item.identifier);
+      onItemDeleted(item, deleted);
+    } catch (error, stackTrace) {
+      _beingRemovedItemIds.remove(item.identifier);
       emitState(emit);
-      handleError(e, emit, stacktrace: s);
+      handleError(error, emit, stacktrace: stackTrace);
+      onItemDeleted(item, false);
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // BULK DELETE
-  // ---------------------------------------------------------------------------
-
+  /// Removes multiple items from the remote source and then from the local list.
   Future<void> removeMultipleItems(
     BlocxCollectionEventRemoveMultipleItems<T> event,
     Emitter<BlocxCollectionState<T>> emit,
@@ -90,140 +92,157 @@ mixin BlocxCollectionDeletableMixin<T extends BlocxBaseEntity, P> on BlocxCollec
 
     if (items.isEmpty) return;
 
-    for (final it in items) {
-      _beingRemovedItemIds.add(it.identifier);
+    for (final item in items) {
+      _beingRemovedItemIds.add(item.identifier);
     }
 
     emitState(emit);
 
-    final ucMany = deleteMultipleItemsUseCase(items);
-    final hasMany = ucMany != null;
-    final hasSingle = deleteItemUseCase != null;
-
-    if (!hasMany && !hasSingle) {
-      for (final it in items) {
-        _beingRemovedItemIds.remove(it.identifier);
-      }
-
-      emitState(emit);
-
-      throw UnimplementedError(
-        "Bulk delete not configured for '$T'.\n"
-        "Provide `deleteMultipleItemsUseCase(items)` or `deleteItemUseCase(item)`.",
-      );
-    }
-
-    final Map<T, bool> results = {};
+    final results = <T, bool>{};
 
     try {
-      if (hasMany) {
-        final BlocxUseCaseResult<bool> result = await ucMany.execute(items);
+      final bulkTask = deleteMultipleItemsTask(items);
 
-        final ok = result.isSuccess && (result.data ?? false);
+      if (bulkTask != null) {
+        final deleted = await _executeTask(bulkTask, emit);
 
-        for (final it in items) {
-          _beingRemovedItemIds.remove(it.identifier);
+        for (final item in items) {
+          results[item] = deleted;
 
-          if (ok) {
-            removeItemFromList(it);
+          if (deleted) {
+            removeItemFromList(item);
           }
-
-          results[it] = result.isSuccess;
         }
 
-        emitState(emit);
+        if (deleted && isSelectable) {
+          add(BlocxCollectionEventDeselectMultipleItems<T>(items: items));
+        }
       } else {
-        for (final it in items) {
-          final uc = deleteItemUseCase!;
+        for (final item in items) {
+          final deleted = await _deleteItem(item, emit);
 
-          try {
-            final BlocxUseCaseResult<bool> r = await uc.execute(it);
+          results[item] = deleted;
 
-            final ok = r.isSuccess && (r.data ?? false);
+          if (deleted) {
+            removeItemFromList(item);
 
-            if (ok) {
-              removeItemFromList(it);
-
-              if (isSelectable) {
-                add(BlocxCollectionEventDeselectMultipleItems(items: [it]));
-              }
+            if (isSelectable) {
+              add(
+                BlocxCollectionEventDeselectMultipleItems<T>(
+                  items: <T>[item],
+                ),
+              );
             }
-
-            results[it] = r.isSuccess;
-          } catch (e) {
-            results[it] = false;
-          } finally {
-            _beingRemovedItemIds.remove(it.identifier);
-            emitState(emit);
           }
         }
       }
-    } catch (e, s) {
-      for (final it in items) {
-        _beingRemovedItemIds.remove(it.identifier);
+
+      for (final item in items) {
+        _beingRemovedItemIds.remove(item.identifier);
       }
 
       emitState(emit);
-      handleError(e, emit, stacktrace: s);
-    } finally {
-      _onMultipleItemsDeletedResult(results, event.items, wasMultipleDelete: hasMany);
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // HOOKS
-  // ---------------------------------------------------------------------------
-
-  void _onItemDeletedResult(BlocxUseCaseResult<bool> result) {
-    if (!displayDeletedSnackbar) return;
-
-    final ok = result.isSuccess && (result.data ?? false);
-
-    if (ok) {
-      displayInfoSnackbar("Item deleted");
-    } else {
-      displayWarningSnackbar("Failed to delete item");
-    }
-  }
-
-  void _onMultipleItemsDeletedResult(Map<T, bool> results, List<T> items, {required bool wasMultipleDelete}) {
-    if (!displayDeletedSnackbar) return;
-
-    final total = results.length;
-    final success = results.values.where((r) => r).length;
-    final fail = total - success;
-
-    if (fail == 0) {
-      displayInfoSnackbar("Deleted $success item(s).");
-
-      if (isSelectable && wasMultipleDelete) {
-        add(BlocxCollectionEventDeselectMultipleItems(items: items));
+      onMultipleItemsDeleted(items, results);
+    } catch (error, stackTrace) {
+      for (final item in items) {
+        _beingRemovedItemIds.remove(item.identifier);
+        results.putIfAbsent(item, () => false);
       }
-    } else if (success == 0) {
-      displayWarningSnackbar("Failed to delete $fail item(s).");
-    } else {
-      displayWarningSnackbar("Deleted $success, failed $fail.");
+
+      emitState(emit);
+      handleError(error, emit, stacktrace: stackTrace);
+      onMultipleItemsDeleted(items, results);
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // STATE HELPERS
-  // ---------------------------------------------------------------------------
+  Future<bool> _deleteItem(
+    T item,
+    Emitter<BlocxCollectionState<T>> emit,
+  ) async {
+    final task = deleteItemTask(item);
 
-  @override
-  Set<String> get beingRemovedItemIds => _beingRemovedItemIds;
+    if (task != null) {
+      return _executeTask(task, emit);
+    }
 
+    return performDeleteItem(item);
+  }
+
+  Future<bool> _executeTask(
+    BlocxUseCaseTask<Object?, bool> task,
+    Emitter<BlocxCollectionState<T>> emit,
+  ) async {
+    final result = await task.execute();
+
+    if (result.isFailure) {
+      handleError(result.error!, emit, stacktrace: result.stackTrace);
+      return false;
+    }
+
+    return result.data ?? false;
+  }
+
+  /// Fallback delete implementation when [deleteItemTask] is not provided.
+  ///
+  /// Override this only when you do not want to use task-based deletion.
+  Future<bool> performDeleteItem(T item) {
+    throw UnimplementedError(
+      'Delete is not configured for `$T`. Provide `deleteItemTask(item)` '
+      'or override `performDeleteItem(item)`.',
+    );
+  }
+
+  /// Called after a single delete operation finishes.
+  void onItemDeleted(T item, bool deleted) {
+    if (!displayDeletedSnackbar) return;
+
+    if (deleted) {
+      displayInfoSnackbar('Item deleted');
+    } else {
+      displayWarningSnackbar('Failed to delete item');
+    }
+  }
+
+  /// Called after a bulk delete operation finishes.
+  void onMultipleItemsDeleted(
+    List<T> items,
+    Map<T, bool> results,
+  ) {
+    if (!displayDeletedSnackbar) return;
+
+    final successCount = results.values.where((deleted) => deleted).length;
+    final failedCount = results.length - successCount;
+
+    if (failedCount == 0) {
+      displayInfoSnackbar('Deleted $successCount item(s).');
+    } else if (successCount == 0) {
+      displayWarningSnackbar('Failed to delete $failedCount item(s).');
+    } else {
+      displayWarningSnackbar('Deleted $successCount, failed $failedCount.');
+    }
+  }
+
+  /// Removes an item locally by its identifier.
+  ///
+  /// This does not call the remote delete task. Use this for local-only removal.
   FutureOr<void> removeItemById(
     BlocxCollectionEventRemoveItemById<T> event,
     Emitter<BlocxCollectionState<T>> emit,
-  ) async {
-    final index = list.indexWhere((item) => item.identifier == event.identifier);
+  ) {
+    final index = list.indexWhere(
+      (item) => item.identifier == event.identifier,
+    );
 
-    if (index == -1) return;
+    if (index == -1) return Future.value();
 
     removeItemFromList(list[index]);
     emitState(emit);
   }
 
+  /// Identifiers of items currently being removed.
+  @override
+  Set<String> get beingRemovedItemIds => _beingRemovedItemIds;
+
+  /// Whether delete result snackbars should be displayed.
   bool get displayDeletedSnackbar => false;
 }

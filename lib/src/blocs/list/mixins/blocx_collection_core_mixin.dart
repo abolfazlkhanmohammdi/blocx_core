@@ -17,39 +17,15 @@ import 'package:blocx_core/list_bloc.dart'
         BlocxCollectionStateLoaded,
         BlocxInfiniteListEventSetReachedEnd,
         BlocxInfiniteListEventChangeLoadBottomDataStatus,
-        BlocxInfiniteListEventCloseRefresh,
         BlocxCollectionEventHighlightItem;
-import 'package:blocx_core/src/blocs/list/use_cases/blocx_pagination_use_case.dart';
+import 'package:blocx_core/src/blocs/list/use_cases/blocx_paginated_use_case.dart';
 import 'package:blocx_core/src/core/models/base_entity_extensions.dart';
 
-/// Mixin that provides **core list state management and data orchestration**
-/// for a [BlocxListBloc].
+/// Provides core collection state management and data orchestration.
 ///
-/// This mixin is responsible for:
-/// - Maintaining the internal immutable list state
-/// - Loading initial paginated data
-/// - Inserting, updating, and replacing items
-/// - Coordinating infinite scroll events
-/// - Tracking UI flags (loading, refreshing, searching)
-/// - Emitting consistent [BlocxCollectionStateLoaded] updates
-///
-/// ## Architecture role
-/// This mixin acts as the **data layer backbone** of list-based blocs.
-/// It does NOT handle UI logic directly; instead it emits normalized state
-/// used by presentation layers.
-///
-/// ## Immutability guarantee
-/// The exposed [list] is an [UnmodifiableListView], meaning:
-/// - External code cannot mutate internal state
-/// - All mutations must go through provided methods
-///
-/// ## Pagination model
-/// Pagination is handled through a task-based or use-case-based system
-/// (depending on implementation), and inserts are categorized using
-/// [DataInsertSource].
-///
-/// ## State emission strategy
-/// All updates go through [emitState], ensuring consistent state shape.
+/// This mixin owns the internal list, initial loading, insertion, replacement,
+/// pagination state flags, and common state emission used by all collection
+/// blocs.
 mixin BlocxCollectionCoreMixin<T extends BlocxBaseEntity, P>
     on BaseBloc<BlocxCollectionEvent<T>, BlocxCollectionState<T>> {
   /// Optional external payload used for initial loading.
@@ -59,111 +35,105 @@ mixin BlocxCollectionCoreMixin<T extends BlocxBaseEntity, P>
   final List<T> _list = [];
 
   /// Immutable view of the internal list.
-  ///
-  /// This prevents external mutation of bloc state.
   UnmodifiableListView<T> get list => UnmodifiableListView(_list);
 
-  /// Indicates whether a "next page" request is in progress.
+  /// Whether a next-page request is currently running.
   bool isLoadingNextPage = false;
 
-  /// Indicates whether all pages have been loaded.
+  /// Whether the collection has reached the final page.
   bool hasReachedEnd = false;
 
-  /// Indicates whether a search operation is active.
+  /// Whether a search operation is currently active.
   bool isSearching = false;
 
-  /// Indicates whether a refresh operation is active.
+  /// Whether a refresh operation is currently active.
   bool isRefreshing = false;
 
-  /// IDs of selected items.
+  /// Identifiers of selected items.
   Set<String> get selectedItemIds;
 
-  /// IDs currently being selected (UI transition state).
+  /// Identifiers of items currently being selected.
   Set<String> get beingSelectedItemIds;
 
-  /// IDs of highlighted items.
+  /// Identifiers of highlighted items.
   Set<String> get highlightedItemIds;
 
-  /// IDs of items currently being removed.
+  /// Identifiers of items currently being removed.
   Set<String> get beingRemovedItemIds;
 
-  /// IDs of expanded items.
+  /// Identifiers of expanded items.
   Set<String> get expandedItemIds;
 
-  /// Single task that drives initial load, next-page, and refresh.
+  /// Shared paginated task used by initial load, next-page load, and refresh.
   ///
-  /// This is the recommended entry point for the common case where all three
-  /// pagination operations share the same use case and input shape.
+  /// Override this when all paginated operations use the same use case.
   ///
-  /// ## Usage
+  /// Example:
+  ///
   /// ```dart
   /// @override
-  /// BlocxPaginatedUseCaseTask get paginationTask => BlocxPaginatedUseCaseTask(
-  ///   useCase: _myUseCase,
-  ///   inputBuilder: ({required limit, required offset}) =>
-  ///       MyInput(limit: limit, offset: offset),
-  /// );
+  /// BlocxPaginatedUseCaseTask<GetCategoriesInput, CategoryEntity>?
+  ///     get paginationTask {
+  ///   return BlocxPaginatedUseCaseTask<GetCategoriesInput, CategoryEntity>(
+  ///     useCase: getCategoriesUseCase,
+  ///     inputBuilder: (offset, limit) {
+  ///       return GetCategoriesInput(
+  ///         offset: offset,
+  ///         limit: limit,
+  ///       );
+  ///     },
+  ///   );
+  /// }
   /// ```
-  ///
-  /// When set, [loadInitialPageTask] automatically delegates to this getter,
-  /// and the infinite and refreshable mixins do the same for their respective
-  /// tasks — so a single override is all that is needed.
-  ///
-  /// If you need different behaviour per operation (e.g. a separate refresh
-  /// endpoint), override [loadInitialPageTask] directly instead.
-  BlocxPaginatedUseCaseTask<BlocxPaginatedUseCase<BlocxPaginationInput, T>, BlocxPaginationInput>?
-      get paginationTask => null;
+  BlocxPaginatedUseCaseTask<BlocxPaginatedInput, T>? get paginationTask => null;
 
-  /// Task responsible for loading the initial page of data.
+  /// Task responsible for loading the initial page.
   ///
-  /// Defaults to [paginationTask]. Override this only when the initial load
-  /// requires a different use case or input shape from the shared pagination
-  /// task.
-  BlocxPaginatedUseCaseTask<BlocxPaginatedUseCase<BlocxPaginationInput, T>, BlocxPaginationInput>?
-      get loadInitialPageTask => paginationTask;
+  /// Defaults to [paginationTask]. Override this only when initial loading uses
+  /// a different use case or input shape.
+  BlocxPaginatedUseCaseTask<BlocxPaginatedInput, T>? get loadInitialPageTask => paginationTask;
 
-  /// Loads the initial page of data.
-  ///
-  /// This method:
-  /// - Stores the provided payload
-  /// - Executes the initial page use case task
-  /// - Emits loading and loaded states accordingly
-  ///
-  /// Throws [UnimplementedError] if no loading strategy is provided.
-  Future loadInitialPage(
+  /// Loads the first page of collection data.
+  Future<void> loadInitialPage(
     BlocxCollectionEventLoadInitialPage<T, P> event,
     Emitter<BlocxCollectionState<T>> emit,
   ) async {
     payload = event.payload;
 
-    if (loadInitialPageTask != null) {
-      return _fetchInitialPage(event, emit);
+    final task = loadInitialPageTask;
+    if (task != null) {
+      return _fetchInitialPage(task, emit);
     }
 
     throw UnimplementedError(
-        "Provide `paginationTask` (or `loadInitialPageTask`) or override `loadInitialPage`.");
+      'Provide `paginationTask` or `loadInitialPageTask`, '
+      'or override `loadInitialPage()`.',
+    );
   }
 
-  /// Internal handler that executes the initial load task.
-  ///
-  /// Emits [BlocxCollectionStateLoading] before execution and updates state
-  /// upon success or failure.
+  /// Executes the initial load task.
   Future<void> _fetchInitialPage(
-    BlocxCollectionEventLoadInitialPage<T, P> event,
+    BlocxPaginatedUseCaseTask<BlocxPaginatedInput, T> task,
     Emitter<BlocxCollectionState<T>> emit,
   ) async {
     emit(BlocxCollectionStateLoading<T>());
 
-    final task = loadInitialPageTask!;
-
-    final result = await task.useCase.execute(task.inputBuilder(0, limit));
+    final result = await task.execute(offset: 0, limit: limit);
 
     if (result.isFailure) {
       await handleError(result.error!, emit, stacktrace: result.stackTrace);
       return;
     }
 
-    await insertToList(result.data!.items, !result.data!.hasNext, DataInsertSource.init);
+    final page = result.data!;
+
+    clearList();
+
+    await insertToList(
+      page.items,
+      !page.hasNext,
+      DataInsertSource.init,
+    );
 
     emitState(emit);
   }
@@ -175,11 +145,9 @@ mixin BlocxCollectionCoreMixin<T extends BlocxBaseEntity, P>
   int get offset => list.length;
 
   /// Allows modification of incoming data before insertion.
-  ///
-  /// Override for preprocessing (sorting, filtering, mapping).
   Future<List<T>> modifyListBeforeInsert(List<T> data) async => data;
 
-  /// Registers all internal event handlers for this mixin.
+  /// Registers core collection event handlers.
   void initCoreMixin() {
     on<BlocxCollectionEventLoadInitialPage<T, P>>(loadInitialPage);
     on<BlocxCollectionEventAddItem<T>>(addItem);
@@ -187,9 +155,7 @@ mixin BlocxCollectionCoreMixin<T extends BlocxBaseEntity, P>
     on<BlocxCollectionEventReplaceList<T>>(handleReplaceList);
   }
 
-  /// Emits the current list state to listeners.
-  ///
-  /// This is the single source of truth for UI updates.
+  /// Emits the current loaded collection state.
   void emitState(Emitter<BlocxCollectionState<T>> emit) {
     emit(
       BlocxCollectionStateLoaded(
@@ -208,50 +174,49 @@ mixin BlocxCollectionCoreMixin<T extends BlocxBaseEntity, P>
     );
   }
 
-  /// Optional additional metadata attached to state.
+  /// Optional additional metadata attached to loaded states.
   dynamic get additionalInfo => null;
 
-  /// Inserts a batch of items into the list.
-  ///
-  /// Handles:
-  /// - insertion position based on [DataInsertSource]
-  /// - infinite scroll coordination
-  /// - end-of-list detection
-  Future<void> insertToList(List<T> data, bool hasReachedEnd, DataInsertSource insertSource) async {
-    data = await modifyListBeforeInsert(data);
-
+  /// Inserts [data] into the collection using [insertSource].
+  Future<void> insertToList(
+    List<T> data,
+    bool hasReachedEnd,
+    DataInsertSource insertSource,
+  ) async {
+    final modifiedData = await modifyListBeforeInsert(data);
     final index = insertSource.insertIndex(list);
 
     _addBlocxInfiniteListEvent(insertSource);
 
-    _list.insertAll(index, data);
+    _list.insertAll(index, modifiedData);
 
     doAfterInsert();
 
     this.hasReachedEnd = hasReachedEnd;
 
     if (hasReachedEnd) {
-      infiniteListBloc.add(BlocxInfiniteListEventSetReachedEnd(hasReachedEnd: true));
+      infiniteListBloc.add(
+        BlocxInfiniteListEventSetReachedEnd(hasReachedEnd: true),
+      );
     }
   }
 
-  /// Clears all items from the list.
+  /// Clears all collection items.
   void clearList() => _list.clear();
 
-  /// Replaces entire list with a new set of items.
+  /// Replaces the entire collection with [newList].
   void replaceList(List<T> newList) {
     _list
       ..clear()
       ..addAll(newList);
   }
 
-  /// Replaces a single item in the list.
+  /// Replaces one existing item.
   void replaceItemInList(T item) => _list.replaceItem(item);
 
-  /// Removes an item from the list.
+  /// Removes one item from the collection.
   void removeItemFromList(T item) => _list.removeById(item);
 
-  /// Internal handler for insert source side-effects.
   void _addBlocxInfiniteListEvent(DataInsertSource insertSource) {
     switch (insertSource) {
       case DataInsertSource.search:
@@ -259,29 +224,39 @@ mixin BlocxCollectionCoreMixin<T extends BlocxBaseEntity, P>
         break;
 
       case DataInsertSource.nextPage:
-        infiniteListBloc.add(BlocxInfiniteListEventChangeLoadBottomDataStatus(false, hasReachedEnd));
+        infiniteListBloc.add(
+          BlocxInfiniteListEventChangeLoadBottomDataStatus(
+            false,
+            hasReachedEnd,
+          ),
+        );
         break;
 
       case DataInsertSource.refresh:
-        infiniteListBloc.add(BlocxInfiniteListEventCloseRefresh());
         break;
     }
   }
 
-  /// Infinite list controller used for pagination state coordination.
+  /// Infinite list controller used for pagination coordination.
   BlocxInfiniteListBloc get infiniteListBloc;
 
   /// Whether item highlighting is enabled.
   bool get isHighlightable;
 
-  /// Adds a new item to the list.
-  Future<void> addItem(BlocxCollectionEventAddItem<T> event, Emitter<BlocxCollectionState<T>> emit) async {
+  /// Adds [event.item] to the collection.
+  Future<void> addItem(
+    BlocxCollectionEventAddItem<T> event,
+    Emitter<BlocxCollectionState<T>> emit,
+  ) async {
     _list.insert(event.index, event.item);
     emitState(emit);
   }
 
-  /// Updates an existing item in the list.
-  FutureOr<void> updateItem(BlocxCollectionEventUpdateItem<T> event, Emitter<BlocxCollectionState<T>> emit) {
+  /// Updates [event.item] inside the collection.
+  FutureOr<void> updateItem(
+    BlocxCollectionEventUpdateItem<T> event,
+    Emitter<BlocxCollectionState<T>> emit,
+  ) {
     final index = _list.indexById(event.item);
 
     if (index == -1) {
@@ -297,12 +272,12 @@ mixin BlocxCollectionCoreMixin<T extends BlocxBaseEntity, P>
     emitState(emit);
   }
 
-  /// Inserts a single item at a specific index.
+  /// Inserts a single [item] at [index].
   void insertToListSingle(T item, {int index = 0}) {
     _list.insert(index, item);
   }
 
-  /// Sorts list using provided comparator.
+  /// Sorts the collection using [comparator].
   void sortList(Comparator<T> comparator) {
     _list.sort(comparator);
   }
@@ -310,7 +285,7 @@ mixin BlocxCollectionCoreMixin<T extends BlocxBaseEntity, P>
   /// Hook executed after insert operations.
   void doAfterInsert() {}
 
-  /// Handles full list replacement event.
+  /// Handles full list replacement.
   FutureOr<void> handleReplaceList(
     BlocxCollectionEventReplaceList<T> event,
     Emitter<BlocxCollectionState<T>> emit,

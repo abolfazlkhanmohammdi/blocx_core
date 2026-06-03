@@ -1,81 +1,67 @@
-import 'package:blocx_core/blocx_core.dart' show BlocxBaseUseCase;
-import 'package:blocx_core/src/blocs/list/use_cases/blocx_pagination_use_case.dart';
+import 'package:blocx_core/blocx_core.dart' show BlocxBaseEntity, BlocxBaseUseCase, BlocxUseCaseResult;
+import 'package:blocx_core/src/blocs/list/models/page.dart';
+import 'package:blocx_core/src/blocs/list/use_cases/blocx_paginated_use_case.dart';
 
 /// Signature for a function that builds a use case input at execution time.
-typedef InputBuilder<I> = I Function();
+typedef InputBuilder<Input> = Input Function();
 
-/// Signature for a function that builds a [BlocxPaginationInput] subclass
-/// given the current [limit] and [offset].
-typedef PaginationInputBuilder<I extends BlocxPaginationInput> = I Function(int offset, int limit);
+/// Signature for a function that builds a paginated use case input.
+typedef PaginatedInputBuilder<Input extends BlocxPaginatedInput> = Input Function(
+  int offset,
+  int limit,
+);
 
-/// Pairs a [BlocxBaseUseCase] with a lazily evaluated [inputBuilder].
+/// Pairs a [BlocxBaseUseCase] with a lazily evaluated input builder.
 ///
-/// Input is constructed at execution time rather than registration time,
-/// so it always reflects the latest runtime state (form values, bloc state, etc.).
+/// [Input] is the input type accepted by the use case.
+/// [Output] is the output type returned by the use case.
 ///
-/// ```dart
-/// BlocxUseCaseTask(
-///   useCase: getUserUseCase,
-///   inputBuilder: () => GetUserInput(userId: state.selectedUserId),
-/// );
-/// ```
-class BlocxUseCaseTask<UseCase extends BlocxBaseUseCase, Input> {
+/// Input is constructed at execution time rather than registration time, so it
+/// always reflects the latest runtime state, such as current form values.
+class BlocxUseCaseTask<Input, Output> {
   /// The use case to execute.
-  final UseCase useCase;
+  final BlocxBaseUseCase<Input, Output> useCase;
 
   /// Produces a fresh [Input] at execution time.
   final InputBuilder<Input> inputBuilder;
 
-  /// Creates a [BlocxUseCaseTask].
-  const BlocxUseCaseTask({required this.useCase, required this.inputBuilder});
+  /// Creates a use case task.
+  const BlocxUseCaseTask({
+    required this.useCase,
+    required this.inputBuilder,
+  });
+
+  /// Executes [useCase] using the latest value from [inputBuilder].
+  Future<BlocxUseCaseResult<Output>> execute() {
+    return useCase.execute(inputBuilder());
+  }
 }
 
-/// Pairs a paginated [BlocxBaseUseCase] with a [PaginationInputBuilder] that
-/// receives the current [limit] and [offset] at execution time.
+/// Pairs a [BlocxPaginatedUseCase] with a lazily evaluated paginated input.
 ///
-/// This is the standard task type for [BlocxCollectionBloc.paginationTask].
+/// [Input] is the paginated input type accepted by the use case.
+/// [Output] is the list item entity type returned inside [BlocxPage].
 ///
-/// ## Usage
-///
-/// ```dart
-/// @override
-/// BlocxPaginatedUseCaseTask get paginationTask => BlocxPaginatedUseCaseTask(
-///   useCase: _getOrdersUseCase,
-///   inputBuilder: ({required limit, required offset}) =>
-///       BlocxPaginationInput(limit: limit, offset: offset),
-/// );
-/// ```
-///
-/// ## With extra input fields from bloc state
-///
-/// ```dart
-/// @override
-/// BlocxPaginatedUseCaseTask get paginationTask => BlocxPaginatedUseCaseTask(
-///   useCase: _getOrdersUseCase,
-///   inputBuilder: ({required limit, required offset}) => GetOrdersInput(
-///     limit: limit,
-///     offset: offset,
-///     userId: payload!.id,
-///     status: currentFilter,
-///   ),
-/// );
-/// ```
-///
-/// ## Separate tasks per operation
-///
-/// If initial load, next-page, and refresh each hit different endpoints,
-/// override [BlocxCollectionBloc.loadInitialPageTask] individually instead.
-class BlocxPaginatedUseCaseTask<UseCase extends BlocxPaginatedUseCase<Input, dynamic>,
-    Input extends BlocxPaginationInput> {
+/// This task is used by collection mixins for initial load, next-page loading,
+/// refresh, and search.
+class BlocxPaginatedUseCaseTask<Input extends BlocxPaginatedInput, Output extends BlocxBaseEntity> {
   /// The paginated use case to execute.
-  final UseCase useCase;
+  final BlocxPaginatedUseCase<Input, Output> useCase;
 
-  /// Produces a fresh [Input] at execution time, receiving the current
-  /// [limit] (page size) and [offset] (number of already-loaded items).
-  ///
-  /// Called once per load operation — initial, next-page, and refresh.
-  final PaginationInputBuilder<Input> inputBuilder;
+  /// Produces a fresh [Input] from the requested [offset] and [limit].
+  final PaginatedInputBuilder<Input> inputBuilder;
 
-  /// Creates a [BlocxPaginatedUseCaseTask].
-  const BlocxPaginatedUseCaseTask({required this.useCase, required this.inputBuilder});
+  /// Creates a paginated use case task.
+  const BlocxPaginatedUseCaseTask({
+    required this.useCase,
+    required this.inputBuilder,
+  });
+
+  /// Executes [useCase] using an input built from [offset] and [limit].
+  Future<BlocxUseCaseResult<BlocxPage<Output>>> execute({
+    required int offset,
+    required int limit,
+  }) {
+    return useCase.execute(inputBuilder(offset, limit));
+  }
 }
