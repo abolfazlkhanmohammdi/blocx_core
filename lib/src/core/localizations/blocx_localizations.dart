@@ -22,6 +22,11 @@ abstract class BlocXLocalizations {
   String get valuesDoNotMatch;
   String get invalidPhoneNumber;
   String get selectedItemsMustBeUnique;
+  String get cancel;
+  String get delete;
+  String get deleteItem;
+  String get areYouSure;
+  String get areYouSureYouWantToDeleteThisItem;
 
   String errorCodeMessage(BlocXErrorCode errorCode);
 
@@ -73,6 +78,9 @@ class _DefaultLocalizations extends BlocXLocalizations {
 
   @override
   String get close => "Close";
+
+  @override
+  String get cancel => "Cancel";
 
   @override
   String get report => "Report";
@@ -188,4 +196,16 @@ class _DefaultLocalizations extends BlocXLocalizations {
   String fileSizeMustBeSmallerThan(String format) {
     return "This file's size must be smaller than $format";
   }
+
+  @override
+  String get areYouSure => "Are you sure?";
+
+  @override
+  String get areYouSureYouWantToDeleteThisItem => "Are you sure you want to delete this item?";
+
+  @override
+  String get delete => "Delete";
+
+  @override
+  String get deleteItem => "Delete Item";
 }

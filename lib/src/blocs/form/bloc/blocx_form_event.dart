@@ -1,6 +1,6 @@
 part of 'blocx_form_bloc.dart';
 
-class BlocxFormEvent extends BaseEvent {}
+class BlocxFormEvent extends BlocxBaseEvent {}
 
 class BlocxFormEventInit<P> extends BlocxFormEvent {
   final P? payload;
@@ -12,23 +12,6 @@ class BlocxFormEventUpdateData<E> extends BlocxFormEvent {
   final E key;
   BlocxFormEventUpdateData({required this.data, required this.key});
 }
-
-class BlocxFormEventNextStep extends BlocxFormEvent {}
-
-class BlocxFormEventPreviousStep extends BlocxFormEvent {}
-
-class BlocxFormEventGoToStep extends BlocxFormEvent {
-  final int stepIndex;
-  BlocxFormEventGoToStep(this.stepIndex);
-}
-
-class BlocxFormEventCheckUniqueValue<E extends Enum> extends BlocxFormEvent {
-  final E key;
-  final Object data;
-  BlocxFormEventCheckUniqueValue({required this.key, required this.data});
-}
-
-class BlocxFormEventFetchRequiredInfo extends BlocxFormEvent {}
 
 class BlocxFormEventSubmit extends BlocxFormEvent {}
 

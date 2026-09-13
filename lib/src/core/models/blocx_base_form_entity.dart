@@ -1,5 +1,6 @@
 import 'package:blocx_core/blocx_core.dart';
 import 'package:meta/meta.dart';
+import 'package:collection/collection.dart';
 
 /// Base class for all immutable form entities used by [BlocxFormBloc].
 ///
@@ -103,19 +104,24 @@ abstract class BlocxBaseFormEntity<F extends BlocxBaseFormEntity<F, E>, E extend
   /// is incorrectly implemented.
   ///
   /// In release builds the assertion is stripped — no runtime overhead.
+
   @nonVirtual
   F updateByKeySafe(E key, dynamic value) {
     final result = updateByKey(key, value);
 
     assert(() {
       final setValue = result.getValueByKey(key);
-      if (setValue != value) {
+
+      const equality = DeepCollectionEquality();
+
+      if (!equality.equals(setValue, value)) {
         throw Exception(
           'Failed to update key $key with value $value.\n'
           'Either "updateByKey" or "getValueByKey" is incorrectly implemented '
           'in the subclass. Expected "$value" but got "$setValue".',
         );
       }
+
       return true;
     }());
 

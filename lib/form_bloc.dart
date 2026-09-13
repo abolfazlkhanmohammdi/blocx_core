@@ -1,17 +1,17 @@
-// File: lib/src/blocs/form/validators/validators.dart
+// File: lib/form_bloc.dart
 
-export 'src/blocs/form/mixins/blocx_form_validation_mixin.dart';
 export 'src/blocs/form/validators/blocx_field_validator.dart';
 export 'src/blocs/form/validators/timed_error_message.dart';
 export 'src/core/models/blocx_base_form_entity.dart';
 
 //form
 export 'src/blocs/form/bloc/blocx_form_bloc.dart';
-export 'src/blocs/form/mixins/blocx_unique_field_validator_mixin.dart';
-export 'src/blocs/form/mixins/blocx_form_errors_mixin.dart';
-export 'src/blocs/form/mixins/blocx_form_info_fetcher_mixin.dart';
-export 'src/blocs/form/mixins/blocx_form_stepped_mixin.dart';
+export 'src/blocs/form/bloc/blocx_form_errors_mixin.dart';
 export 'src/blocs/form/validation/blocx_form_validator.dart';
+export 'src/blocs/form/mixins/prefetch/exports.dart';
+export 'src/blocs/form/mixins/stepped/exports.dart';
+export 'src/blocs/form/mixins/unique_field/exports.dart';
+export 'src/blocs/form/mixins/validation/exports.dart';
 
 /// STRING VALIDATORS
 export 'src/blocs/form/validators/string/blocx_string_required_validator.dart';
@@ -67,3 +67,6 @@ export 'src/blocs/form/validators/phone_number/blocx_phone_e164_validator.dart';
 export 'src/blocs/form/validators/phone_number/blocx_phone_max_length_validator.dart';
 export 'src/blocs/form/validators/phone_number/blocx_phone_min_length_validator.dart';
 export 'src/blocs/form/validators/phone_number/blocx_phone_required_validator.dart';
+
+/// Object Validators
+export 'src/blocs/form/validators/object/blocx_required_field_validator.dart';

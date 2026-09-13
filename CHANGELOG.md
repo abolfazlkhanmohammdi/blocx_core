@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.8.4]
+## [0.9.0]
 
 ### Fixed
 
@@ -35,10 +35,11 @@
   * Preserved stale-response protection through per-field request tokens.
   * Forwarded use case stack traces to `handleError`.
 
-* **Pagination**
+* **Pagination & Collection Tests**
 
   * Fixed `BlocxPage.hasNext` to compare returned item count against the requested `limit`.
   * Replaced the old `loadCount` field with `limit`.
+  * Fixed `BlocxCollectionBloc` initial page test limit configuration.
 
 ### Changed
 
@@ -59,7 +60,7 @@
 
 * **Paginated input naming**
 
-  * Renamed `BlocxPaginationInput` to `BlocxPaginatedInput`.
+  * Renamed `BlocxPaginatedInput` to `BlocxPaginatedInput`.
   * Renamed the source file/export from `blocx_pagination_use_case.dart` to `blocx_paginated_use_case.dart`.
   * Updated `BlocxSearchInput` to extend `BlocxPaginatedInput`.
 
@@ -108,11 +109,11 @@
 
 ### Migration Guide
 
-#### Replace `BlocxPaginationInput` with `BlocxPaginatedInput`
+#### Replace `BlocxPaginatedInput` with `BlocxPaginatedInput`
 
 ```dart
 // Before
-class GetUsersInput extends BlocxPaginationInput {
+class GetUsersInput extends BlocxPaginatedInput {
   const GetUsersInput({
     required super.limit,
     required super.offset,
@@ -132,10 +133,10 @@ class GetUsersInput extends BlocxPaginatedInput {
 
 ```dart
 // Before
-import 'package:blocx_core/src/blocs/list/use_cases/blocx_pagination_use_case.dart';
+import 'package:blocx_core/src/blocs/collection/use_cases/blocx_pagination_use_case.dart';
 
 // After
-import 'package:blocx_core/src/blocs/list/use_cases/blocx_paginated_use_case.dart';
+import 'package:blocx_core/src/blocs/collection/use_cases/blocx_paginated_use_case.dart';
 ```
 
 Prefer the public barrel when possible:
@@ -336,10 +337,10 @@ Update any direct imports of the renamed mixin files:
 
 ```dart
 // Before
-import 'package:blocx_core/src/blocs/list/mixins/blocx_collection_bloc_infinite_mixin.dart';
+import 'package:blocx_core/src/blocs/collection/mixins/blocx_collection_bloc_infinite_mixin.dart';
 
 // After
-import 'package:blocx_core/src/blocs/list/mixins/blocx_collection_infinite_mixin.dart';
+import 'package:blocx_core/src/blocs/collection/mixins/blocx_collection_infinite_mixin.dart';
 ```
 
 The same pattern applies to all other renamed list mixins listed above.

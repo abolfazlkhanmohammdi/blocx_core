@@ -1,6 +1,6 @@
 import 'package:blocx_core/blocx_core.dart' show BlocxBaseEntity, BlocxBaseUseCase, BlocxUseCaseResult;
-import 'package:blocx_core/src/blocs/list/models/page.dart';
-import 'package:blocx_core/src/blocs/list/use_cases/blocx_paginated_use_case.dart';
+import 'package:blocx_core/src/blocs/collection/models/blocx_page.dart';
+import 'package:blocx_core/src/blocs/collection/use_cases/blocx_paginated_use_case.dart';
 
 /// Signature for a function that builds a use case input at execution time.
 typedef InputBuilder<Input> = Input Function();

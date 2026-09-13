@@ -1,7 +1,7 @@
 part of 'screen_manager_cubit.dart';
 
 @immutable
-class ScreenManagerCubitState extends BaseState {
+class ScreenManagerCubitState extends BlocxBaseState {
   const ScreenManagerCubitState({required super.shouldRebuild, required super.shouldListen});
 }
 
@@ -14,7 +14,7 @@ class ScreenManagerCubitStateInitial extends ScreenManagerCubitState {
 class ScreenManagerCubitStateDisplayErrorPage extends ScreenManagerCubitState {
   final ReadableError error;
   const ScreenManagerCubitStateDisplayErrorPage({required this.error})
-    : super(shouldRebuild: true, shouldListen: false);
+      : super(shouldRebuild: true, shouldListen: false);
 }
 
 @immutable
@@ -23,7 +23,7 @@ class ScreenManagerCubitStateDisplayErrorPageByErrorCode extends ScreenManagerCu
   final Object? error;
   final StackTrace? stackTrace;
   const ScreenManagerCubitStateDisplayErrorPageByErrorCode(this.errorCode, {this.error, this.stackTrace})
-    : super(shouldRebuild: true, shouldListen: false);
+      : super(shouldRebuild: true, shouldListen: false);
 }
 
 @immutable

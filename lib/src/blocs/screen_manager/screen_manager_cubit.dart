@@ -1,5 +1,5 @@
 import 'package:bloc/bloc.dart' show Cubit;
-import 'package:blocx_core/src/blocs/base/base_bloc.dart';
+import 'package:blocx_core/src/blocs/base/blocx_base_bloc.dart';
 import 'package:blocx_core/src/blocs/base/readable_error.dart';
 import 'package:blocx_core/src/core/enum_error_codes.dart';
 import 'package:meta/meta.dart';

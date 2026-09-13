@@ -5,49 +5,48 @@
 <h1 align="center">blocx_core</h1>
 
 <p align="center">
-  Build production-ready Dart BLoCs for lists, forms, pagination, search, refresh, validation, selection, and screen side effects.
+  Production-ready, pure Dart BLoC architecture for paginated collections, dynamic forms, validation, event broadcasting, and UI side-effects.
 </p>
 
 <p align="center">
-  Pure Dart • Composable Mixins • Use-case Driven • flutter_bloc Compatible
+  Pure Dart • Composable Mixins • Use-Case Driven • flutter_bloc Compatible
 </p>
 
 ---
 
 # Why BlocX?
 
-Most apps do not become hard to maintain because their business logic is complex. They become hard to maintain because every feature quietly rebuilds the same state-management infrastructure:
+State management in real-world apps rarely breaks because business logic is complex. It breaks because every feature repeatedly rebuilds the same boilerplate infrastructure:
 
-- loading the first page
-- loading the next page
-- detecting the end of pagination
-- refreshing data
-- searching with debounce
-- preserving search pagination
-- selecting and deselecting items
-- deleting items with loading state
-- highlighting and expanding rows
-- syncing lists from streams
-- validating form fields
-- validating the full form on submit
-- checking async uniqueness
-- managing timed field errors
-- surfacing failures as snackbars, pages, or navigation intents
+- Loading initial pages and appending infinite pages
+- Tracking reached-end state and scroll intents
+- Pull-to-refresh and debounced search with page retention
+- Collection item filtering, multi-selection, row expansion, and item highlighting
+- Local and remote single/bulk item deletion
+- Reactive list synchronization from streams
+- Immutable form entities with per-field updates and full replacements
+- Form validation modes (`none`, `onSubmit`, `onUserInteraction`, `always`)
+- Async uniqueness checks and prefetching dropdown/reference data
+- Timed and persistent field errors
+- System-wide BLoC event broadcasting
+- Surfacing errors and UI side-effects (snackbars, error pages, pop intents)
 
-`blocx_core` extracts those repeated patterns into composable Dart building blocks.
+`blocx_core` extracts these recurring requirements into composable Dart mixins and tasks.
 
-You still write your domain use cases. You still define your entities, inputs, repositories, and validators. BlocX handles the recurring BLoC infrastructure around them.
+You write clean domain use cases and repositories. BlocX handles the state orchestration around them.
 
-Instead of building a large custom BLoC for every list or form, you describe what the feature needs:
+Instead of writing hundreds of lines of state-management code for every screen, you declare what capabilities your feature needs:
 
 ```dart
-class UsersBloc extends BlocxCollectionBloc<User, void>
+class ProductsBloc extends BlocxCollectionBloc<Product, void>
     with
-        BlocxCollectionInfiniteMixin<User, void>,
-        BlocxCollectionSearchableMixin<User, void>,
-        BlocxCollectionRefreshableMixin<User, void>,
-        BlocxCollectionSelectableMixin<User, void> {
-  UsersBloc() : super();
+        BlocxCollectionInfiniteMixin<Product, void>,
+        BlocxCollectionSearchableMixin<Product, void>,
+        BlocxCollectionFilterMixin<Product, void, ProductFilter>,
+        BlocxCollectionRefreshableMixin<Product, void>,
+        BlocxCollectionSelectableMixin<Product, void>,
+        BlocxCollectionDeletableMixin<Product, void> {
+  ProductsBloc() : super();
 }
 ```
 
@@ -55,20 +54,21 @@ For forms:
 
 ```dart
 class SignUpBloc extends BlocxFormBloc<SignUpForm, void, SignUpField>
-    with BlocxFormValidationMixin<SignUpForm, void, SignUpField> {
+    with
+        BlocxFormValidationMixin<SignUpForm, void, SignUpField>,
+        BlocxFormPrefetchMixin<SignUpForm, void, SignUpField>,
+        BlocxUniqueFieldValidatorMixin<SignUpForm, void, SignUpField> {
   SignUpBloc() : super(const SignUpForm());
 }
 ```
 
-The result is a consistent architecture where:
+### Key Architectural Benefits
 
-- use cases perform async business operations
-- BLoCs own state and event orchestration
-- mixins add focused capabilities
-- screen side effects stay typed and UI-agnostic
-- Flutter remains optional
-
-`blocx_core` is pure Dart. Pair it with [`flutter_blocx`](https://pub.dev/packages/flutter_blocx) when you want ready-made Flutter widgets and screen host classes on top of this core package.
+- **Pure Dart**: Zero dependency on Flutter. Runs on VM, Web, Server, or CLI.
+- **Composable**: Opt into only the features you need using mixins.
+- **Use-Case Driven**: Business logic stays inside `BlocxBaseUseCase` and `BlocxUseCaseTask`.
+- **UI-Agnostic Side Effects**: `ScreenManagerCubit` emits typed intents (snackbars, navigation, error pages) that any UI layer can render.
+- **`flutter_bloc` Native**: Integrates seamlessly with standard BLoC packages and ready-made widgets from [`flutter_blocx`](https://pub.dev/packages/flutter_blocx).
 
 ---
 
@@ -78,14 +78,14 @@ The result is a consistent architecture where:
 
 ```dart
 class TodosBloc extends Bloc<TodosEvent, TodosState> {
-  // pagination flags
-  // loading flags
-  // refresh handling
-  // search debounce
-  // selected item ids
-  // delete loading ids
-  // error routing
-  // repetitive event handlers
+  // Manual page offset tracking
+  // Manual limit & end-of-list detection
+  // Search debouncing logic
+  // Refresh & initial load state merging
+  // Selection set management
+  // Delete loading state & item filtering
+  // Error handling & exception catching boilerplate
+  // Repetitive event handler registrations
 }
 ```
 
@@ -104,116 +104,52 @@ class TodosBloc extends BlocxCollectionBloc<Todo, void>
   BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Todo>? get paginationTask {
     return BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Todo>(
       useCase: fetchTodosUseCase,
-      inputBuilder: (offset, limit) {
-        return BlocxPaginatedInput(offset: offset, limit: limit);
-      },
+      inputBuilder: (offset, limit) => BlocxPaginatedInput(offset: offset, limit: limit),
     );
   }
 }
 ```
 
-The behavior is provided by the mixins. Your code stays focused on the domain.
+Mixins provide all the orchestration. Your code remains purely domain-focused.
 
 ---
 
 # What You Get
 
-## Lists and Collections
+## 📦 Collections & Lists (`collection_bloc.dart`)
 
-- Initial page loading
-- Infinite scrolling
-- Debounced search
-- Search pagination
-- Search refresh
-- Pull-to-refresh
-- Selection and multi-selection
-- Optional remote selection sync
-- Highlighting
-- Expansion
-- Scroll-to-item intents
-- Single and bulk deletion
-- Stream synchronization
-- Typed paginated use case tasks
+- **Initial Load & Pagination**: Cursor/offset-based page fetching with `BlocxPage<T>`.
+- **Infinite Scrolling**: Automated next-page loading via `BlocxInfiniteListBloc`.
+- **Debounced Search**: Debounced query execution, search pagination, and search refresh.
+- **Filtering**: Apply dynamic filters with automatic initial-page reloads.
+- **Pull-to-Refresh**: Refresh lists while managing pagination offset reset.
+- **Selection & Multi-Select**: Single/multi-selection with optional remote server sync.
+- **Highlighting & Expansion**: Temporarily highlight items and toggle expandable row states.
+- **Scroll Intents**: Programmatically request scrolling to an item or identifier in the UI.
+- **Single & Bulk Deletion**: Animated item removal with rollback support on remote failure.
+- **Reactive Streams**: Sync collection state dynamically from external streams.
 
-## Forms
+## 📝 Forms (`form_bloc.dart`)
 
-- Immutable form entities
-- Field update events
-- Full form replacement
-- Submit workflows
-- Submit-time validation
-- Validation modes
-- Field-level errors
-- Timed field errors
-- Async uniqueness checks
-- Required info fetching
-- Multi-step forms
-- Typed submit use case tasks
+- **Immutable Entities**: Strongly typed fields mapped to enum keys with `BlocxBaseFormEntity`.
+- **Validation Modes**: `none`, `onSubmit`, `onUserInteraction`, and `always`.
+- **40+ Built-in Validators**: Comprehensive validators for String, DateTime, Double, Integer, List, File, Phone, and Object types.
+- **Data Prefetching**: Load auxiliary reference data (e.g. dropdown options) before rendering.
+- **Async Uniqueness Checks**: Debounced server-side unique field validation.
+- **Timed & Persistent Errors**: Programmatically attach temporary or persistent field errors.
+- **Multi-Step Wizards**: Step-by-step navigation with forward/backward validation checks.
 
-## Architecture
+## 🛠️ Architecture & Infrastructure (`blocx_core.dart`)
 
-- Pure Dart
-- No Flutter dependency
-- `bloc` / `flutter_bloc` compatible
-- Use-case driven
-- Typed results
-- Typed error handling
-- Composable feature mixins
-- UI side effects through `ScreenManagerCubit`
+- **Typed Use Case Tasks**: `BlocxUseCaseTask<Input, Output>` and `BlocxPaginatedUseCaseTask<Input, Output>`.
+- **Result Containers**: `BlocxUseCaseResult<T>` and normalized `BlocxPage<T>`.
+- **Global Error Translation**: Map exceptions to human-readable `ReadableError` instances.
+- **Screen Manager**: Emit snackbars, error pages, and pop intents directly from BLoCs.
+- **Event Bus (`BlocxEventHubMixin`)**: Decoupled cross-BLoC communication with `BlocxAppEvent`.
 
 ---
 
-# Is BlocX Right For Me?
-
-Use BlocX if:
-
-- you already use the BLoC pattern
-- you have many list, grid, CRUD, or admin-style screens
-- you repeatedly implement pagination, search, refresh, and selection
-- your forms need validation, submit guards, and async checks
-- you want use cases and UI side effects separated
-- you want consistency across features and projects
-
-You may not need BlocX if:
-
-- your app has only a few simple screens
-- your state is mostly local widget state
-- you prefer a minimal state-management layer
-- you do not want mixin-based composition
-
----
-
-# Architecture Philosophy
-
-BlocX is intentionally composable.
-
-A collection bloc does not automatically search, refresh, select, delete, expand, highlight, or scroll. You opt into only the capabilities your feature needs:
-
-```dart
-class ProductsBloc extends BlocxCollectionBloc<Product, void>
-    with
-        BlocxCollectionInfiniteMixin<Product, void>,
-        BlocxCollectionRefreshableMixin<Product, void> {
-  ProductsBloc() : super();
-}
-```
-
-A form bloc does not automatically validate, fetch required info, check unique fields, or become stepped. You compose those features explicitly:
-
-```dart
-class ProfileFormBloc extends BlocxFormBloc<ProfileForm, ProfilePayload, ProfileField>
-    with
-        BlocxFormValidationMixin<ProfileForm, ProfilePayload, ProfileField>,
-        BlocxFormInfoFetcherMixin<ProfileForm, ProfilePayload, ProfileField> {
-  ProfileFormBloc() : super(const ProfileForm());
-}
-```
-
-The package gives you infrastructure. You keep control over the feature.
-
----
-
-## Table of Contents
+# Table of Contents
 
 - [Installation](#installation)
 - [Architecture Overview](#architecture-overview)
@@ -221,28 +157,25 @@ The package gives you infrastructure. You keep control over the feature.
   - [BlocxBaseEntity](#blocxbaseentity)
   - [UseCase & UseCaseResult](#usecase--usecaseresult)
   - [Use Case Tasks](#use-case-tasks)
-  - [BlocxPage](#blocxpaget)
-  - [ScreenManagerCubit](#screenmanagercubit)
+  - [BlocxPage](#blocxpage)
+  - [ScreenManagerCubit & Errors](#screenmanagercubit--errors)
+  - [Cross-BLoC Event Bus](#cross-bloc-event-bus)
 - [Collection BLoC](#collection-bloc)
   - [BlocxCollectionBloc](#blocxcollectionbloc)
   - [Collection Mixins](#collection-mixins)
   - [Collection Tasks](#collection-tasks)
-  - [Collection Events](#collection-events)
-  - [Collection States](#collection-states)
+  - [Collection Events & States](#collection-events--states)
 - [Form BLoC](#form-bloc)
   - [BlocxBaseFormEntity](#blocxbaseformentity)
   - [BlocxFormBloc](#blocxformbloc)
-  - [Form Validation](#form-validation)
+  - [Form Validation Modes](#form-validation-modes)
   - [Built-in Validators](#built-in-validators)
   - [Form Mixins](#form-mixins)
-  - [Form Events](#form-events)
-  - [Form States](#form-states)
-- [Error & Screen Management](#error--screen-management)
-- [Quickstart: Paged & Searchable List](#quickstart-paged--searchable-list)
-- [Quickstart: Form with Validation](#quickstart-form-with-validation)
-- [Migrating to 0.8.4](#migrating-to-084)
-- [Migrating from 0.7.x](#migrating-from-07x)
-- [Contributing](#contributing)
+  - [Form Events & States](#form-events--states)
+- [Quickstarts](#quickstarts)
+  - [Paged, Searchable & Selectable List](#quickstart-paged-searchable--selectable-list)
+  - [Form with Validation & Prefetching](#quickstart-form-with-validation--prefetching)
+- [Migrating to 0.9.0](#migrating-to-090)
 - [License](#license)
 
 ---
@@ -253,42 +186,40 @@ Add `blocx_core` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  blocx_core: ^0.8.4
+  blocx_core: ^0.9.0
 ```
 
-Or install via the command line:
+Or run:
 
 ```sh
 dart pub add blocx_core
 ```
 
-Import the library:
+### Barrel Imports
 
 ```dart
-// Base types, use cases, results, screen manager, errors.
+// Base types, use cases, results, screen manager, errors, event hub.
 import 'package:blocx_core/blocx_core.dart';
 
-// Collection-specific bloc, events, states, mixins, page, paginated use cases.
-import 'package:blocx_core/list_bloc.dart';
+// Collection bloc, events, states, mixins, page, paginated use cases.
+import 'package:blocx_core/collection_bloc.dart';
 
-// Form-specific bloc, events, states, mixins, validators, form entity.
+// Form bloc, events, states, mixins, validators, form entity.
 import 'package:blocx_core/form_bloc.dart';
 ```
 
-**Requirements:** Dart SDK `>=3.5.0`
+**SDK Requirement:** Dart `>=3.5.0`
 
 ---
 
 ## Architecture Overview
-
-`blocx_core` is organised around four layers:
 
 ```txt
 ┌─────────────────────────────────────────────────────┐
 │                  Your Domain BLoC                    │
 │  BlocxCollectionBloc / BlocxFormBloc + mixins        │
 └───────────────────────┬─────────────────────────────┘
-                        │ executes
+                        │ executes via tasks
 ┌───────────────────────▼─────────────────────────────┐
 │                    Use Cases                         │
 │  BlocxBaseUseCase<Input, Output>                     │
@@ -304,8 +235,7 @@ import 'package:blocx_core/form_bloc.dart';
                         │ emits UI intents through
 ┌───────────────────────▼─────────────────────────────┐
 │                ScreenManagerCubit                    │
-│  snackbar / error page / pop intents                 │
-│  rendered by your Flutter layer or another UI layer  │
+│  snackbars / error pages / navigation intents       │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -315,17 +245,17 @@ import 'package:blocx_core/form_bloc.dart';
 
 ### BlocxBaseEntity
 
-All domain objects used with collection blocs must extend `BlocxBaseEntity`. It provides stable identity semantics through `identifier`.
+Collection domain models must extend `BlocxBaseEntity` to supply a stable `identifier`:
 
 ```dart
 class Product extends BlocxBaseEntity {
   final String id;
-  final String name;
+  final String title;
   final double price;
 
   const Product({
     required this.id,
-    required this.name,
+    required this.title,
     required this.price,
   });
 
@@ -334,15 +264,13 @@ class Product extends BlocxBaseEntity {
 }
 ```
 
-The `identifier` is used internally for selection, highlighting, deletion, expansion, and scroll-to-item behavior.
+The `identifier` is used for selection, highlighting, expansion, deletion, and scrolling.
 
 ---
 
 ### UseCase & UseCaseResult
 
-Every async business operation should be represented by a `BlocxBaseUseCase<Input, Output>`.
-
-Use cases expose `perform(input)` and are executed through `execute(input)`. Exception handling is built into `execute`; unhandled exceptions become `BlocxUseCaseFailure`.
+Represent business operations with `BlocxBaseUseCase<Input, Output>`:
 
 ```dart
 class FetchProductUseCase extends BlocxBaseUseCase<String, Product> {
@@ -358,71 +286,44 @@ class FetchProductUseCase extends BlocxBaseUseCase<String, Product> {
 }
 ```
 
-`BlocxUseCaseResult<Output>` is either:
-
-- success with `data`
-- failure with `error` and `stackTrace`
+Calling `execute(input)` automatically catches unhandled errors and converts them to `BlocxUseCaseFailure`.
 
 ---
 
 ### Use Case Tasks
 
-Tasks pair a use case with a lazily evaluated input builder.
+Tasks bundle a use case with a lazy input builder so inputs read the latest state at execution time.
 
-This matters because form data, selected items, filters, search text, payloads, and pagination values often change after the bloc is created.
-
-### BlocxUseCaseTask
-
-Use `BlocxUseCaseTask<Input, Output>` for normal operations.
+#### Standard Task
 
 ```dart
 BlocxUseCaseTask<CreateUserInput, User>(
   useCase: createUserUseCase,
-  inputBuilder: () {
-    return CreateUserInput(
-      name: formData.name,
-      email: formData.email,
-    );
-  },
+  inputBuilder: () => CreateUserInput(
+    name: formData.name,
+    email: formData.email,
+  ),
 );
 ```
 
-Execute it with:
-
-```dart
-final result = await task.execute();
-```
-
-### BlocxPaginatedUseCaseTask
-
-Use `BlocxPaginatedUseCaseTask<Input, Output>` for paginated operations.
-
-`Input` must extend `BlocxPaginatedInput`. `Output` must extend `BlocxBaseEntity`.
+#### Paginated Task
 
 ```dart
 BlocxPaginatedUseCaseTask<GetOrdersInput, Order>(
   useCase: getOrdersUseCase,
-  inputBuilder: (offset, limit) {
-    return GetOrdersInput(
-      offset: offset,
-      limit: limit,
-      status: currentStatus,
-    );
-  },
+  inputBuilder: (offset, limit) => GetOrdersInput(
+    offset: offset,
+    limit: limit,
+    status: currentStatus,
+  ),
 );
-```
-
-Execute it with:
-
-```dart
-final result = await task.execute(offset: 0, limit: 20);
 ```
 
 ---
 
-### BlocxPage\<T\>
+### BlocxPage
 
-`BlocxPage<T>` is the normalized container for paginated items.
+Normalized pagination response model:
 
 ```dart
 class BlocxPage<T> {
@@ -434,40 +335,56 @@ class BlocxPage<T> {
 }
 ```
 
-`hasNext` returns `true` when the number of returned items equals the requested `limit`. If fewer items are returned, pagination is considered complete.
+`hasNext` evaluates to `true` when the returned item count equals `limit`.
 
 ---
 
-### ScreenManagerCubit
+### ScreenManagerCubit & Errors
 
-`ScreenManagerCubit` is owned internally by `BaseBloc`. You do not construct or pass one manually.
-
-It lets BLoCs emit UI intents without importing Flutter:
-
-| Method | Intent |
-|---|---|
-| `displaySnackBar(...)` | Show a snackbar or toast |
-| `displayErrorWidget(...)` | Show a full-page error |
-| `displayErrorWidgetByErrorCode(...)` | Show an error page from a typed error code |
-| `pop()` | Request navigation pop |
+`BaseBloc` manages an internal `ScreenManagerCubit` to surface UI side-effects cleanly:
 
 ```dart
-displaySnackBar(
-  message: 'Item deleted successfully.',
-  type: BlocXSnackbarType.success,
-);
+// Emit a snackbar
+displaySnackBar('Changes saved.', BlocXSnackbarType.success);
 
+// Show full page error
 displayErrorWidget(
-  error: ReadableError(
-    title: 'Not Found',
-    message: 'The requested item could not be loaded.',
-  ),
+  error: ReadableError(title: 'Error', message: 'Failed to load details.'),
 );
 
+// Request UI back navigation
 pop();
 ```
 
-The UI layer decides how these intents are rendered.
+Register a global error translator at app initialization:
+
+```dart
+BlocxErrorTranslator.instance = AppErrorTranslator();
+```
+
+---
+
+### Cross-BLoC Event Bus
+
+Communicate across BLoCs without tight coupling using `BlocxEventHubMixin` and `BlocxAppEvent`:
+
+```dart
+class UserUpdatedEvent extends BlocxAppEvent {
+  final User user;
+  UserUpdatedEvent(this.user);
+}
+
+class OrdersBloc extends BlocxCollectionBloc<Order, void>
+    with BlocxEventHubMixin {
+  final BlocxEventHub eventHub;
+
+  OrdersBloc(this.eventHub) {
+    systemEventsOfType<UserUpdatedEvent>().listen((event) {
+      add(BlocxCollectionEventRefreshData());
+    });
+  }
+}
+```
 
 ---
 
@@ -475,12 +392,10 @@ The UI layer decides how these intents are rendered.
 
 ### BlocxCollectionBloc
 
-`BlocxCollectionBloc<T, P>` is the base class for collection state management.
+`BlocxCollectionBloc<T, P>` is the base class for manageing lists:
 
-- `T` is the item entity type.
-- `P` is an optional payload type used for initial loading.
-
-Use `void` when no payload is needed.
+- `T`: Entity type extending `BlocxBaseEntity`.
+- `P`: Payload type passed on initial load (`void` if not needed).
 
 ```dart
 class OrdersBloc extends BlocxCollectionBloc<Order, void>
@@ -493,206 +408,86 @@ class OrdersBloc extends BlocxCollectionBloc<Order, void>
   BlocxPaginatedUseCaseTask<GetOrdersInput, Order>? get paginationTask {
     return BlocxPaginatedUseCaseTask<GetOrdersInput, Order>(
       useCase: getOrdersUseCase,
-      inputBuilder: (offset, limit) {
-        return GetOrdersInput(
-          offset: offset,
-          limit: limit,
-        );
-      },
+      inputBuilder: (offset, limit) => GetOrdersInput(offset: offset, limit: limit),
     );
   }
 }
 ```
 
-Mixin initialization is automatic. Do not call `initInfiniteList()`, `initSearch()`, `initRefresh()`, or similar methods manually.
-
 ---
 
 ### Collection Mixins
 
-Mix these into a `BlocxCollectionBloc` subclass.
-
-| Mixin | Capability |
+| Mixin | Functionality |
 |---|---|
-| `BlocxCollectionInfiniteMixin<T, P>` | Next-page loading and reached-end tracking |
-| `BlocxCollectionSearchableMixin<T, P>` | Debounced search, search pagination, and search refresh |
-| `BlocxCollectionRefreshableMixin<T, P>` | Pull-to-refresh behavior |
-| `BlocxCollectionSelectableMixin<T, P>` | Single and multi-item selection |
-| `BlocxCollectionHighlightableMixin<T, P>` | Highlight and clear-highlight behavior |
-| `BlocxCollectionExpandableMixin<T, P>` | Expand, collapse, and toggle item expansion |
-| `BlocxCollectionScrollableMixin<T, P>` | Scroll-to-item and scroll-to-identifier intents |
-| `BlocxCollectionDeletableMixin<T, P>` | Single delete, delete by id, and bulk delete |
-| `BlocxCollectionSyncStreamMixin<T, P>` | Sync collection state from an external stream |
+| `BlocxCollectionInfiniteMixin<T, P>` | Infinite scrolling and next-page loading |
+| `BlocxCollectionSearchableMixin<T, P>` | Debounced search with search-result pagination |
+| `BlocxCollectionFilterMixin<T, P, F>` | Apply active filter objects to collection requests |
+| `BlocxCollectionRefreshableMixin<T, P>` | Pull-to-refresh list resetting |
+| `BlocxCollectionSelectableMixin<T, P>` | Single & multi-item selection with optional remote sync |
+| `BlocxCollectionHighlightableMixin<T, P>` | Highlight and unhighlight rows |
+| `BlocxCollectionExpandableMixin<T, P>` | Expand and collapse items |
+| `BlocxCollectionScrollableMixin<T, P>` | Programmatic scroll-to-item intents |
+| `BlocxCollectionDeletableMixin<T, P>` | Single and bulk item deletion |
+| `BlocxCollectionSyncStreamMixin<T, P>` | Real-time state synchronization from a Dart stream |
 
 ---
 
 ### Collection Tasks
 
-#### Shared pagination
-
-Use `paginationTask` when initial load, next-page load, and refresh use the same endpoint.
-
 ```dart
+// Shared Pagination Task
 @override
 BlocxPaginatedUseCaseTask<GetProductsInput, Product>? get paginationTask {
   return BlocxPaginatedUseCaseTask<GetProductsInput, Product>(
     useCase: getProductsUseCase,
-    inputBuilder: (offset, limit) {
-      return GetProductsInput(
-        offset: offset,
-        limit: limit,
-        categoryId: payload?.categoryId,
-      );
-    },
+    inputBuilder: (offset, limit) => GetProductsInput(offset: offset, limit: limit),
   );
 }
-```
 
-#### Separate initial, next-page, or refresh tasks
-
-Override these only when an operation needs a different endpoint or input shape:
-
-```dart
-@override
-BlocxPaginatedUseCaseTask<GetProductsInput, Product>? get loadInitialPageTask {
-  return paginationTask;
-}
-
-@override
-BlocxPaginatedUseCaseTask<GetProductsInput, Product>? get loadNextPageTask {
-  return paginationTask;
-}
-
-@override
-BlocxPaginatedUseCaseTask<GetProductsInput, Product>? get refreshPageUseCaseTask {
-  return paginationTask;
-}
-```
-
-#### Search
-
-Search uses `searchUseCaseTask`. Its input should extend `BlocxSearchInput`.
-
-```dart
+// Search Task
 @override
 BlocxPaginatedUseCaseTask<BlocxSearchInput, Product>? get searchUseCaseTask {
   return BlocxPaginatedUseCaseTask<BlocxSearchInput, Product>(
     useCase: searchProductsUseCase,
-    inputBuilder: (offset, limit) {
-      return BlocxSearchInput(
-        searchText: searchText,
-        offset: offset,
-        limit: limit,
-      );
-    },
+    inputBuilder: (offset, limit) => BlocxSearchInput(
+      searchText: searchText,
+      offset: offset,
+      limit: limit,
+    ),
   );
 }
-```
 
-#### Delete
-
-Delete uses task factories so each feature can build the input its API requires.
-
-```dart
+// Single Delete Task Factory
 @override
 BlocxUseCaseTask<DeleteProductInput, bool>? deleteItemTask(Product item) {
   return BlocxUseCaseTask<DeleteProductInput, bool>(
     useCase: deleteProductUseCase,
-    inputBuilder: () {
-      return DeleteProductInput(id: item.id);
-    },
-  );
-}
-```
-
-For bulk delete:
-
-```dart
-@override
-BlocxUseCaseTask<DeleteProductsInput, bool>? deleteMultipleItemsTask(
-  List<Product> items,
-) {
-  return BlocxUseCaseTask<DeleteProductsInput, bool>(
-    useCase: deleteProductsUseCase,
-    inputBuilder: () {
-      return DeleteProductsInput(
-        ids: items.map((item) => item.id).toList(),
-      );
-    },
-  );
-}
-```
-
-#### Remote selection sync
-
-Selection can be local only, or synced remotely.
-
-```dart
-@override
-bool get syncWithServerOnSelection => true;
-
-@override
-BlocxUseCaseTask<SelectProductInput, bool>? selectItemTask(Product item) {
-  return BlocxUseCaseTask<SelectProductInput, bool>(
-    useCase: selectProductUseCase,
-    inputBuilder: () => SelectProductInput(id: item.id),
-  );
-}
-
-@override
-BlocxUseCaseTask<DeselectProductInput, bool>? deselectItemTask(Product item) {
-  return BlocxUseCaseTask<DeselectProductInput, bool>(
-    useCase: deselectProductUseCase,
-    inputBuilder: () => DeselectProductInput(id: item.id),
+    inputBuilder: () => DeleteProductInput(id: item.id),
   );
 }
 ```
 
 ---
 
-### Collection Events
+### Collection Events & States
 
-| Event | Description |
-|---|---|
-| `BlocxCollectionEventLoadInitialPage<T, P>` | Load the first page |
-| `BlocxCollectionEventLoadNextPage<T>` | Append the next page |
-| `BlocxCollectionEventRefreshData<T>` | Refresh the collection |
-| `BlocxCollectionEventSearch<T>` | Run a debounced search query |
-| `BlocxCollectionEventSearchNextPage<T>` | Load the next page of search results |
-| `BlocxCollectionEventSearchRefresh<T>` | Refresh current search results |
-| `BlocxCollectionEventClearSearch<T>` | Clear search and restore base list |
-| `BlocxCollectionEventSelectItem<T>` | Select one item |
-| `BlocxCollectionEventDeselectItem<T>` | Deselect one item |
-| `BlocxCollectionEventSelectMultipleItems<T>` | Select multiple items |
-| `BlocxCollectionEventDeselectMultipleItems<T>` | Deselect multiple items |
-| `BlocxCollectionEventClearSelection<T>` | Clear all selection |
-| `BlocxCollectionEventHighlightItem<T>` | Highlight one item |
-| `BlocxCollectionEventClearHighlightedItem<T>` | Clear item highlight |
-| `BlocxCollectionEventExpandItem<T>` | Expand one item |
-| `BlocxCollectionEventCollapseItem<T>` | Collapse one item |
-| `BlocxCollectionEventToggleItemExpansion<T>` | Toggle item expansion |
-| `BlocxCollectionEventScrollToItem<T>` | Emit scroll-to-item state |
-| `BlocxCollectionEventScrollToIdentifier<T>` | Emit scroll-to-identifier state |
-| `BlocxCollectionEventAddItem<T>` | Insert an item |
-| `BlocxCollectionEventUpdateItem<T>` | Replace an item |
-| `BlocxCollectionEventRemoveItem<T>` | Remove one item |
-| `BlocxCollectionEventRemoveItemById<T>` | Remove one item by identifier |
-| `BlocxCollectionEventRemoveMultipleItems<T>` | Remove multiple items |
-| `BlocxCollectionEventReplaceList<T>` | Replace the full list |
+#### Events
+- `BlocxCollectionEventLoadInitialPage<T, P>`
+- `BlocxCollectionEventLoadNextPage<T>`
+- `BlocxCollectionEventRefreshData<T>`
+- `BlocxCollectionEventSearch<T>`
+- `BlocxCollectionEventFilter<T, F>`
+- `BlocxCollectionEventSelectItem<T>`
+- `BlocxCollectionEventDeselectItem<T>`
+- `BlocxCollectionEventRemoveItem<T>`
+- `BlocxCollectionEventScrollToItem<T>`
 
----
-
-### Collection States
-
-| State | Description |
-|---|---|
-| `BlocxCollectionStateLoading<T>` | Initial loading state |
-| `BlocxCollectionStateLoaded<T>` | Collection data is available |
-| `BlocxCollectionStateError<T>` | Collection loading failed |
-| `BlocxCollectionStateSelectionChanged<T>` | Selection changed |
-| `BlocxCollectionStateScrollToItem<T>` | UI should scroll to a specific item |
-
-Use collection state extensions for convenience accessors where available.
+#### States
+- `BlocxCollectionStateLoading<T>`
+- `BlocxCollectionStateLoaded<T>`
+- `BlocxCollectionStateError<T>`
+- `BlocxCollectionStateSelectionChanged<T>`
 
 ---
 
@@ -700,30 +495,17 @@ Use collection state extensions for convenience accessors where available.
 
 ### BlocxBaseFormEntity
 
-A form entity must extend `BlocxBaseFormEntity<F, E>`.
-
-- `F` is the form entity type itself.
-- `E` is an enum that identifies each field.
-
-The entity should be immutable.
+Form models must extend `BlocxBaseFormEntity<F, E>` where `F` is the entity and `E` is an enum of field keys:
 
 ```dart
-enum ProfileField {
-  name,
-  email,
-  phone,
-}
+enum ProfileField { name, email, phone }
 
 class ProfileForm extends BlocxBaseFormEntity<ProfileForm, ProfileField> {
   final String name;
   final String email;
   final String phone;
 
-  const ProfileForm({
-    this.name = '',
-    this.email = '',
-    this.phone = '',
-  });
+  const ProfileForm({this.name = '', this.email = '', this.phone = ''});
 
   @override
   ProfileForm updateByKey(ProfileField key, dynamic value) {
@@ -743,11 +525,7 @@ class ProfileForm extends BlocxBaseFormEntity<ProfileForm, ProfileField> {
     };
   }
 
-  ProfileForm copyWith({
-    String? name,
-    String? email,
-    String? phone,
-  }) {
+  ProfileForm copyWith({String? name, String? email, String? phone}) {
     return ProfileForm(
       name: name ?? this.name,
       email: email ?? this.email,
@@ -760,203 +538,65 @@ class ProfileForm extends BlocxBaseFormEntity<ProfileForm, ProfileField> {
 }
 ```
 
-`updateByKey` is used by `BlocxFormEventUpdateData`.
-
-`getValueByKey` is used for reading values, validation, and initial hydration by UI packages such as `flutter_blocx`.
-
 ---
 
 ### BlocxFormBloc
 
-`BlocxFormBloc<F, P, E>` manages a form.
-
-- `F` is your form entity.
-- `P` is an optional initialization payload.
-- `E` is your field enum.
+`BlocxFormBloc<F, P, E>` manages form lifecycle, field updates, validation, and submission:
 
 ```dart
-class ProfileFormBloc
-    extends BlocxFormBloc<ProfileForm, UserProfile, ProfileField>
-    with BlocxFormValidationMixin<ProfileForm, UserProfile, ProfileField> {
+class ProfileFormBloc extends BlocxFormBloc<ProfileForm, void, ProfileField>
+    with BlocxFormValidationMixin<ProfileForm, void, ProfileField> {
   ProfileFormBloc() : super(const ProfileForm());
 
   @override
-  FutureOr<ProfileForm> applyPayloadToFormData(UserProfile payload) {
-    return ProfileForm(
-      name: payload.name,
-      email: payload.email,
-      phone: payload.phone,
-    );
-  }
+  BlocxFormValidator<ProfileForm, ProfileField> get validator => ProfileFormValidator();
+
+  @override
+  List<ProfileField> get formKeysList => ProfileField.values;
+
+  @override
+  FormValidationMode get formValidationMode => FormValidationMode.onSubmit;
 
   @override
   BlocxUseCaseTask<UpdateProfileInput, UserProfile> get submitUseCaseTask {
     return BlocxUseCaseTask<UpdateProfileInput, UserProfile>(
       useCase: updateProfileUseCase,
-      inputBuilder: () {
-        return UpdateProfileInput(
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-        );
-      },
+      inputBuilder: () => UpdateProfileInput(
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+      ),
     );
-  }
-
-  @override
-  BlocxFormValidator<ProfileForm, ProfileField> get validator {
-    return ProfileFormValidator();
-  }
-
-  @override
-  List<ProfileField> get formKeysList {
-    return ProfileField.values;
-  }
-
-  @override
-  FormValidationMode get formValidationMode {
-    return FormValidationMode.onSubmit;
   }
 }
 ```
-
-Submit flow:
-
-1. full-form validation is requested
-2. validation mode decides what actually runs
-3. `isFormSubmittable` blocks invalid or busy forms
-4. `doBeforeSubmit` runs
-5. submit use case task executes
-6. `onFormSubmitted` runs
-7. `BlocxFormStateFormSubmitted` is emitted
 
 ---
 
-### Form Validation
-
-`BlocxFormValidationMixin` delegates rules to a `BlocxFormValidator`.
-
-Validation timing is controlled by `formValidationMode`:
+### Form Validation Modes
 
 | Mode | Behavior |
 |---|---|
-| `FormValidationMode.none` | No validation |
-| `FormValidationMode.onSubmit` | Full-form validation only on submit/full-validation requests |
-| `FormValidationMode.onUserInteraction` | Field validation while editing; full-form validation on submit |
-| `FormValidationMode.always` | Full-form validation on every update and submit |
-
-```dart
-class ProfileFormValidator
-    extends BlocxFormValidator<ProfileForm, ProfileField> {
-  @override
-  List<ProfileField> formKeys() {
-    return ProfileField.values;
-  }
-
-  @override
-  List<BlocxFieldValidator<ProfileForm, ProfileField, dynamic>>
-      getValidatorsByKey(ProfileForm formData, ProfileField key) {
-    return switch (key) {
-      ProfileField.name => [
-          BlocxStringRequiredValidator<ProfileForm, ProfileField>(),
-          BlocxStringMinLengthValidator<ProfileForm, ProfileField>(
-            minLength: 2,
-          ),
-        ],
-      ProfileField.email => [
-          BlocxStringRequiredValidator<ProfileForm, ProfileField>(),
-          BlocxStringEmailValidator<ProfileForm, ProfileField>(),
-        ],
-      ProfileField.phone => [
-          BlocxPhoneBasicFormatValidator<ProfileForm, ProfileField>(),
-        ],
-    };
-  }
-}
-```
+| `FormValidationMode.none` | Disables validation |
+| `FormValidationMode.onSubmit` | Validates the full form only on submit |
+| `FormValidationMode.onUserInteraction` | Validates changed fields while editing; validates full form on submit |
+| `FormValidationMode.always` | Validates full form on every field change and submit |
 
 ---
 
 ### Built-in Validators
 
-Validators are exported from `form_bloc.dart`.
+All exported from `package:blocx_core/form_bloc.dart`:
 
-#### String validators
-
-| Validator |
-|---|
-| `BlocxStringRequiredValidator` |
-| `BlocxStringMinLengthValidator` |
-| `BlocxStringMaxLengthValidator` |
-| `BlocxStringExactLengthValidator` |
-| `BlocxStringLengthRangeValidator` |
-| `BlocxStringEmailValidator` |
-| `BlocxStringRegexValidator` |
-| `BlocxStringNumericValidator` |
-| `BlocxStringAlphanumericValidator` |
-| `BlocxStringUrlValidator` |
-| `BlocxStringMatchValidator` |
-
-#### DateTime validators
-
-| Validator |
-|---|
-| `BlocxDateTimeRequiredValidator` |
-| `BlocxDateTimeMinValidator` |
-| `BlocxDateTimeMaxValidator` |
-| `BlocxDateTimeRangeValidator` |
-| `BlocxDateTimeAfterFieldValidator` |
-| `BlocxDateTimeBeforeFieldValidator` |
-
-#### Double validators
-
-| Validator |
-|---|
-| `BlocxDoubleRequiredValidator` |
-| `BlocxDoubleMinValueValidator` |
-| `BlocxDoubleMaxValueValidator` |
-| `BlocxDoublePositiveValidator` |
-| `BlocxDoubleRangeValidator` |
-
-#### Integer validators
-
-| Validator |
-|---|
-| `BlocxIntegerRequiredValidator` |
-| `BlocxIntegerMinValueValidator` |
-| `BlocxIntegerMaxValueValidator` |
-| `BlocxIntegerPositiveValidator` |
-| `BlocxIntegerNonZeroValidator` |
-| `BlocxIntegerRangeValidator` |
-| `BlocxIntegerGreaterThanFieldValidator` |
-| `BlocxIntegerLessThanFieldValidator` |
-
-#### List validators
-
-| Validator |
-|---|
-| `BlocxListRequiredValidator` |
-| `BlocxListMinItemsValidator` |
-| `BlocxListMaxItemsValidator` |
-| `BlocxListUniqueItemsValidator` |
-
-#### File validators
-
-| Validator |
-|---|
-| `BlocxFile` |
-| `BlocxFileRequiredValidator` |
-| `BlocxFileMaxSizeValidator` |
-
-#### Phone number validators
-
-| Validator |
-|---|
-| `BlocxPhoneRequiredValidator` |
-| `BlocxPhoneBasicFormatValidator` |
-| `BlocxPhoneE164Validator` |
-| `BlocxPhoneMinLengthValidator` |
-| `BlocxPhoneMaxLengthValidator` |
+- **String**: `BlocxStringRequiredValidator`, `BlocxStringMinLengthValidator`, `BlocxStringMaxLengthValidator`, `BlocxStringLengthRangeValidator`, `BlocxStringExactLengthValidator`, `BlocxStringEmailValidator`, `BlocxStringNumericValidator`, `BlocxStringAlphanumericValidator`, `BlocxStringUrlValidator`, `BlocxStringMatchValidator`
+- **DateTime**: `BlocxDateTimeRequiredValidator`, `BlocxDateTimeMinValidator`, `BlocxDateTimeMaxValidator`, `BlocxDateTimeRangeValidator`, `BlocxDateTimeAfterFieldValidator`, `BlocxDateTimeBeforeFieldValidator`
+- **Double**: `BlocxDoubleRequiredValidator`, `BlocxDoubleMinValueValidator`, `BlocxDoubleMaxValueValidator`, `BlocxDoublePositiveValidator`, `BlocxDoubleRangeValidator`
+- **Integer**: `BlocxIntegerRequiredValidator`, `BlocxIntegerMinValueValidator`, `BlocxIntegerMaxValueValidator`, `BlocxIntegerPositiveValidator`, `BlocxIntegerNonZeroValidator`, `BlocxIntegerRangeValidator`, `BlocxIntegerGreaterThanFieldValidator`, `BlocxIntegerLessThanFieldValidator`
+- **List**: `BlocxListRequiredValidator`, `BlocxListMinItemsValidator`, `BlocxListMaxItemsValidator`, `BlocxListUniqueItemsValidator`
+- **File**: `BlocxFileRequiredValidator`, `BlocxFileMaxSizeValidator`
+- **Phone**: `BlocxPhoneRequiredValidator`, `BlocxPhoneBasicFormatValidator`, `BlocxPhoneE164Validator`, `BlocxPhoneMinLengthValidator`, `BlocxPhoneMaxLengthValidator`
+- **Object**: `BlocxRequiredFieldValidator`
 
 ---
 
@@ -964,349 +604,132 @@ Validators are exported from `form_bloc.dart`.
 
 | Mixin | Capability |
 |---|---|
-| `BlocxFormValidationMixin<F, P, E>` | Per-field and full-form validation |
-| `BlocxFormErrorsMixin<F, P, E>` | Programmatic persistent and timed errors |
-| `BlocxFormInfoFetcherMixin<F, P, E>` | Fetch remote data required before form interaction |
-| `BlocxFormSteppedMixin<F, P, E>` | Multi-step form navigation |
+| `BlocxFormValidationMixin<F, P, E>` | Form field & full-form validation |
+| `BlocxFormPrefetchMixin<F, P, E>` | Prefetch auxiliary reference data before form load |
 | `BlocxUniqueFieldValidatorMixin<F, P, E>` | Async uniqueness validation per field |
+| `BlocxFormErrorsMixin<F, P, E>` | Persistent and timed field error messages |
+| `BlocxFormSteppedMixin<F, P, E>` | Multi-step wizard navigation |
 
-#### Required info fetching
-
-```dart
-@override
-Map<ProfileField, BlocxUseCaseTask<Object?, Object?>>
-    get requiredInitialInfoTasks {
-  return {
-    ProfileField.phone: BlocxUseCaseTask<Object?, Object?>(
-      useCase: getPhoneMetadataUseCase,
-      inputBuilder: () => null,
-    ),
-  };
-}
-```
-
-#### Unique-field validation
+#### Prefetch Example
 
 ```dart
 @override
-List<ProfileField> get uniqueFieldKeys {
-  return [ProfileField.email];
-}
-
-@override
-BlocxUseCaseTask<CheckEmailInput, bool>? useCaseIsUniqueValueAvailable(
-  ProfileField key,
-  dynamic value,
-) {
-  if (key != ProfileField.email) return null;
-
-  return BlocxUseCaseTask<CheckEmailInput, bool>(
-    useCase: checkEmailUseCase,
-    inputBuilder: () {
-      return CheckEmailInput(email: value as String);
-    },
-  );
-}
+Map<ProfileField, BlocxUseCaseTask<Object?, Object?>> get requiredInitialInfoTasks => {
+  ProfileField.phone: BlocxUseCaseTask<Object?, Object?>(
+    useCase: getCountriesUseCase,
+    inputBuilder: () => null,
+  ),
+};
 ```
 
 ---
 
-### Form Events
+### Form Events & States
 
-| Event | Description |
-|---|---|
-| `BlocxFormEventInit<P>` | Initialize the form, optionally with a payload |
-| `BlocxFormEventFetchRequiredInfo` | Fetch remote data required by the form |
-| `BlocxFormEventUpdateData<E>` | Update one field |
-| `BlocxFormEventUpdateFormData<P>` | Replace the full form data object |
-| `BlocxFormEventSubmit` | Validate and submit |
-| `BlocxFormEventSetErrorToField<E>` | Set a persistent field error |
-| `BlocxFormEventSetTimedErrorToField<E>` | Set a temporary field error |
-| `BlocxFormEventClearFieldError<E>` | Clear a field error |
-| `BlocxFormEventCheckUniqueValue<E>` | Check async uniqueness |
-| `BlocxFormEventNextStep` | Go to next step |
-| `BlocxFormEventPreviousStep` | Go to previous step |
-| `BlocxFormEventGoToStep` | Jump to a specific step |
+#### Events
+- `BlocxFormEventInit<P>`
+- `BlocxFormEventPrefetchRequiredInfo`
+- `BlocxFormEventUpdateData<E>`
+- `BlocxFormEventUpdateFormData<P>`
+- `BlocxFormEventSubmit`
+- `BlocxFormEventSetTimedErrorToField<E>`
 
----
-
-### Form States
-
-| State | Description |
-|---|---|
-| `BlocxFormStateInitial<F, E>` | Form not initialized |
-| `BlocxFormStateLoaded<F, E>` | Form loaded and interactive |
-| `BlocxFormStateFormUpdated<F, E>` | Field value or form data updated |
-| `BlocxFormStateApplyInitialDataToForm<F, E>` | Initial data should be applied to UI controls |
-| `BlocxFormStateSubmittingForm<F, E>` | Submit in progress |
-| `BlocxFormStateFormSubmitted<F, E>` | Submit succeeded |
+#### States
+- `BlocxFormStateInitial<F, E>`
+- `BlocxFormStateLoaded<F, E>`
+- `BlocxFormStateSubmittingForm<F, E>`
+- `BlocxFormStateFormSubmitted<F, E>`
 
 ---
 
-## Error & Screen Management
+## Quickstarts
 
-Any bloc can emit UI intents without importing Flutter.
-
-Error handling is built into `BaseBloc`. Call `handleError` from event handlers to log and surface errors through the configured `errorDisplayPolicy`.
-
-```dart
-try {
-  // work
-} catch (error, stackTrace) {
-  handleError(error, emit, stacktrace: stackTrace);
-}
-```
-
-To display a full-page error instead of a snackbar, override:
-
-```dart
-@override
-ErrorDisplayPolicy get errorDisplayPolicy => ErrorDisplayPolicy.page;
-```
-
-Register a `BlocxErrorTranslator` once at app startup to map raw exceptions to human-readable `ReadableError` instances.
-
-```dart
-BlocxErrorTranslator.instance = AppErrorTranslator();
-```
-
-The presentation layer listens to `ScreenManagerCubit` and decides how to render each state.
-
----
-
-## Quickstart: Paged & Searchable List
-
-This example wires up a paginated, searchable, refreshable, and selectable `Todo` collection.
-
-### 1. Define the entity
+### Quickstart: Paged, Searchable & Selectable List
 
 ```dart
 import 'package:blocx_core/blocx_core.dart';
+import 'package:blocx_core/collection_bloc.dart';
 
 class Todo extends BlocxBaseEntity {
   final String id;
   final String title;
-  final bool completed;
 
-  const Todo({
-    required this.id,
-    required this.title,
-    this.completed = false,
-  });
+  const Todo({required this.id, required this.title});
 
   @override
   String get identifier => id;
 }
-```
 
-### 2. Define the repository contract
-
-```dart
-abstract class TodoRepository {
-  Future<List<Todo>> fetchPage({
-    required int limit,
-    required int offset,
-  });
-
-  Future<List<Todo>> search({
-    required String query,
-    required int limit,
-    required int offset,
-  });
-}
-```
-
-### 3. Implement use cases
-
-```dart
-import 'package:blocx_core/blocx_core.dart';
-import 'package:blocx_core/list_bloc.dart';
-
-class FetchTodosUseCase
-    extends BlocxPaginatedUseCase<BlocxPaginatedInput, Todo> {
+class FetchTodosUseCase extends BlocxPaginatedUseCase<BlocxPaginatedInput, Todo> {
   final TodoRepository repo;
-
   FetchTodosUseCase(this.repo);
 
   @override
-  Future<BlocxUseCaseResult<BlocxPage<Todo>>> perform(
-    BlocxPaginatedInput input,
-  ) async {
-    final items = await repo.fetchPage(
-      limit: input.limit,
-      offset: input.offset,
-    );
-
+  Future<BlocxUseCaseResult<BlocxPage<Todo>>> perform(BlocxPaginatedInput input) async {
+    final items = await repo.fetchPage(limit: input.limit, offset: input.offset);
     return successResult(items: items, input: input);
   }
 }
-
-class SearchTodosUseCase extends BlocxSearchUseCase<BlocxSearchInput, Todo> {
-  final TodoRepository repo;
-
-  SearchTodosUseCase(this.repo);
-
-  @override
-  Future<BlocxUseCaseResult<BlocxPage<Todo>>> perform(
-    BlocxSearchInput input,
-  ) async {
-    final items = await repo.search(
-      query: input.searchText,
-      limit: input.limit,
-      offset: input.offset,
-    );
-
-    return successResult(items: items, input: input);
-  }
-}
-```
-
-### 4. Compose the collection bloc
-
-```dart
-import 'package:blocx_core/blocx_core.dart';
-import 'package:blocx_core/list_bloc.dart';
 
 class TodosBloc extends BlocxCollectionBloc<Todo, void>
     with
         BlocxCollectionInfiniteMixin<Todo, void>,
         BlocxCollectionSearchableMixin<Todo, void>,
-        BlocxCollectionRefreshableMixin<Todo, void>,
         BlocxCollectionSelectableMixin<Todo, void> {
   final FetchTodosUseCase fetchTodosUseCase;
-  final SearchTodosUseCase searchTodosUseCase;
 
-  TodosBloc({
-    required this.fetchTodosUseCase,
-    required this.searchTodosUseCase,
-  }) : super();
+  TodosBloc(this.fetchTodosUseCase) : super();
 
   @override
   BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Todo>? get paginationTask {
     return BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Todo>(
       useCase: fetchTodosUseCase,
-      inputBuilder: (offset, limit) {
-        return BlocxPaginatedInput(
-          offset: offset,
-          limit: limit,
-        );
-      },
+      inputBuilder: (offset, limit) => BlocxPaginatedInput(offset: offset, limit: limit),
     );
   }
-
-  @override
-  BlocxPaginatedUseCaseTask<BlocxSearchInput, Todo>? get searchUseCaseTask {
-    return BlocxPaginatedUseCaseTask<BlocxSearchInput, Todo>(
-      useCase: searchTodosUseCase,
-      inputBuilder: (offset, limit) {
-        return BlocxSearchInput(
-          searchText: searchText,
-          offset: offset,
-          limit: limit,
-        );
-      },
-    );
-  }
-
-  @override
-  bool get isSingleSelect => false;
 }
 ```
-
-### 5. Drive the collection bloc
-
-```dart
-final bloc = TodosBloc(
-  fetchTodosUseCase: FetchTodosUseCase(repo),
-  searchTodosUseCase: SearchTodosUseCase(repo),
-);
-
-bloc.add(BlocxCollectionEventLoadInitialPage<Todo, void>(payload: null));
-bloc.add(BlocxCollectionEventLoadNextPage<Todo>());
-bloc.add(BlocxCollectionEventSearch<Todo>(searchText: 'urgent'));
-bloc.add(BlocxCollectionEventClearSearch<Todo>());
-bloc.add(BlocxCollectionEventRefreshData<Todo>());
-bloc.add(BlocxCollectionEventSelectItem<Todo>(item: someTodo));
-bloc.add(BlocxCollectionEventClearSelection<Todo>());
-```
-
-> For ready-made Flutter list widgets, use [`flutter_blocx`](https://pub.dev/packages/flutter_blocx).
 
 ---
 
-## Quickstart: Form with Validation
-
-### 1. Define the field enum and form entity
+### Quickstart: Form with Validation & Prefetching
 
 ```dart
+import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/form_bloc.dart';
 
-enum SignUpField {
-  email,
-  password,
-  confirmPassword,
-}
+enum SignUpField { email, password }
 
 class SignUpForm extends BlocxBaseFormEntity<SignUpForm, SignUpField> {
   final String email;
   final String password;
-  final String confirmPassword;
 
-  const SignUpForm({
-    this.email = '',
-    this.password = '',
-    this.confirmPassword = '',
-  });
+  const SignUpForm({this.email = '', this.password = ''});
 
   @override
   SignUpForm updateByKey(SignUpField key, dynamic value) {
     return switch (key) {
-      SignUpField.email => copyWith(email: value as String),
-      SignUpField.password => copyWith(password: value as String),
-      SignUpField.confirmPassword => copyWith(
-          confirmPassword: value as String,
-        ),
+      SignUpField.email => SignUpForm(email: value as String, password: password),
+      SignUpField.password => SignUpForm(email: email, password: value as String),
     };
   }
 
   @override
-  dynamic getValueByKey(SignUpField key) {
-    return switch (key) {
-      SignUpField.email => email,
-      SignUpField.password => password,
-      SignUpField.confirmPassword => confirmPassword,
-    };
-  }
-
-  SignUpForm copyWith({
-    String? email,
-    String? password,
-    String? confirmPassword,
-  }) {
-    return SignUpForm(
-      email: email ?? this.email,
-      password: password ?? this.password,
-      confirmPassword: confirmPassword ?? this.confirmPassword,
-    );
-  }
+  dynamic getValueByKey(SignUpField key) => key == SignUpField.email ? email : password;
 
   @override
   String get identifier => 'sign_up_form';
 }
-```
 
-### 2. Define the validator
-
-```dart
 class SignUpValidator extends BlocxFormValidator<SignUpForm, SignUpField> {
   @override
-  List<SignUpField> formKeys() {
-    return SignUpField.values;
-  }
+  List<SignUpField> formKeys() => SignUpField.values;
 
   @override
-  List<BlocxFieldValidator<SignUpForm, SignUpField, dynamic>>
-      getValidatorsByKey(SignUpForm formData, SignUpField key) {
+  List<BlocxFieldValidator<SignUpForm, SignUpField, dynamic>> getValidatorsByKey(
+    SignUpForm formData,
+    SignUpField key,
+  ) {
     return switch (key) {
       SignUpField.email => [
           BlocxStringRequiredValidator<SignUpForm, SignUpField>(),
@@ -1314,177 +737,70 @@ class SignUpValidator extends BlocxFormValidator<SignUpForm, SignUpField> {
         ],
       SignUpField.password => [
           BlocxStringRequiredValidator<SignUpForm, SignUpField>(),
-          BlocxStringMinLengthValidator<SignUpForm, SignUpField>(
-            minLength: 8,
-          ),
-        ],
-      SignUpField.confirmPassword => [
-          BlocxStringRequiredValidator<SignUpForm, SignUpField>(),
-          BlocxStringMatchValidator<SignUpForm, SignUpField>(
-            SignUpField.password,
-          ),
+          BlocxStringMinLengthValidator<SignUpForm, SignUpField>(minLength: 8),
         ],
     };
   }
 }
-```
-
-### 3. Define the submit use case
-
-```dart
-class CreateAccountInput {
-  final String email;
-  final String password;
-
-  const CreateAccountInput({
-    required this.email,
-    required this.password,
-  });
-}
-
-class Account {
-  final String id;
-  final String email;
-
-  const Account({
-    required this.id,
-    required this.email,
-  });
-}
-
-class CreateAccountUseCase
-    extends BlocxBaseUseCase<CreateAccountInput, Account> {
-  final AuthRepository repo;
-
-  CreateAccountUseCase(this.repo);
-
-  @override
-  Future<BlocxUseCaseResult<Account>> perform(
-    CreateAccountInput input,
-  ) async {
-    final account = await repo.createAccount(
-      email: input.email,
-      password: input.password,
-    );
-
-    return success(account);
-  }
-}
-```
-
-### 4. Compose the form bloc
-
-```dart
-import 'package:blocx_core/blocx_core.dart';
-import 'package:blocx_core/form_bloc.dart';
 
 class SignUpBloc extends BlocxFormBloc<SignUpForm, void, SignUpField>
     with BlocxFormValidationMixin<SignUpForm, void, SignUpField> {
   final CreateAccountUseCase createAccountUseCase;
 
-  SignUpBloc({
-    required this.createAccountUseCase,
-  }) : super(const SignUpForm());
+  SignUpBloc(this.createAccountUseCase) : super(const SignUpForm());
 
   @override
-  BlocxFormValidator<SignUpForm, SignUpField> get validator {
-    return SignUpValidator();
-  }
+  BlocxFormValidator<SignUpForm, SignUpField> get validator => SignUpValidator();
 
   @override
-  List<SignUpField> get formKeysList {
-    return SignUpField.values;
-  }
+  List<SignUpField> get formKeysList => SignUpField.values;
 
   @override
-  FormValidationMode get formValidationMode {
-    return FormValidationMode.onSubmit;
-  }
+  FormValidationMode get formValidationMode => FormValidationMode.onSubmit;
 
   @override
   BlocxUseCaseTask<CreateAccountInput, Account> get submitUseCaseTask {
     return BlocxUseCaseTask<CreateAccountInput, Account>(
       useCase: createAccountUseCase,
-      inputBuilder: () {
-        return CreateAccountInput(
-          email: formData.email,
-          password: formData.password,
-        );
-      },
+      inputBuilder: () => CreateAccountInput(email: formData.email, password: formData.password),
     );
   }
 }
 ```
 
-### 5. Drive the form bloc
-
-```dart
-final bloc = SignUpBloc(
-  createAccountUseCase: CreateAccountUseCase(repo),
-);
-
-bloc.add(BlocxFormEventInit<void>());
-
-bloc.add(
-  BlocxFormEventUpdateData<SignUpField>(
-    key: SignUpField.email,
-    data: 'user@example.com',
-  ),
-);
-
-bloc.add(
-  BlocxFormEventUpdateData<SignUpField>(
-    key: SignUpField.password,
-    data: 'password123',
-  ),
-);
-
-bloc.add(BlocxFormEventSubmit());
-```
-
-> For ready-made Flutter form widgets, use [`flutter_blocx`](https://pub.dev/packages/flutter_blocx).
-
 ---
 
-## Migrating to 0.8.4
+## Migrating to 0.9.0
 
-### Replace `BlocxPaginationInput` with `BlocxPaginatedInput`
+### Update Barrel Imports
 
-```dart
-// Before
-class GetUsersInput extends BlocxPaginationInput {
-  const GetUsersInput({
-    required super.limit,
-    required super.offset,
-  });
-}
-
-// After
-class GetUsersInput extends BlocxPaginatedInput {
-  const GetUsersInput({
-    required super.limit,
-    required super.offset,
-  });
-}
-```
-
-### Update paginated use case imports
+Replace imports of `list_bloc.dart` with `collection_bloc.dart`:
 
 ```dart
 // Before
-import 'package:blocx_core/src/blocs/list/use_cases/blocx_pagination_use_case.dart';
-
-// After
-import 'package:blocx_core/src/blocs/list/use_cases/blocx_paginated_use_case.dart';
-```
-
-Prefer the public barrel:
-
-```dart
 import 'package:blocx_core/list_bloc.dart';
+
+// After
+import 'package:blocx_core/collection_bloc.dart';
 ```
 
-### Update normal use case tasks
+### Update Form Prefetch Mixin Name
+
+`BlocxFormInfoFetcherMixin` has been renamed to `BlocxFormPrefetchMixin`:
+
+```dart
+// Before
+class ProfileFormBloc extends BlocxFormBloc<ProfileForm, void, ProfileField>
+    with BlocxFormInfoFetcherMixin<ProfileForm, void, ProfileField> { ... }
+
+// After
+class ProfileFormBloc extends BlocxFormBloc<ProfileForm, void, ProfileField>
+    with BlocxFormPrefetchMixin<ProfileForm, void, ProfileField> { ... }
+```
+
+### Update Typed UseCase Tasks
+
+`BlocxUseCaseTask` and `BlocxPaginatedUseCaseTask` use input/output type parameters:
 
 ```dart
 // Before
@@ -1500,212 +816,8 @@ BlocxUseCaseTask<CreateUserInput, User>(
 );
 ```
 
-### Update paginated tasks
-
-```dart
-@override
-BlocxPaginatedUseCaseTask<GetUsersInput, User>? get paginationTask {
-  return BlocxPaginatedUseCaseTask<GetUsersInput, User>(
-    useCase: getUsersUseCase,
-    inputBuilder: (offset, limit) {
-      return GetUsersInput(
-        offset: offset,
-        limit: limit,
-      );
-    },
-  );
-}
-```
-
-### Update search tasks
-
-```dart
-@override
-BlocxPaginatedUseCaseTask<BlocxSearchInput, User>? get searchUseCaseTask {
-  return BlocxPaginatedUseCaseTask<BlocxSearchInput, User>(
-    useCase: searchUsersUseCase,
-    inputBuilder: (offset, limit) {
-      return BlocxSearchInput(
-        searchText: searchText,
-        offset: offset,
-        limit: limit,
-      );
-    },
-  );
-}
-```
-
-### Update delete configuration
-
-```dart
-// Before
-@override
-BlocxBaseUseCase<User, bool>? get deleteItemUseCase => deleteUserUseCase;
-
-// After
-@override
-BlocxUseCaseTask<DeleteUserInput, bool>? deleteItemTask(User item) {
-  return BlocxUseCaseTask<DeleteUserInput, bool>(
-    useCase: deleteUserUseCase,
-    inputBuilder: () => DeleteUserInput(id: item.id),
-  );
-}
-```
-
-### Update remote selection sync
-
-```dart
-@override
-BlocxUseCaseTask<SelectUserInput, bool>? selectItemTask(User item) {
-  return BlocxUseCaseTask<SelectUserInput, bool>(
-    useCase: selectUserUseCase,
-    inputBuilder: () => SelectUserInput(id: item.id),
-  );
-}
-
-@override
-BlocxUseCaseTask<DeselectUserInput, bool>? deselectItemTask(User item) {
-  return BlocxUseCaseTask<DeselectUserInput, bool>(
-    useCase: deselectUserUseCase,
-    inputBuilder: () => DeselectUserInput(id: item.id),
-  );
-}
-```
-
-### Update form submit tasks
-
-```dart
-@override
-BlocxUseCaseTask<CreateAccountInput, Account> get submitUseCaseTask {
-  return BlocxUseCaseTask<CreateAccountInput, Account>(
-    useCase: createAccountUseCase,
-    inputBuilder: () {
-      return CreateAccountInput(
-        email: formData.email,
-        password: formData.password,
-      );
-    },
-  );
-}
-```
-
-### Note form submit behavior
-
-Form submission now requests full validation before `doBeforeSubmit`.
-
-The submit use case is blocked when:
-
-- validation errors exist
-- required form info is still loading
-- unique-field validation is still running
-
-`FormValidationMode` still decides what validation actually runs.
-
----
-
-## Migrating from 0.7.x
-
-### List bloc rename
-
-`BlocxListBloc` was renamed to `BlocxCollectionBloc`.
-
-```dart
-// Before
-class TodosBloc extends BlocxListBloc<Todo, void> {}
-
-// After
-class TodosBloc extends BlocxCollectionBloc<Todo, void> {}
-```
-
-### Collection mixin renames
-
-| Before | After |
-|---|---|
-| `BlocxInfiniteListBlocMixin` | `BlocxCollectionInfiniteMixin` |
-| `BlocxSelectableListBlocMixin` | `BlocxCollectionSelectableMixin` |
-| `BlocxRefreshableListBlocMixin` | `BlocxCollectionRefreshableMixin` |
-| `BlocxSearchableListBlocMixin` | `BlocxCollectionSearchableMixin` |
-| `BlocxDeletableListBlocMixin` | `BlocxCollectionDeletableMixin` |
-| `BlocxExpandableListBlocMixin` | `BlocxCollectionExpandableMixin` |
-| `BlocxHighlightableListBlocMixin` | `BlocxCollectionHighlightableMixin` |
-| `BlocxScrollableListBlocMixin` | `BlocxCollectionScrollableMixin` |
-| `BlocxListBlocSyncStreamMixin` | `BlocxCollectionSyncStreamMixin` |
-
-### Form mixin renames
-
-| Before | After |
-|---|---|
-| `BlocxInfoFetcherFormMixin` | `BlocxFormInfoFetcherMixin` |
-| `BlocxSteppedFormMixin` | `BlocxFormSteppedMixin` |
-
-### Event and state renames
-
-All list events and states were renamed from `BlocxList*` to `BlocxCollection*`.
-
-| Before | After |
-|---|---|
-| `BlocxListEventLoadInitialPage` | `BlocxCollectionEventLoadInitialPage` |
-| `BlocxListEventLoadNextPage` | `BlocxCollectionEventLoadNextPage` |
-| `BlocxListEventSearch` | `BlocxCollectionEventSearch` |
-| `BlocxListEventRefreshData` | `BlocxCollectionEventRefreshData` |
-| `BlocxListStateLoading` | `BlocxCollectionStateLoading` |
-| `BlocxListStateLoaded` | `BlocxCollectionStateLoaded` |
-| `BlocxListStateError` | `BlocxCollectionStateError` |
-
-### Automatic mixin initialization
-
-Manual mixin initialization is no longer needed.
-
-```dart
-// Before
-TodosBloc() : super() {
-  initInfiniteList();
-  initSearch();
-  initRefresh();
-}
-
-// After
-TodosBloc() : super();
-```
-
-### Constructor changes
-
-`ScreenManagerCubit` and `BlocxInfiniteListBloc` are owned internally.
-
-```dart
-// Before
-TodosBloc({
-  required ScreenManagerCubit screen,
-}) : super(screen, BlocxInfiniteListBloc());
-
-// After
-TodosBloc() : super();
-```
-
-### Model renames
-
-| Before | After |
-|---|---|
-| `BaseFormEntity` | `BlocxBaseFormEntity` |
-| `Page<T>` | `BlocxPage<T>` |
-| `UseCaseResult<T>` | `BlocxUseCaseResult<T>` |
-| `BlocxPaginationInput` | `BlocxPaginatedInput` |
-
----
-
-## Contributing
-
-Contributions are welcome.
-
-- Run `dart format .` before committing.
-- Ensure `dart analyze` reports no issues.
-- Add or update tests for every new mixin, event, state, or validator.
-- Run `dart test` before opening a pull request.
-- All public APIs must include dartdoc comments.
-- Keep pull requests focused: one feature or fix per PR.
-
 ---
 
 ## License
 
-This project is licensed under the MIT License. See the [`LICENSE`](LICENSE) file at the repository root for details.
+`blocx_core` is released under the MIT License.

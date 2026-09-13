@@ -1,12 +1,8 @@
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/form_bloc.dart'
-    show
-        BlocxFormErrorsMixin,
-        BlocxFormInfoFetcherMixin,
-        BlocxFormSteppedMixin,
-        BlocxUniqueFieldValidatorMixin;
-import 'package:blocx_core/src/blocs/form/mixins/blocx_form_core_mixin.dart';
+    show BlocxFormErrorsMixin, BlocxFormPrefetchMixin, BlocxFormSteppedMixin, BlocxUniqueFieldValidatorMixin;
+import 'package:blocx_core/src/blocs/form/bloc/blocx_form_core_mixin.dart';
 import 'package:blocx_core/src/core/models/blocx_base_form_entity.dart';
 
 part 'blocx_form_event.dart';
@@ -46,7 +42,7 @@ part 'blocx_form_state.dart';
 /// |---|---|
 /// | [BlocxFormSteppedMixin] | Multi-step form navigation |
 /// | [BlocxUniqueFieldValidatorMixin] | Async per-field uniqueness checks |
-/// | [BlocxFormInfoFetcherMixin] | Fetches remote data before the form renders |
+/// | [BlocxFormPrefetchMixin] | Fetches remote data before the form renders |
 ///
 /// ## Update / edit forms
 ///
@@ -62,42 +58,47 @@ part 'blocx_form_state.dart';
 /// - [E]: The enum identifying each field. Used as the key for updates,
 ///   validation errors, and info-fetching.
 abstract class BlocxFormBloc<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
-    extends BaseBloc<BlocxFormEvent, BlocxFormState<F, E>>
+    extends BlocxBaseBloc<BlocxFormEvent, BlocxFormState<F, E>>
     with BlocxFormCoreMixin<F, P, E>, BlocxFormErrorsMixin<F, P, E> {
+  late final bool isStepped;
+  late final bool hasValidation;
+  @override
+  late final bool isUniqueFieldValidator;
+  @override
+  late final bool isInfoFetcher;
+
   /// Creates the bloc with the blank [formData] as the initial state.
   ///
-  /// No [ScreenManagerCubit] is needed. It is managed by [BaseBloc].
+  /// No [ScreenManagerCubit] is needed. It is managed by [BlocxBaseBloc].
   BlocxFormBloc(F formData) : super(BlocxFormStateInitial(formData: formData)) {
     initData(formData);
     initErrors();
 
-    if (isStepped) {
-      (this as BlocxFormSteppedMixin<F, P, E>).initStepped();
-    }
-
-    if (isUniqueFieldValidator) {
-      (this as BlocxUniqueFieldValidatorMixin<F, P, E>).initUniqueFieldChecker();
-    }
-
-    if (isInfoFetcher) {
-      (this as BlocxFormInfoFetcherMixin<F, P, E>).initInfoFetcher();
-    }
+    isStepped = initStepped();
+    isUniqueFieldValidator = initUniqueFieldChecker();
+    isInfoFetcher = initInfoFetcher();
+    hasValidation = initValidation();
   }
 
-  /// Whether this bloc has [BlocxFormSteppedMixin] applied.
-  bool get isStepped => this is BlocxFormSteppedMixin<F, P, E>;
+  bool initValidation() {
+    return false;
+  }
 
-  /// Whether this bloc has [BlocxUniqueFieldValidatorMixin] applied.
-  @override
-  bool get isUniqueFieldValidator => this is BlocxUniqueFieldValidatorMixin<F, P, E>;
+  bool initStepped() {
+    return false;
+  }
 
-  /// Whether this bloc has [BlocxFormInfoFetcherMixin] applied.
-  @override
-  bool get isInfoFetcher => this is BlocxFormInfoFetcherMixin<F, P, E>;
+  bool initUniqueFieldChecker() {
+    return false;
+  }
+
+  bool initInfoFetcher() {
+    return false;
+  }
 
   /// The set of fields currently waiting on a remote info fetch.
   ///
-  /// Override when using [BlocxFormInfoFetcherMixin] to track per-field loading
+  /// Override when using [BlocxFormPrefetchMixin] to track per-field loading
   /// indicators.
   Set<E> get fieldsFetchingInfo => <E>{};
 
@@ -125,6 +126,7 @@ abstract class BlocxFormBloc<F extends BlocxBaseFormEntity<F, E>, P, E extends E
         fieldsFetchingInfo: fieldsFetchingInfo,
         checkingUniqueFields: uniqueKeysBeingChecked,
         comesFromPreviousStep: comesFromPreviousStep,
+        isFormValid: checkIsFormValid(),
       ),
     );
   }

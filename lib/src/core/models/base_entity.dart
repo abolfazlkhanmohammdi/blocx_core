@@ -38,13 +38,4 @@ abstract class BlocxBaseEntity {
   ///
   /// Equality and [hashCode] depend solely on this field.
   String get identifier;
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is BlocxBaseEntity && other.runtimeType == runtimeType && other.identifier == identifier;
-  }
-
-  @override
-  int get hashCode => Object.hash(runtimeType, identifier);
 }
