@@ -2,7 +2,7 @@ import 'package:blocx_core/blocx_core.dart';
 
 abstract class BlocXLocalizations {
   static BlocXLocalizations? _loc;
-  static set localizations(value) => _loc = value;
+  static set localizations(BlocXLocalizations? value) => _loc = value;
   static BlocXLocalizations get localizations => _loc ?? _DefaultLocalizations();
 
   String get tryAgain;

@@ -2,14 +2,19 @@ import 'dart:async';
 
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/collection_bloc.dart'
-    show BlocxCollectionEvent, BlocxCollectionState, BlocxCollectionEventUpdateItem, BlocxCollectionEventRemoveItemById, BlocxCollectionEventAddItem;
+    show
+        BlocxCollectionEvent,
+        BlocxCollectionState,
+        BlocxCollectionEventUpdateItem,
+        BlocxCollectionEventRemoveItemById,
+        BlocxCollectionEventAddItem;
 
 mixin BlocxCollectionSyncStreamMixin<T extends BlocxBaseEntity, P>
     on BlocxBaseBloc<BlocxCollectionEvent<T>, BlocxCollectionState<T>> {
   StreamSubscription<T>? _createSub;
   StreamSubscription<T>? _updateSub;
   StreamSubscription<String>? _deleteSub;
-  initStreams() {
+  bool initStreams() {
     _createSub = itemCreationStream?.listen((T value) {
       int index = getInsertIndexForItem(value);
       add(BlocxCollectionEventAddItem(item: value, index: index));
@@ -22,6 +27,7 @@ mixin BlocxCollectionSyncStreamMixin<T extends BlocxBaseEntity, P>
     _deleteSub = itemDeleteStream?.listen((String id) {
       add(BlocxCollectionEventRemoveItemById(identifier: id));
     });
+    return true;
   }
 
   Stream<T>? get itemCreationStream => null;
@@ -32,7 +38,7 @@ mixin BlocxCollectionSyncStreamMixin<T extends BlocxBaseEntity, P>
     return 0;
   }
 
-  closeStreams() {
+  void closeStreams() {
     _createSub?.cancel();
     _updateSub?.cancel();
     _deleteSub?.cancel();
