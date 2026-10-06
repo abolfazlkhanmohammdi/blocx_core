@@ -154,7 +154,8 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
   /// Task responsible for search requests.
   ///
   /// Override this to enable search.
-  BlocxPaginatedUseCaseTask<BlocxSearchInput, Entity>? get searchUseCaseTask => null;
+  BlocxPaginatedUseCaseTask<BlocxSearchInput, Entity>? get searchUseCaseTask =>
+      null;
 
   /// Debounce duration applied to search input.
   Duration get searchDebounceDuration => const Duration(milliseconds: 300);
@@ -240,7 +241,8 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
     emitState(emit);
 
     try {
-      final result = await task.execute(offset: 0, limit: list.isNotEmpty ? list.length : limit);
+      final result = await task.execute(
+          offset: 0, limit: list.isNotEmpty ? list.length : limit);
 
       if (result.isFailure) {
         await handleError(

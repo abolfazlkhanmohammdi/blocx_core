@@ -2,15 +2,18 @@ part of 'blocx_infinite_list_bloc.dart';
 
 class BlocxInfiniteListEvent extends BlocxBaseEvent {}
 
-class BlocxInfiniteListEventChangeLoadTopDataStatus extends BlocxInfiniteListEvent {
+class BlocxInfiniteListEventChangeLoadTopDataStatus
+    extends BlocxInfiniteListEvent {
   final bool isLoading;
   BlocxInfiniteListEventChangeLoadTopDataStatus(this.isLoading);
 }
 
-class BlocxInfiniteListEventChangeLoadBottomDataStatus extends BlocxInfiniteListEvent {
+class BlocxInfiniteListEventChangeLoadBottomDataStatus
+    extends BlocxInfiniteListEvent {
   final bool isLoading;
   final bool hasReachedEnd;
-  BlocxInfiniteListEventChangeLoadBottomDataStatus(this.isLoading, this.hasReachedEnd);
+  BlocxInfiniteListEventChangeLoadBottomDataStatus(
+      this.isLoading, this.hasReachedEnd);
 }
 
 class BlocxInfiniteListEventOnScroll extends BlocxInfiniteListEvent {

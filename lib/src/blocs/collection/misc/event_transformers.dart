@@ -6,6 +6,7 @@ import 'package:stream_transform/stream_transform.dart';
 /// if a new event comes in before the previous one finishes.
 EventTransformer<E> debounceRestartable<E>(Duration duration) {
   return (events, mapper) {
-    return restartable<E>().call(events.debounce(duration, leading: false, trailing: true), mapper);
+    return restartable<E>().call(
+        events.debounce(duration, leading: false, trailing: true), mapper);
   };
 }

@@ -1,8 +1,10 @@
 import 'collection/collection_bloc_test.dart' as collection_bloc_test;
 import 'core/use_case_test.dart' as use_case_test;
 import 'form/form_bloc_test.dart' as form_bloc_test;
-import 'screen_manager/screen_manager_cubit_test.dart' as screen_manager_cubit_test;
-import 'stream/entity_command_stream_sync_test.dart' as entity_command_stream_sync_test;
+import 'screen_manager/screen_manager_cubit_test.dart'
+    as screen_manager_cubit_test;
+import 'stream/entity_command_stream_sync_test.dart'
+    as entity_command_stream_sync_test;
 
 void main() {
   use_case_test.main();
@@ -11,4 +13,3 @@ void main() {
   screen_manager_cubit_test.main();
   entity_command_stream_sync_test.main();
 }
-

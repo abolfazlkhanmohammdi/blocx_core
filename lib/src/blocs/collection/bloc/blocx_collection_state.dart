@@ -1,7 +1,8 @@
 // lib/src/blocs/list/bloc/list_state.dart
 part of 'blocx_collection_bloc.dart';
 
-abstract class BlocxCollectionState<T extends BlocxBaseEntity> extends BlocxBaseState {
+abstract class BlocxCollectionState<T extends BlocxBaseEntity>
+    extends BlocxBaseState {
   final List<T> list;
   final bool hasReachedEnd;
   final bool isLoadingNextPage;
@@ -33,7 +34,8 @@ abstract class BlocxCollectionState<T extends BlocxBaseEntity> extends BlocxBase
   bool get isEmpty => list.isEmpty;
 }
 
-class BlocxCollectionStateLoading<T extends BlocxBaseEntity> extends BlocxCollectionState<T> {
+class BlocxCollectionStateLoading<T extends BlocxBaseEntity>
+    extends BlocxCollectionState<T> {
   const BlocxCollectionStateLoading({
     super.list = const [],
     super.hasReachedEnd = false,
@@ -47,7 +49,8 @@ class BlocxCollectionStateLoading<T extends BlocxBaseEntity> extends BlocxCollec
   }) : super(shouldRebuild: true, shouldListen: false);
 }
 
-class BlocxCollectionStateLoaded<T extends BlocxBaseEntity> extends BlocxCollectionState<T> {
+class BlocxCollectionStateLoaded<T extends BlocxBaseEntity>
+    extends BlocxCollectionState<T> {
   const BlocxCollectionStateLoaded({
     required super.list,
     required super.hasReachedEnd,
@@ -91,7 +94,8 @@ class BlocxCollectionStateLoaded<T extends BlocxBaseEntity> extends BlocxCollect
   }
 }
 
-class BlocxCollectionStateError<T extends BlocxBaseEntity> extends BlocxCollectionState<T> {
+class BlocxCollectionStateError<T extends BlocxBaseEntity>
+    extends BlocxCollectionState<T> {
   final String message;
 
   const BlocxCollectionStateError({
@@ -108,11 +112,13 @@ class BlocxCollectionStateError<T extends BlocxBaseEntity> extends BlocxCollecti
   }) : super(shouldRebuild: true, shouldListen: false);
 }
 
-class BlocxCollectionStateScrollToItem<T extends BlocxBaseEntity> extends BlocxCollectionState<T> {
+class BlocxCollectionStateScrollToItem<T extends BlocxBaseEntity>
+    extends BlocxCollectionState<T> {
   final T item;
   final int index;
 
-  const BlocxCollectionStateScrollToItem({required this.item, required this.index})
+  const BlocxCollectionStateScrollToItem(
+      {required this.item, required this.index})
       : super(
           list: const [],
           hasReachedEnd: false,
@@ -124,7 +130,8 @@ class BlocxCollectionStateScrollToItem<T extends BlocxBaseEntity> extends BlocxC
         );
 }
 
-class BlocxCollectionStateSelectionChanged<T extends BlocxBaseEntity> extends BlocxCollectionState<T> {
+class BlocxCollectionStateSelectionChanged<T extends BlocxBaseEntity>
+    extends BlocxCollectionState<T> {
   final SelectionChangedData<T> selectionData;
   const BlocxCollectionStateSelectionChanged({
     required this.selectionData,

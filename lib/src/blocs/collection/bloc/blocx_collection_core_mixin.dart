@@ -28,7 +28,8 @@ import 'package:blocx_core/src/core/models/base_entity_extensions.dart';
 /// pagination state flags, and common state emission used by all collection
 /// blocs.
 mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
-    on BlocxBaseBloc<BlocxCollectionEvent<Entity>, BlocxCollectionState<Entity>> {
+    on BlocxBaseBloc<BlocxCollectionEvent<Entity>,
+        BlocxCollectionState<Entity>> {
   /// Optional external payload used for initial loading.
   Payload? payload;
 
@@ -86,13 +87,15 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   ///   );
   /// }
   /// ```
-  BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Entity>? get paginationTask => null;
+  BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Entity>? get paginationTask =>
+      null;
 
   /// Task responsible for loading the initial page.
   ///
   /// Defaults to [paginationTask]. Override this only when initial loading uses
   /// a different use case or input shape.
-  BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Entity>? get loadInitialPageTask => paginationTask;
+  BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Entity>?
+      get loadInitialPageTask => paginationTask;
 
   /// Loads the first page of collection data.
   Future<void> loadInitialPage(
@@ -303,7 +306,8 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   FutureOr<void> applyInitialSelection() {}
 
   FutureOr<void> removeFromList(
-      BlocxCollectionEventRemoveFromList<Entity> event, Emitter<BlocxCollectionState<Entity>> emit) async {
+      BlocxCollectionEventRemoveFromList<Entity> event,
+      Emitter<BlocxCollectionState<Entity>> emit) async {
     var index = _list.indexById(event.item);
     if (index < 0) return;
     _list.removeAt(index);

@@ -32,10 +32,11 @@ enum _ErrorMutationType {
 /// Timed errors are cleared by dispatching [BlocxFormEventClearFieldError]
 /// after their duration expires. This avoids using an old [Emitter] after an
 /// event handler has already completed.
-mixin BlocxFormErrorsMixin<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
-    on BlocxBaseBloc<BlocxFormEvent, BlocxFormState<F, E>> {
+mixin BlocxFormErrorsMixin<F extends BlocxBaseFormEntity<F, E>, P,
+    E extends Enum> on BlocxBaseBloc<BlocxFormEvent, BlocxFormState<F, E>> {
   final Map<E, Set<String>> _errors = <E, Set<String>>{};
-  final Map<E, List<_TimedFieldErrorTimer>> _timers = <E, List<_TimedFieldErrorTimer>>{};
+  final Map<E, List<_TimedFieldErrorTimer>> _timers =
+      <E, List<_TimedFieldErrorTimer>>{};
 
   /// Initialises form error event handlers.
   ///
@@ -207,7 +208,9 @@ mixin BlocxFormErrorsMixin<F extends BlocxBaseFormEntity<F, E>, P, E extends Enu
   }) {
     return _mutateErrors(
       source: source,
-      type: errorMessage == null ? _ErrorMutationType.clearField : _ErrorMutationType.remove,
+      type: errorMessage == null
+          ? _ErrorMutationType.clearField
+          : _ErrorMutationType.remove,
       key: key,
       error: errorMessage,
     );

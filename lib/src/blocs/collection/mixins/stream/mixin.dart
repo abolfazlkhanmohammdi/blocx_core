@@ -198,4 +198,3 @@ mixin BlocxCollectionSyncStreamMixin<T extends BlocxBaseEntity, P>
     _deleteSub?.cancel();
   }
 }
-

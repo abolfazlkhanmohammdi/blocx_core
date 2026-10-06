@@ -63,7 +63,8 @@ part 'blocx_collection_state.dart';
 /// - [Payload]: The payload type passed with [BlocxCollectionEventLoadInitialPage].
 ///   Use `void` when no payload is needed.
 abstract class BlocxCollectionBloc<Entity extends BlocxBaseEntity, Payload>
-    extends BlocxBaseBloc<BlocxCollectionEvent<Entity>, BlocxCollectionState<Entity>>
+    extends BlocxBaseBloc<BlocxCollectionEvent<Entity>,
+        BlocxCollectionState<Entity>>
     with BlocxCollectionCoreMixin<Entity, Payload> {
   late final BlocxInfiniteListBloc _infiniteListBloc =
       BlocxInfiniteListBloc(refreshThreshold: infiniteListRefreshThreshold);
@@ -85,8 +86,9 @@ abstract class BlocxCollectionBloc<Entity extends BlocxBaseEntity, Payload>
   ///
   /// Delegates to [BlocxCollectionRefreshableMixin.refreshThreshold] when
   /// [isRefreshable] is true. Returns `0` otherwise.
-  double get infiniteListRefreshThreshold =>
-      isRefreshable ? (this as BlocxCollectionRefreshableMixin).refreshThreshold : 0;
+  double get infiniteListRefreshThreshold => isRefreshable
+      ? (this as BlocxCollectionRefreshableMixin).refreshThreshold
+      : 0;
 
   /// Creates the bloc.
   ///
@@ -109,7 +111,9 @@ abstract class BlocxCollectionBloc<Entity extends BlocxBaseEntity, Payload>
   @override
   Future<void> close() async {
     await infiniteListBloc.close();
-    if (isStreamable) (this as BlocxCollectionSyncStreamMixin<Entity, Payload>).closeStreams();
+    if (isStreamable) {
+      (this as BlocxCollectionSyncStreamMixin<Entity, Payload>).closeStreams();
+    }
     await super.close();
   }
 
@@ -117,27 +121,33 @@ abstract class BlocxCollectionBloc<Entity extends BlocxBaseEntity, Payload>
   BlocxInfiniteListBloc get infiniteListBloc => _infiniteListBloc;
 
   @override
-  Set<String> get beingRemovedItemIds =>
-      isDeletable ? (this as BlocxCollectionDeletableMixin<Entity, Payload>).beingRemovedItemIds : {};
+  Set<String> get beingRemovedItemIds => isDeletable
+      ? (this as BlocxCollectionDeletableMixin<Entity, Payload>)
+          .beingRemovedItemIds
+      : {};
 
   @override
   Set<String> get selectedItemIds => isSelectable
-      ? (this as BlocxCollectionSelectableMixin<Entity, Payload>).selectedItemIdsOriginal
+      ? (this as BlocxCollectionSelectableMixin<Entity, Payload>)
+          .selectedItemIdsOriginal
       : const {};
 
   @override
   Set<String> get beingSelectedItemIds => isSelectable
-      ? (this as BlocxCollectionSelectableMixin<Entity, Payload>).beingSelectedItemIdsOriginal
+      ? (this as BlocxCollectionSelectableMixin<Entity, Payload>)
+          .beingSelectedItemIdsOriginal
       : const {};
 
   @override
   Set<String> get highlightedItemIds => isHighlightable
-      ? (this as BlocxCollectionHighlightableMixin<Entity, Payload>).highlightedItemIdsOriginal
+      ? (this as BlocxCollectionHighlightableMixin<Entity, Payload>)
+          .highlightedItemIdsOriginal
       : const {};
 
   @override
   Set<String> get expandedItemIds => isExpandable
-      ? (this as BlocxCollectionExpandableMixin<Entity, Payload>).expandedItemIdsOriginal
+      ? (this as BlocxCollectionExpandableMixin<Entity, Payload>)
+          .expandedItemIdsOriginal
       : const {};
 
   bool initFilters() {

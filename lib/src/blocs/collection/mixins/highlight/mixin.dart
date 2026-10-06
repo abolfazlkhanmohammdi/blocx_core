@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
-import 'package:blocx_core/collection_bloc.dart' show BlocxCollectionBloc, BlocxCollectionState;
+import 'package:blocx_core/collection_bloc.dart'
+    show BlocxCollectionBloc, BlocxCollectionState;
 
 import 'events.dart';
 

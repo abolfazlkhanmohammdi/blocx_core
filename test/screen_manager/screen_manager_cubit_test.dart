@@ -22,7 +22,8 @@ void main() {
       cubit.pop();
     });
 
-    test('displaySnackbar emits snackbar state then restores previous state', () async {
+    test('displaySnackbar emits snackbar state then restores previous state',
+        () async {
       expectLater(
         cubit.stream,
         emitsInOrder([

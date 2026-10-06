@@ -12,15 +12,19 @@ class TestEntity extends BlocxBaseEntity {
   String get identifier => id;
 }
 
-class TestPaginatedUseCase extends BlocxPaginatedUseCase<BlocxPaginatedInput, TestEntity> {
+class TestPaginatedUseCase
+    extends BlocxPaginatedUseCase<BlocxPaginatedInput, TestEntity> {
   @override
-  Future<BlocxUseCaseResult<BlocxPage<TestEntity>>> perform(BlocxPaginatedInput input) async {
+  Future<BlocxUseCaseResult<BlocxPage<TestEntity>>> perform(
+      BlocxPaginatedInput input) async {
     final count = input.limit;
     final items = List.generate(
       count,
-      (i) => TestEntity(id: '${input.offset + i}', title: 'Item ${input.offset + i}'),
+      (i) => TestEntity(
+          id: '${input.offset + i}', title: 'Item ${input.offset + i}'),
     );
-    return success(BlocxPage(items: items, offset: input.offset, limit: input.limit));
+    return success(
+        BlocxPage(items: items, offset: input.offset, limit: input.limit));
   }
 }
 
@@ -34,10 +38,12 @@ class TestCollectionBloc extends BlocxCollectionBloc<TestEntity, void>
   int get limit => 10;
 
   @override
-  BlocxPaginatedUseCaseTask<BlocxPaginatedInput, TestEntity> get paginationTask => BlocxPaginatedUseCaseTask(
-        useCase: _useCase,
-        inputBuilder: (offset, limit) => BlocxPaginatedInput(limit: limit, offset: offset),
-      );
+  BlocxPaginatedUseCaseTask<BlocxPaginatedInput, TestEntity>
+      get paginationTask => BlocxPaginatedUseCaseTask(
+            useCase: _useCase,
+            inputBuilder: (offset, limit) =>
+                BlocxPaginatedInput(limit: limit, offset: offset),
+          );
 }
 
 void main() {

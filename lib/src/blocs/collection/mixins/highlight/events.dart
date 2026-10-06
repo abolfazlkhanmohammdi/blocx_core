@@ -4,7 +4,8 @@ import 'package:blocx_core/collection_bloc.dart';
 /// Highlights a specific [item] in the list.
 ///
 /// Highlighting is typically temporary and used for drawing user attention.
-class BlocxCollectionEventHighlightItem<T extends BlocxBaseEntity> extends BlocxCollectionEvent<T> {
+class BlocxCollectionEventHighlightItem<T extends BlocxBaseEntity>
+    extends BlocxCollectionEvent<T> {
   /// The item to highlight.
   final T item;
 
@@ -12,7 +13,8 @@ class BlocxCollectionEventHighlightItem<T extends BlocxBaseEntity> extends Blocx
 }
 
 /// Clears highlighting from a specific [item].
-class BlocxCollectionEventClearHighlightedItem<T extends BlocxBaseEntity> extends BlocxCollectionEvent<T> {
+class BlocxCollectionEventClearHighlightedItem<T extends BlocxBaseEntity>
+    extends BlocxCollectionEvent<T> {
   /// The item to clear highlighting from.
   final T item;
 

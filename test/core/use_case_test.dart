@@ -33,7 +33,8 @@ void main() {
       expect(output, equals('Length is 5'));
     });
 
-    test('failed execution catches exception and returns BlocxUseCaseFailure', () async {
+    test('failed execution catches exception and returns BlocxUseCaseFailure',
+        () async {
       final useCase = TestFailureUseCase();
       final result = await useCase.execute('hello');
 

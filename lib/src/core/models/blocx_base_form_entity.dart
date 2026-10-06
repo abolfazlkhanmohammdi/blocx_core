@@ -50,8 +50,8 @@ import 'package:collection/collection.dart';
 /// Equality is inherited from [BlocxBaseEntity] and is based solely on
 /// [identifier]. Two form entity instances with the same [identifier] are
 /// considered equal regardless of field values.
-abstract class BlocxBaseFormEntity<F extends BlocxBaseFormEntity<F, E>, E extends Enum>
-    extends BlocxBaseEntity {
+abstract class BlocxBaseFormEntity<F extends BlocxBaseFormEntity<F, E>,
+    E extends Enum> extends BlocxBaseEntity {
   const BlocxBaseFormEntity();
 
   /// Updates the field identified by [key] and returns a new instance.

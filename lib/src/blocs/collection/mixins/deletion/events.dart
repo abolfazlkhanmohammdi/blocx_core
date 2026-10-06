@@ -2,7 +2,8 @@ import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/collection_bloc.dart';
 
 /// Removes a single [item] from the list.
-class BlocxCollectionEventRemoveItem<T extends BlocxBaseEntity> extends BlocxCollectionEvent<T> {
+class BlocxCollectionEventRemoveItem<T extends BlocxBaseEntity>
+    extends BlocxCollectionEvent<T> {
   /// The item to remove.
   final T item;
 
@@ -10,7 +11,8 @@ class BlocxCollectionEventRemoveItem<T extends BlocxBaseEntity> extends BlocxCol
 }
 
 /// Removes a single [item] from the list.
-class BlocxCollectionEventRemoveItemById<T extends BlocxBaseEntity> extends BlocxCollectionEvent<T> {
+class BlocxCollectionEventRemoveItemById<T extends BlocxBaseEntity>
+    extends BlocxCollectionEvent<T> {
   /// The item to remove.
   final String identifier;
 
@@ -18,7 +20,8 @@ class BlocxCollectionEventRemoveItemById<T extends BlocxBaseEntity> extends Bloc
 }
 
 /// Removes multiple [items] from the list at once.
-class BlocxCollectionEventRemoveMultipleItems<T extends BlocxBaseEntity> extends BlocxCollectionEvent<T> {
+class BlocxCollectionEventRemoveMultipleItems<T extends BlocxBaseEntity>
+    extends BlocxCollectionEvent<T> {
   /// The items to remove.
   final List<T> items;
 

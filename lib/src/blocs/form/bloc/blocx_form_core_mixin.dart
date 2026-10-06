@@ -107,7 +107,9 @@ mixin BlocxFormCoreMixin<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
     var oldValue = formData.getValueByKey(event.key);
     formData = await updateFormData(event.key, event.data);
     if (isUniqueFieldValidator &&
-        (this as BlocxUniqueFieldValidatorMixin<F, P, E>).uniqueFieldKeys.contains(event.key)) {
+        (this as BlocxUniqueFieldValidatorMixin<F, P, E>)
+            .uniqueFieldKeys
+            .contains(event.key)) {
       add(
         BlocxFormEventCheckUniqueValue(
           key: event.key,
@@ -120,8 +122,8 @@ mixin BlocxFormCoreMixin<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
     emitState(emit);
   }
 
-  void emitChangesOnUpdate(
-      E formKey, dynamic oldValue, dynamic newValue, Emitter<BlocxFormState<F, E>> emit) {
+  void emitChangesOnUpdate(E formKey, dynamic oldValue, dynamic newValue,
+      Emitter<BlocxFormState<F, E>> emit) {
     if (shouldEmitChangesOnUpdate) {
       emit(
         BlocxFormStateFormUpdated(
@@ -313,4 +315,3 @@ mixin BlocxFormCoreMixin<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
   /// The current validation mode.
   FormValidationMode get formValidationMode => FormValidationMode.none;
 }
-

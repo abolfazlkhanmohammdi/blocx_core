@@ -46,7 +46,8 @@ mixin BlocxCollectionSelectableMixin<Entity extends BlocxBaseEntity, Payload>
   bool initSelection() {
     on<BlocxCollectionEventSelectItem<Entity>>(selectItem);
     on<BlocxCollectionEventDeselectItem<Entity>>(deselectItem);
-    on<BlocxCollectionEventDeselectMultipleItems<Entity>>(deselectMultipleItems);
+    on<BlocxCollectionEventDeselectMultipleItems<Entity>>(
+        deselectMultipleItems);
     on<BlocxCollectionEventSelectMultipleItems<Entity>>(selectMultipleItems);
     on<BlocxCollectionEventClearSelection<Entity>>(clearSelection);
     return true;

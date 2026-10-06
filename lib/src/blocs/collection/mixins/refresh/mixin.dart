@@ -31,7 +31,8 @@ mixin BlocxCollectionRefreshableMixin<Entity extends BlocxBaseEntity, Payload>
   ///
   /// Defaults to [paginationTask]. Override this only when refresh requires a
   /// different use case or input shape.
-  BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Entity>? get refreshPageUseCaseTask => paginationTask;
+  BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Entity>?
+      get refreshPageUseCaseTask => paginationTask;
 
   /// Drag distance required to trigger pull-to-refresh.
   double get refreshThreshold => 64.0;
@@ -43,11 +44,15 @@ mixin BlocxCollectionRefreshableMixin<Entity extends BlocxBaseEntity, Payload>
   ) async {
     if (isRefreshing) return;
 
-    if (event.clearSelection && this is BlocxCollectionSelectableMixin<Entity, Payload>) {
+    if (event.clearSelection &&
+        this is BlocxCollectionSelectableMixin<Entity, Payload>) {
       add(BlocxCollectionEventClearSelection<Entity>());
     }
 
-    if (isSearchable && (this as BlocxCollectionSearchableMixin<Entity, Payload>).searchText.isNotEmpty) {
+    if (isSearchable &&
+        (this as BlocxCollectionSearchableMixin<Entity, Payload>)
+            .searchText
+            .isNotEmpty) {
       add(BlocxCollectionEventSearchRefresh<Entity>());
       return;
     }

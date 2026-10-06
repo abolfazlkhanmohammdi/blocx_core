@@ -1,4 +1,5 @@
-import 'package:blocx_core/blocx_core.dart' show BlocxBaseEntity, BlocxBaseUseCase, BlocxUseCaseResult;
+import 'package:blocx_core/blocx_core.dart'
+    show BlocxBaseEntity, BlocxBaseUseCase, BlocxUseCaseResult;
 import 'package:blocx_core/src/blocs/collection/models/blocx_page.dart';
 import 'package:blocx_core/src/blocs/collection/use_cases/blocx_paginated_use_case.dart';
 
@@ -6,7 +7,8 @@ import 'package:blocx_core/src/blocs/collection/use_cases/blocx_paginated_use_ca
 typedef InputBuilder<Input> = Input Function();
 
 /// Signature for a function that builds a paginated use case input.
-typedef PaginatedInputBuilder<Input extends BlocxPaginatedInput> = Input Function(
+typedef PaginatedInputBuilder<Input extends BlocxPaginatedInput> = Input
+    Function(
   int offset,
   int limit,
 );
@@ -44,7 +46,8 @@ class BlocxUseCaseTask<Input, Output> {
 ///
 /// This task is used by collection mixins for initial load, next-page loading,
 /// refresh, and search.
-class BlocxPaginatedUseCaseTask<Input extends BlocxPaginatedInput, Output extends BlocxBaseEntity> {
+class BlocxPaginatedUseCaseTask<Input extends BlocxPaginatedInput,
+    Output extends BlocxBaseEntity> {
   /// The paginated use case to execute.
   final BlocxPaginatedUseCase<Input, Output> useCase;
 

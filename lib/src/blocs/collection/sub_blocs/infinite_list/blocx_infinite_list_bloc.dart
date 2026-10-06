@@ -7,7 +7,8 @@ import 'package:blocx_core/blocx_core.dart';
 part './blocx_infinite_list_bloc_event.dart';
 part './blocx_infinite_list_bloc_state.dart';
 
-class BlocxInfiniteListBloc extends Bloc<BlocxInfiniteListEvent, BlocxInfiniteListState> {
+class BlocxInfiniteListBloc
+    extends Bloc<BlocxInfiniteListEvent, BlocxInfiniteListState> {
   final double refreshThreshold;
 
   bool _isLoadingTopData = false;
@@ -170,7 +171,8 @@ class BlocxInfiniteListBloc extends Bloc<BlocxInfiniteListEvent, BlocxInfiniteLi
       return;
     }
 
-    final shouldRefresh = _dragStartY != null && _swipeRefreshHeight >= refreshThreshold;
+    final shouldRefresh =
+        _dragStartY != null && _swipeRefreshHeight >= refreshThreshold;
 
     _dragStartY = null;
     _dragUpdateY = null;

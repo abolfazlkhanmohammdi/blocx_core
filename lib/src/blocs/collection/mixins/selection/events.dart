@@ -4,7 +4,8 @@ import 'package:blocx_core/collection_bloc.dart';
 /// Selects a single [item] in the list.
 ///
 /// Useful when building UIs that allow user selection (e.g. checkboxes, taps).
-class BlocxCollectionEventSelectItem<T extends BlocxBaseEntity> extends BlocxCollectionEvent<T> {
+class BlocxCollectionEventSelectItem<T extends BlocxBaseEntity>
+    extends BlocxCollectionEvent<T> {
   /// The item to be selected.
   final T item;
 
@@ -12,23 +13,27 @@ class BlocxCollectionEventSelectItem<T extends BlocxBaseEntity> extends BlocxCol
 }
 
 /// Deselects a single [item] in the list.
-class BlocxCollectionEventDeselectItem<T extends BlocxBaseEntity> extends BlocxCollectionEvent<T> {
+class BlocxCollectionEventDeselectItem<T extends BlocxBaseEntity>
+    extends BlocxCollectionEvent<T> {
   /// The item to be deselected.
   final T item;
 
   BlocxCollectionEventDeselectItem({required this.item});
 }
 
-class BlocxCollectionEventDeselectMultipleItems<T extends BlocxBaseEntity> extends BlocxCollectionEvent<T> {
+class BlocxCollectionEventDeselectMultipleItems<T extends BlocxBaseEntity>
+    extends BlocxCollectionEvent<T> {
   final List<T> items;
   BlocxCollectionEventDeselectMultipleItems({required this.items});
 }
 
-class BlocxCollectionEventClearSelection<T extends BlocxBaseEntity> extends BlocxCollectionEvent<T> {
+class BlocxCollectionEventClearSelection<T extends BlocxBaseEntity>
+    extends BlocxCollectionEvent<T> {
   BlocxCollectionEventClearSelection();
 }
 
-class BlocxCollectionEventSelectMultipleItems<T extends BlocxBaseEntity> extends BlocxCollectionEvent<T> {
+class BlocxCollectionEventSelectMultipleItems<T extends BlocxBaseEntity>
+    extends BlocxCollectionEvent<T> {
   final List<T> items;
   BlocxCollectionEventSelectMultipleItems({required this.items});
 }

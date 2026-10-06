@@ -13,5 +13,3 @@ mixin BlocxEventHubMixin on BlocxBaseBloc {
   }) =>
       eventHub.onEntity<T>(commands: commands);
 }
-
-

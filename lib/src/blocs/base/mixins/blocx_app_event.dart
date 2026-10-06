@@ -54,4 +54,3 @@ class BlocxEventOrigin {
 
   const BlocxEventOrigin({required this.feature, required this.source});
 }
-

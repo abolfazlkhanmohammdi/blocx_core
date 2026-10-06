@@ -1,7 +1,11 @@
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/form_bloc.dart'
-    show BlocxFormErrorsMixin, BlocxFormPrefetchMixin, BlocxFormSteppedMixin, BlocxUniqueFieldValidatorMixin;
+    show
+        BlocxFormErrorsMixin,
+        BlocxFormPrefetchMixin,
+        BlocxFormSteppedMixin,
+        BlocxUniqueFieldValidatorMixin;
 import 'package:blocx_core/src/blocs/form/bloc/blocx_form_core_mixin.dart';
 import 'package:blocx_core/src/core/models/blocx_base_form_entity.dart';
 
@@ -57,7 +61,8 @@ part 'blocx_form_state.dart';
 ///   for create-only forms.
 /// - [E]: The enum identifying each field. Used as the key for updates,
 ///   validation errors, and info-fetching.
-abstract class BlocxFormBloc<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
+abstract class BlocxFormBloc<F extends BlocxBaseFormEntity<F, E>, P,
+        E extends Enum>
     extends BlocxBaseBloc<BlocxFormEvent, BlocxFormState<F, E>>
     with BlocxFormCoreMixin<F, P, E>, BlocxFormErrorsMixin<F, P, E> {
   late final bool isStepped;
@@ -121,7 +126,9 @@ abstract class BlocxFormBloc<F extends BlocxBaseFormEntity<F, E>, P, E extends E
   /// still loading, or unique-field validation is still running.
   @override
   bool get isFormSubmittable {
-    return errors.isEmpty && fieldsFetchingInfo.isEmpty && uniqueKeysBeingChecked.isEmpty;
+    return errors.isEmpty &&
+        fieldsFetchingInfo.isEmpty &&
+        uniqueKeysBeingChecked.isEmpty;
   }
 
   @override
@@ -154,4 +161,3 @@ abstract class BlocxFormBloc<F extends BlocxBaseFormEntity<F, E>, P, E extends E
     return super.close();
   }
 }
-

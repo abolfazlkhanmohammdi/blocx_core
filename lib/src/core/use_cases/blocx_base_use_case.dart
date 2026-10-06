@@ -226,4 +226,3 @@ abstract class BlocxBaseUseCase<Input, Output> {
   ) =>
       BlocxUseCaseFailure<Output>(error, stackTrace);
 }
-

@@ -48,7 +48,8 @@ part 'blocx_base_state.dart';
 ///
 /// Register a [BlocxErrorTranslator] once at app startup to map raw exceptions
 /// to human-readable [ReadableError] instances. Blocs pick it up automatically.
-abstract class BlocxBaseBloc<E extends BlocxBaseEvent, S extends BlocxBaseState> extends Bloc<E, S> {
+abstract class BlocxBaseBloc<E extends BlocxBaseEvent, S extends BlocxBaseState>
+    extends Bloc<E, S> {
   /// Internal screen-manager instance. Created once per bloc, closed on [close].
   final ScreenManagerCubit _screenManagerCubit = ScreenManagerCubit();
 
@@ -58,13 +59,12 @@ abstract class BlocxBaseBloc<E extends BlocxBaseEvent, S extends BlocxBaseState>
   /// internally.
   BlocxBaseBloc(super.initialState);
 
-
-
   /// Triggers a pop/back-navigation signal.
   void pop() => _screenManagerCubit.pop();
 
   /// Displays a full-page error widget for [error].
-  void displayErrorWidget(ReadableError error) => _screenManagerCubit.displayErrorWidget(error);
+  void displayErrorWidget(ReadableError error) =>
+      _screenManagerCubit.displayErrorWidget(error);
 
   /// Displays a full-page error widget derived from a [BlocXErrorCode].
   void displayErrorWidgetByErrorCode(
@@ -79,21 +79,24 @@ abstract class BlocxBaseBloc<E extends BlocxBaseEvent, S extends BlocxBaseState>
       );
 
   /// Displays a warning snackbar with [message] and optional [title].
-  void displayWarningSnackbar(String message, {String? title}) => _screenManagerCubit.displaySnackbar(
+  void displayWarningSnackbar(String message, {String? title}) =>
+      _screenManagerCubit.displaySnackbar(
         message,
         BlocXSnackbarType.warning,
         title: title,
       );
 
   /// Displays an error snackbar with [message] and optional [title].
-  void displayErrorSnackbar(String message, {String? title}) => _screenManagerCubit.displaySnackbar(
+  void displayErrorSnackbar(String message, {String? title}) =>
+      _screenManagerCubit.displaySnackbar(
         message,
         BlocXSnackbarType.error,
         title: title,
       );
 
   /// Displays an info snackbar with [message] and optional [title].
-  void displayInfoSnackbar(String message, {String? title}) => _screenManagerCubit.displaySnackbar(
+  void displayInfoSnackbar(String message, {String? title}) =>
+      _screenManagerCubit.displaySnackbar(
         message,
         BlocXSnackbarType.info,
         title: title,
@@ -111,7 +114,9 @@ abstract class BlocxBaseBloc<E extends BlocxBaseEvent, S extends BlocxBaseState>
   }) {
     dev.log(error.toString());
     if (stacktrace != null) dev.log(stacktrace.toString());
-    final readableError = errorTranslator?.makeErrorReadable(error, stackTrace: stacktrace) ?? defaultError;
+    final readableError =
+        errorTranslator?.makeErrorReadable(error, stackTrace: stacktrace) ??
+            defaultError;
     if (errorDisplayPolicy == ErrorDisplayPolicy.snackBar) {
       displayErrorSnackbar(readableError.message, title: readableError.title);
     } else {
@@ -141,7 +146,8 @@ abstract class BlocxBaseBloc<E extends BlocxBaseEvent, S extends BlocxBaseState>
 
   /// The fallback [ReadableError] used when no [BlocxErrorTranslator] is
   /// registered or when the translator does not recognise the error.
-  ReadableError get defaultError => ReadableError(message: loc.somethingWentWrong);
+  ReadableError get defaultError =>
+      ReadableError(message: loc.somethingWentWrong);
 }
 
 /// Controls where errors are displayed after [BlocxBaseBloc.handleError] is called.

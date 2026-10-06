@@ -1,13 +1,15 @@
 part of './blocx_collection_bloc.dart';
 
-extension ListStateExtensions<T extends BlocxBaseEntity> on BlocxCollectionState<T> {
+extension ListStateExtensions<T extends BlocxBaseEntity>
+    on BlocxCollectionState<T> {
   // --- Selection ---
   bool isSelected(T item) => selectedItemIds.contains(item.identifier);
   bool isSelectedId(String id) => selectedItemIds.contains(id);
   bool get hasSelection => selectedItemIds.isNotEmpty;
   int get selectedCount => selectedItemIds.length;
 
-  List<T> get selectedItems => list.where((e) => selectedItemIds.contains(e.identifier)).toList();
+  List<T> get selectedItems =>
+      list.where((e) => selectedItemIds.contains(e.identifier)).toList();
 
   T? firstSelectedItemOrNull() {
     for (final e in list) {
@@ -17,7 +19,8 @@ extension ListStateExtensions<T extends BlocxBaseEntity> on BlocxCollectionState
   }
 
   // --- Being selected (optimistic selection in-flight) ---
-  bool isBeingSelected(T item) => beingSelectedItemIds.contains(item.identifier);
+  bool isBeingSelected(T item) =>
+      beingSelectedItemIds.contains(item.identifier);
   bool isBeingSelectedId(String id) => beingSelectedItemIds.contains(id);
 
   // --- Highlight ---

@@ -99,22 +99,19 @@ class BlocxSimpleEventHub implements BlocxEventHub {
         .where((e) => e is BlocxEntityEvent)
         .cast<BlocxEntityEvent>()
         .where((e) {
-          if (commandSet != null && !commandSet.contains(e.command)) {
-            return false;
-          }
-          if (e is BlocxEntityEvent<T>) return true;
-          return e.entities.isNotEmpty &&
-              e.entities.every((item) => item is T);
-        })
-        .map((e) {
-          if (e is BlocxEntityEvent<T>) return e;
-          return BlocxEntityEvent<T>(
-            entities: List<T>.from(e.entities),
-            command: e.command,
-            origin: e.origin,
-            debugTrace: e.debugTrace,
-          );
-        });
+      if (commandSet != null && !commandSet.contains(e.command)) {
+        return false;
+      }
+      if (e is BlocxEntityEvent<T>) return true;
+      return e.entities.isNotEmpty && e.entities.every((item) => item is T);
+    }).map((e) {
+      if (e is BlocxEntityEvent<T>) return e;
+      return BlocxEntityEvent<T>(
+        entities: List<T>.from(e.entities),
+        command: e.command,
+        origin: e.origin,
+        debugTrace: e.debugTrace,
+      );
+    });
   }
 }
-

@@ -35,11 +35,8 @@ import 'package:meta/meta.dart';
 ///   }
 /// }
 /// ```
-mixin BlocxFormSyncStreamMixin<
-    F extends BlocxBaseFormEntity<F, E>,
-    P,
-    E extends Enum,
-    Entity extends BlocxBaseEntity> on BlocxFormBloc<F, P, E> {
+mixin BlocxFormSyncStreamMixin<F extends BlocxBaseFormEntity<F, E>, P,
+    E extends Enum, Entity extends BlocxBaseEntity> on BlocxFormBloc<F, P, E> {
   StreamSubscription<BlocxEntityEvent<Entity>>? _entityEventSub;
 
   /// The [BlocxEventHub] this form bloc listens to for entity commands.

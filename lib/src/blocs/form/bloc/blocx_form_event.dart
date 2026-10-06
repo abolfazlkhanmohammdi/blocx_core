@@ -15,11 +15,13 @@ class BlocxFormEventUpdateData<E> extends BlocxFormEvent {
 
 class BlocxFormEventSubmit extends BlocxFormEvent {}
 
-class BlocxFormEventSetTimedErrorToField<E extends Enum> extends BlocxFormEvent {
+class BlocxFormEventSetTimedErrorToField<E extends Enum>
+    extends BlocxFormEvent {
   final String message;
   final E key;
   final Duration? duration;
-  BlocxFormEventSetTimedErrorToField({required this.message, required this.key, this.duration});
+  BlocxFormEventSetTimedErrorToField(
+      {required this.message, required this.key, this.duration});
 }
 
 class BlocxFormEventSetErrorToField<E extends Enum> extends BlocxFormEvent {
@@ -52,4 +54,3 @@ class BlocxFormEventSyncFormData<F> extends BlocxFormEvent {
     this.validate = false,
   });
 }
-

@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
-import 'package:blocx_core/collection_bloc.dart' show BlocxCollectionBloc, BlocxCollectionState;
+import 'package:blocx_core/collection_bloc.dart'
+    show BlocxCollectionBloc, BlocxCollectionState;
 
 import 'events.dart';
 
@@ -63,8 +64,8 @@ mixin BlocxCollectionExpandableMixin<Entity extends BlocxBaseEntity, Payload>
   ///
   /// - Adds the item’s [BlocxBaseEntity.identifier] to [_expandedItemIds].
   /// - Emits the updated state so the UI can rebuild accordingly.
-  FutureOr<void> expandItem(
-      BlocxCollectionEventExpandItem<Entity> event, Emitter<BlocxCollectionState<Entity>> emit) {
+  FutureOr<void> expandItem(BlocxCollectionEventExpandItem<Entity> event,
+      Emitter<BlocxCollectionState<Entity>> emit) {
     _expandedItemIds.add(event.item.identifier);
     emitState(emit);
   }
@@ -88,7 +89,9 @@ mixin BlocxCollectionExpandableMixin<Entity extends BlocxBaseEntity, Payload>
     Emitter<BlocxCollectionState<Entity>> emit,
   ) {
     final isExpanded = _expandedItemIds.contains(event.item.identifier);
-    isExpanded ? _expandedItemIds.remove(event.item.identifier) : _expandedItemIds.add(event.item.identifier);
+    isExpanded
+        ? _expandedItemIds.remove(event.item.identifier)
+        : _expandedItemIds.add(event.item.identifier);
     emitState(emit);
   }
 }

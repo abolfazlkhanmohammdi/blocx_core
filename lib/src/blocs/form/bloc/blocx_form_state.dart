@@ -24,7 +24,10 @@ class BlocxFormState<F, E extends Enum> extends BlocxBaseState {
     return fieldsFetchingInfo.contains(key);
   }
 
-  bool get isValid => errors.isEmpty && fieldsFetchingInfo.isEmpty && checkingUniqueFields.isEmpty;
+  bool get isValid =>
+      errors.isEmpty &&
+      fieldsFetchingInfo.isEmpty &&
+      checkingUniqueFields.isEmpty;
 
   String? errorByKey(E key) {
     var errors = this.errors[key];
@@ -67,7 +70,8 @@ class BlocxFormStateLoaded<F, E extends Enum> extends BlocxFormState<F, E> {
   }) : super(shouldListen: false, shouldRebuild: true);
 }
 
-class BlocxFormStateApplyInitialDataToForm<F, E extends Enum> extends BlocxFormState<F, E> {
+class BlocxFormStateApplyInitialDataToForm<F, E extends Enum>
+    extends BlocxFormState<F, E> {
   BlocxFormStateApplyInitialDataToForm({required super.formData})
       : super(
             shouldRebuild: false,
@@ -79,9 +83,11 @@ class BlocxFormStateApplyInitialDataToForm<F, E extends Enum> extends BlocxFormS
             isFormValid: true);
 }
 
-class BlocxFormStateSubmittingForm<F, E extends Enum> extends BlocxFormState<F, E> {
+class BlocxFormStateSubmittingForm<F, E extends Enum>
+    extends BlocxFormState<F, E> {
   final String? buttonText;
-  BlocxFormStateSubmittingForm({required super.step, required super.formData, this.buttonText})
+  BlocxFormStateSubmittingForm(
+      {required super.step, required super.formData, this.buttonText})
       : super(
             shouldRebuild: true,
             shouldListen: false,
@@ -91,9 +97,11 @@ class BlocxFormStateSubmittingForm<F, E extends Enum> extends BlocxFormState<F, 
             isFormValid: false);
 }
 
-class BlocxFormStateFormSubmitted<F, E extends Enum> extends BlocxFormState<F, E> {
+class BlocxFormStateFormSubmitted<F, E extends Enum>
+    extends BlocxFormState<F, E> {
   final dynamic submittedData;
-  BlocxFormStateFormSubmitted({required super.formData, required this.submittedData})
+  BlocxFormStateFormSubmitted(
+      {required super.formData, required this.submittedData})
       : super(
             shouldRebuild: false,
             shouldListen: true,
@@ -104,7 +112,8 @@ class BlocxFormStateFormSubmitted<F, E extends Enum> extends BlocxFormState<F, E
             isFormValid: true);
 }
 
-class BlocxFormStateFormUpdated<F, E extends Enum> extends BlocxFormState<F, E> {
+class BlocxFormStateFormUpdated<F, E extends Enum>
+    extends BlocxFormState<F, E> {
   final dynamic newValue;
   final dynamic oldValue;
   final E updatedKey;

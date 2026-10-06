@@ -23,9 +23,13 @@
   * Added `entityEventsOfType<T extends BlocxBaseEntity>({Iterable<BlocxCommandType>? commands})` to `BlocxEventHubMixin`.
 * **Bundled AI Agent Skill (`skills/blocx-core`)**
   * Added a comprehensive `blocx-core` AI coding skill (`SKILL.md` and `references/`) for agentic IDEs.
+* **Runnable Package Example (`example/blocx_core_example.dart`)**
+  * Added a complete runnable pure-Dart example showcasing `BlocxBaseEntity`, `BlocxPaginatedUseCase`, `BlocxEventHub`, `BlocxCollectionBloc`, and `BlocxFormBloc`.
 
 ### Changed
 
+* **Full Web & WASM Platform Compatibility**
+  * Removed the unused `logger` dependency (which transitively imported `dart:io`), enabling 100% Web and WASM runtime compatibility across all 6 target platforms.
 * **Strict Unidirectional EventHub Architecture**
   * Removed `emitSystemWideEvent` from `BlocxEventHubMixin`. Only `BlocxBaseUseCase` subclasses emit app/domain events; `BlocxBaseBloc` and `BlocxEventHubMixin` are strictly listeners.
 * **Documentation Overhaul**

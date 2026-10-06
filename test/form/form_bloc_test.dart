@@ -19,8 +19,10 @@ class TestFormEntity extends BlocxBaseFormEntity<TestFormEntity, TestField> {
   @override
   TestFormEntity updateByKey(TestField key, dynamic value) {
     return switch (key) {
-      TestField.email => TestFormEntity(email: value as String? ?? '', password: password),
-      TestField.password => TestFormEntity(email: email, password: value as String? ?? ''),
+      TestField.email =>
+        TestFormEntity(email: value as String? ?? '', password: password),
+      TestField.password =>
+        TestFormEntity(email: email, password: value as String? ?? ''),
     };
   }
 
@@ -33,7 +35,8 @@ class TestFormEntity extends BlocxBaseFormEntity<TestFormEntity, TestField> {
   }
 }
 
-class EmailValidator extends BlocxFieldValidator<TestFormEntity, TestField, Object?> {
+class EmailValidator
+    extends BlocxFieldValidator<TestFormEntity, TestField, Object?> {
   const EmailValidator();
 
   @override
@@ -43,7 +46,8 @@ class EmailValidator extends BlocxFieldValidator<TestFormEntity, TestField, Obje
   }
 }
 
-class PasswordValidator extends BlocxFieldValidator<TestFormEntity, TestField, Object?> {
+class PasswordValidator
+    extends BlocxFieldValidator<TestFormEntity, TestField, Object?> {
   const PasswordValidator();
 
   @override
@@ -58,7 +62,8 @@ class TestFormValidator extends BlocxFormValidator<TestFormEntity, TestField> {
   List<TestField> formKeys() => TestField.values;
 
   @override
-  List<BlocxFieldValidator<TestFormEntity, TestField, dynamic>> getValidatorsByKey(
+  List<BlocxFieldValidator<TestFormEntity, TestField, dynamic>>
+      getValidatorsByKey(
     TestFormEntity formData,
     TestField key,
   ) {
@@ -83,16 +88,19 @@ class TestFormBloc extends BlocxFormBloc<TestFormEntity, void, TestField>
   TestFormBloc() : super(const TestFormEntity());
 
   @override
-  BlocxFormValidator<TestFormEntity, TestField> get validator => TestFormValidator();
+  BlocxFormValidator<TestFormEntity, TestField> get validator =>
+      TestFormValidator();
 
   @override
-  FormValidationMode get formValidationMode => FormValidationMode.onUserInteraction;
+  FormValidationMode get formValidationMode =>
+      FormValidationMode.onUserInteraction;
 
   @override
   List<TestField> get formKeysList => TestField.values;
 
   @override
-  BlocxUseCaseTask<Object?, Object?> get submitUseCaseTask => BlocxUseCaseTask<void, String>(
+  BlocxUseCaseTask<Object?, Object?> get submitUseCaseTask =>
+      BlocxUseCaseTask<void, String>(
         useCase: _submitUseCase,
         inputBuilder: () {},
       );
@@ -102,10 +110,12 @@ void main() {
   group('BlocxBaseFormEntity', () {
     test('updateByKeySafe updates entity correctly and passes assertion', () {
       const entity = TestFormEntity();
-      final updated = entity.updateByKeySafe(TestField.email, 'test@example.com');
+      final updated =
+          entity.updateByKeySafe(TestField.email, 'test@example.com');
 
       expect(updated.email, equals('test@example.com'));
-      expect(updated.getValueByKey(TestField.email), equals('test@example.com'));
+      expect(
+          updated.getValueByKey(TestField.email), equals('test@example.com'));
     });
   });
 
@@ -123,7 +133,8 @@ void main() {
     test('updates field and triggers field validation', () async {
       expect(bloc.formData.email, isEmpty);
 
-      bloc.add(BlocxFormEventUpdateData(key: TestField.email, data: 'user@domain.com'));
+      bloc.add(BlocxFormEventUpdateData(
+          key: TestField.email, data: 'user@domain.com'));
       await Future.delayed(const Duration(milliseconds: 50));
 
       expect(bloc.formData.email, equals('user@domain.com'));
@@ -144,8 +155,10 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 50));
 
       // Update valid values
-      bloc.add(BlocxFormEventUpdateData(key: TestField.email, data: 'test@example.com'));
-      bloc.add(BlocxFormEventUpdateData(key: TestField.password, data: '123456'));
+      bloc.add(BlocxFormEventUpdateData(
+          key: TestField.email, data: 'test@example.com'));
+      bloc.add(
+          BlocxFormEventUpdateData(key: TestField.password, data: '123456'));
       await Future.delayed(const Duration(milliseconds: 50));
 
       expect(bloc.isFormSubmittable, isTrue);
@@ -153,7 +166,8 @@ void main() {
       bloc.add(BlocxFormEventSubmit());
       await Future.delayed(const Duration(milliseconds: 50));
 
-      expect(bloc.state, isA<BlocxFormStateLoaded<TestFormEntity, TestField>>());
+      expect(
+          bloc.state, isA<BlocxFormStateLoaded<TestFormEntity, TestField>>());
     });
   });
 }

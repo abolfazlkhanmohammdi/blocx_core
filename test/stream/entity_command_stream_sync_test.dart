@@ -530,9 +530,8 @@ void main() {
       expect(formBloc.formData.title, equals('Externally Updated Title'));
       expect(
         states.any(
-          (s) =>
-              s is BlocxFormStateApplyInitialDataToForm<NoteFormData,
-                  NoteFormField>,
+          (s) => s is BlocxFormStateApplyInitialDataToForm<NoteFormData,
+              NoteFormField>,
         ),
         isTrue,
       );

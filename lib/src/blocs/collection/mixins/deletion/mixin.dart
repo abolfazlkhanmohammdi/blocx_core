@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
-import 'package:blocx_core/collection_bloc.dart' show BlocxCollectionBloc, BlocxCollectionState;
+import 'package:blocx_core/collection_bloc.dart'
+    show BlocxCollectionBloc, BlocxCollectionState;
 
 import '../selection/events.dart';
 import 'events.dart';
@@ -39,7 +40,9 @@ mixin BlocxCollectionDeletableMixin<Entity extends BlocxBaseEntity, Payload>
   ///
   /// Return `null` to fall back to deleting each item individually through
   /// [deleteItemTask] or [performDeleteItem].
-  BlocxUseCaseTask<Object?, bool>? deleteMultipleItemsTask(List<Entity> items) => null;
+  BlocxUseCaseTask<Object?, bool>? deleteMultipleItemsTask(
+          List<Entity> items) =>
+      null;
 
   /// Registers delete event handlers.
   @override
@@ -67,7 +70,8 @@ mixin BlocxCollectionDeletableMixin<Entity extends BlocxBaseEntity, Payload>
         removeItemFromList(item);
 
         if (isSelectable) {
-          add(BlocxCollectionEventDeselectMultipleItems<Entity>(items: <Entity>[item]));
+          add(BlocxCollectionEventDeselectMultipleItems<Entity>(
+              items: <Entity>[item]));
         }
       }
 

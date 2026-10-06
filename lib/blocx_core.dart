@@ -1,6 +1,8 @@
-/// Support for doing something awesome.
+/// Core primitives, base entities, use cases, error handling, and event hub
+/// for the BlocX architecture.
 ///
-/// More dartdocs go here.
+/// See also `package:blocx_core/collection_bloc.dart` and
+/// `package:blocx_core/form_bloc.dart`.
 library;
 
 export 'src/core/localizations/blocx_localizations.dart';

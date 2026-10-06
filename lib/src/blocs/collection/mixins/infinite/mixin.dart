@@ -29,14 +29,18 @@ mixin BlocxCollectionInfiniteMixin<Entity extends BlocxBaseEntity, Payload>
   ///
   /// Defaults to [paginationTask]. Override this only when next-page loading
   /// requires a different use case or input shape.
-  BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Entity>? get loadNextPageTask => paginationTask;
+  BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Entity>?
+      get loadNextPageTask => paginationTask;
 
   /// Handles next-page loading.
   Future<void> loadNextPage(
     BlocxCollectionEventLoadNextPage<Entity> event,
     Emitter<BlocxCollectionState<Entity>> emit,
   ) async {
-    if (isSearchable && (this as BlocxCollectionSearchableMixin<Entity, Payload>).searchText.isNotEmpty) {
+    if (isSearchable &&
+        (this as BlocxCollectionSearchableMixin<Entity, Payload>)
+            .searchText
+            .isNotEmpty) {
       add(BlocxCollectionEventSearchNextPage<Entity>());
       return;
     }

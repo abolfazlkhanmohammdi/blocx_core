@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/collection_bloc.dart'
-    show BlocxCollectionBloc, BlocxCollectionState, BlocxCollectionStateScrollToItem;
+    show
+        BlocxCollectionBloc,
+        BlocxCollectionState,
+        BlocxCollectionStateScrollToItem;
 
-import 'package:blocx_core/src/core/logger.dart';
 import 'package:blocx_core/src/blocs/collection/misc/event_transformers.dart';
 import 'package:blocx_core/src/core/models/base_entity_extensions.dart';
 
@@ -86,7 +88,9 @@ mixin BlocxCollectionScrollableMixin<Entity extends BlocxBaseEntity, Payload>
     // If you have an extension like `indexByIdentifier`, use that.
     // Fallback to a simple search to avoid tight coupling.
     final index = list.indexWhere((e) => e.identifier == event.identifier);
-    if (index < 0) return; // not found -> ignore (or emit a dedicated error state if you prefer)
+    if (index < 0) {
+      return; // not found -> ignore (or emit a dedicated error state if you prefer)
+    }
     final item = list[index];
     if (event.highlightItem) _toBeHighlightedItems.add(item);
     emit(BlocxCollectionStateScrollToItem(item: item, index: index));
@@ -97,7 +101,6 @@ mixin BlocxCollectionScrollableMixin<Entity extends BlocxBaseEntity, Payload>
     BlocxCollectionEventHighlightScrolledToItems<Entity> event,
     Emitter<BlocxCollectionState<Entity>> emit,
   ) {
-    logger.i("BlocxListEventHighlightScrollToItems");
     for (Entity item in _toBeHighlightedItems) {
       add(BlocxCollectionEventHighlightItem(item: item));
     }
