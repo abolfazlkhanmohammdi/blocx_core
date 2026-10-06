@@ -52,6 +52,7 @@ mixin BlocxFormCoreMixin<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
     on<BlocxFormEventUpdateData<E>>(updateData);
     on<BlocxFormEventSubmit>(submit);
     on<BlocxFormEventUpdateFormData<P>>(handleUpdateFormDataEvent);
+    on<BlocxFormEventSyncFormData<F>>(handleSyncFormDataEvent);
   }
 
   /// Handles the initial form event.
@@ -291,6 +292,25 @@ mixin BlocxFormCoreMixin<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
     emitState(emit);
   }
 
+  /// Handles replacing the full form data from a synced [BlocxFormEventSyncFormData].
+  FutureOr<void> handleSyncFormDataEvent(
+    BlocxFormEventSyncFormData<F> event,
+    Emitter<BlocxFormState<F, E>> emit,
+  ) async {
+    formData = event.formData;
+
+    if (event.applyToControllers) {
+      emit(BlocxFormStateApplyInitialDataToForm(formData: formData));
+    }
+
+    if (event.validate) {
+      await validateForm(formData, forceFullValidation: true);
+    }
+
+    emitState(emit);
+  }
+
   /// The current validation mode.
   FormValidationMode get formValidationMode => FormValidationMode.none;
 }
+

@@ -27,4 +27,11 @@ class BlocxSearchInput extends BlocxPaginatedInput {
 /// This preserves compatibility with the pagination system while
 /// enabling search-specific behavior.
 abstract class BlocxSearchUseCase<Input extends BlocxSearchInput, Output extends BlocxBaseEntity>
-    extends BlocxPaginatedUseCase<Input, Output> {}
+    extends BlocxPaginatedUseCase<Input, Output> {
+  const BlocxSearchUseCase({
+    super.eventHub,
+    super.commandType,
+    super.commandTypes,
+  });
+}
+

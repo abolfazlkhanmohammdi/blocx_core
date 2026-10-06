@@ -40,3 +40,16 @@ class BlocxFormEventUpdateFormData<P> extends BlocxFormEvent {
   final bool isUpdate;
   BlocxFormEventUpdateFormData({required this.payload, this.isUpdate = true});
 }
+
+class BlocxFormEventSyncFormData<F> extends BlocxFormEvent {
+  final F formData;
+  final bool applyToControllers;
+  final bool validate;
+
+  BlocxFormEventSyncFormData({
+    required this.formData,
+    this.applyToControllers = true,
+    this.validate = false,
+  });
+}
+

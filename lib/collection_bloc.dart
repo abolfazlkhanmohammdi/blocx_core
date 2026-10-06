@@ -13,3 +13,5 @@ export 'src/blocs/collection/mixins/refresh/exports.dart';
 export 'src/blocs/collection/mixins/scroll_to/exports.dart';
 export 'src/blocs/collection/mixins/search/exports.dart';
 export 'src/blocs/collection/mixins/selection/exports.dart';
+export 'src/blocs/collection/mixins/stream/exports.dart';
+

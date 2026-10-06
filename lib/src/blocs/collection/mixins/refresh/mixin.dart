@@ -74,7 +74,7 @@ mixin BlocxCollectionRefreshableMixin<Entity extends BlocxBaseEntity, Payload>
     emitState(emit);
 
     try {
-      final result = await task.execute(offset: 0, limit: list.isNotEmpty ? list.length : limit);
+      final result = await task.execute(offset: 0, limit: limit);
 
       if (result.isFailure) {
         await handleError(result.error!, emit, stacktrace: result.stackTrace);

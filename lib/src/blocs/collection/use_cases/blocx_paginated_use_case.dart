@@ -57,6 +57,12 @@ class BlocxPaginatedInput<Filter> {
 /// ```
 abstract class BlocxPaginatedUseCase<Input extends BlocxPaginatedInput, Output extends BlocxBaseEntity>
     extends BlocxBaseUseCase<Input, BlocxPage<Output>> {
+  const BlocxPaginatedUseCase({
+    super.eventHub,
+    super.commandType,
+    super.commandTypes,
+  });
+
   /// Builds a successful paginated result from [items] and the originating [input].
   ///
   /// Constructs [BlocxPage] with the correct [offset] and [limit], then

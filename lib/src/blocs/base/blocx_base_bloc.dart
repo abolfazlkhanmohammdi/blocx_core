@@ -58,6 +58,8 @@ abstract class BlocxBaseBloc<E extends BlocxBaseEvent, S extends BlocxBaseState>
   /// internally.
   BlocxBaseBloc(super.initialState);
 
+
+
   /// Triggers a pop/back-navigation signal.
   void pop() => _screenManagerCubit.pop();
 

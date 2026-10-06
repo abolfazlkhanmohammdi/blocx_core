@@ -10,6 +10,7 @@ export 'src/blocs/form/bloc/blocx_form_errors_mixin.dart';
 export 'src/blocs/form/validation/blocx_form_validator.dart';
 export 'src/blocs/form/mixins/prefetch/exports.dart';
 export 'src/blocs/form/mixins/stepped/exports.dart';
+export 'src/blocs/form/mixins/stream/exports.dart';
 export 'src/blocs/form/mixins/unique_field/exports.dart';
 export 'src/blocs/form/mixins/validation/exports.dart';
 

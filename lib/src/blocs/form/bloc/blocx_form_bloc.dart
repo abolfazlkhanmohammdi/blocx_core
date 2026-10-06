@@ -66,6 +66,7 @@ abstract class BlocxFormBloc<F extends BlocxBaseFormEntity<F, E>, P, E extends E
   late final bool isUniqueFieldValidator;
   @override
   late final bool isInfoFetcher;
+  late final bool isStreamable;
 
   /// Creates the bloc with the blank [formData] as the initial state.
   ///
@@ -78,6 +79,7 @@ abstract class BlocxFormBloc<F extends BlocxBaseFormEntity<F, E>, P, E extends E
     isUniqueFieldValidator = initUniqueFieldChecker();
     isInfoFetcher = initInfoFetcher();
     hasValidation = initValidation();
+    isStreamable = initStreams();
   }
 
   bool initValidation() {
@@ -95,6 +97,12 @@ abstract class BlocxFormBloc<F extends BlocxBaseFormEntity<F, E>, P, E extends E
   bool initInfoFetcher() {
     return false;
   }
+
+  bool initStreams() {
+    return false;
+  }
+
+  void closeStreams() {}
 
   /// The set of fields currently waiting on a remote info fetch.
   ///
@@ -137,10 +145,13 @@ abstract class BlocxFormBloc<F extends BlocxBaseFormEntity<F, E>, P, E extends E
   /// the UI can animate in the correct direction.
   bool get comesFromPreviousStep => false;
 
-  /// Closes the bloc and cancels all pending timed-error timers.
+  /// Closes the bloc, cancels stream subscriptions, and cancels all pending
+  /// timed-error timers.
   @override
   Future<void> close() async {
+    if (isStreamable) closeStreams();
     clearTimers();
     return super.close();
   }
 }
+

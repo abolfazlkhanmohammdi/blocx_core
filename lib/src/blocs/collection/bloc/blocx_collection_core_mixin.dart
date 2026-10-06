@@ -253,7 +253,8 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
     BlocxCollectionEventAddItem<Entity> event,
     Emitter<BlocxCollectionState<Entity>> emit,
   ) async {
-    _list.insert(event.index, event.item);
+    final safeIndex = event.index.clamp(0, _list.length);
+    _list.insert(safeIndex, event.item);
     emitState(emit);
   }
 
@@ -265,7 +266,7 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
     final index = _list.indexById(event.item);
 
     if (index == -1) {
-      throw Exception('Item not found in list');
+      return Future.value();
     }
 
     _list[index] = event.item;
