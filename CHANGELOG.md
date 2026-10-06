@@ -1,5 +1,46 @@
 # Changelog
 
+## [1.0.0]
+
+### Added
+
+* **Command-Driven EventHub & Automatic UseCase Broadcasting**
+  * Added `BlocxCommandType` (`create`, `read`, `update`, `delete`) and `BlocxEntityEvent<T extends BlocxBaseEntity>` (containing `entities`, `command`, `origin`, `debugTrace`, and a convenience `entity` getter).
+  * Updated `BlocxEventHub` and `BlocxSimpleEventHub` with `emitEntity<T>`, `emitEntities<T>`, and typed `onEntity<T>({Iterable<BlocxCommandType>? commands})` stream filtering.
+  * Updated `BlocxBaseUseCase`, `BlocxPaginatedUseCase`, and `BlocxSearchUseCase` constructors to accept optional `eventHub`, `commandType`, and `commandTypes`.
+  * Automatic entity broadcasting on UseCase success: `BlocxBaseUseCase.execute(input)` now automatically resolves affected `BlocxBaseEntity` instances via `resolveCommandEntities(input, output, command)` (extracting from `Output`, `BlocxPage<Output>`, `Iterable<BlocxBaseEntity>`, or `Input` when `command == BlocxCommandType.delete`) and emits `BlocxEntityEvent`s to `eventHub`.
+  * Defaulted `BlocxPaginatedUseCase` and `BlocxSearchUseCase` to `BlocxCommandType.read`.
+  * Added overridable `shouldBroadcastCommandResult(input, output)` hook on `BlocxBaseUseCase`.
+* **Live Collection Stream Synchronization (`BlocxCollectionSyncStreamMixin`)**
+  * Enhanced `BlocxCollectionSyncStreamMixin<T, P>` to automatically subscribe to `eventHub.onEntity<T>(commands: listenedCommandTypes)` as well as custom `entityEventsStreams` and `entitiesStream`.
+  * Added command-aware handlers (`onStreamEntitiesCreate`, `onStreamEntitiesUpdate`, `onStreamEntitiesRead`, `onStreamEntitiesDelete`), `shouldSyncEntity(entity, command)` filter hook, `insertCreatedEntitiesAtStart` flag, and `updateOnlyExistingOnRead` flag.
+  * Exported `BlocxCollectionSyncStreamMixin` from `package:blocx_core/collection_bloc.dart`.
+* **Live Form Stream Synchronization (`BlocxFormSyncStreamMixin`)**
+  * Added `BlocxFormSyncStreamMixin<F, P, E, WatchedEntity>` (exported from `package:blocx_core/form_bloc.dart`) to synchronize open forms when a watched entity is updated/read/created via `BlocxEventHub` or custom streams (`isWatchedEntity`, `mapSyncedEntityToFormData`, `applySyncedDataToControllers`, `validateAfterSync`).
+  * Added automatic screen pop support (`popOnEntityDeleted` and `onWatchedEntityDeleted`) when the watched entity is deleted.
+  * Added `BlocxFormEventSyncFormData<F>` and `handleSyncFormDataEvent` to `BlocxFormCoreMixin`, plus `initStreams()` and `closeStreams()` lifecycle hooks on `BlocxFormBloc`.
+* **Listener Helper on `BlocxEventHubMixin`**
+  * Added `entityEventsOfType<T extends BlocxBaseEntity>({Iterable<BlocxCommandType>? commands})` to `BlocxEventHubMixin`.
+* **Bundled AI Agent Skill (`skills/blocx-core`)**
+  * Added a comprehensive `blocx-core` AI coding skill (`SKILL.md` and `references/`) for agentic IDEs.
+
+### Changed
+
+* **Strict Unidirectional EventHub Architecture**
+  * Removed `emitSystemWideEvent` from `BlocxEventHubMixin`. Only `BlocxBaseUseCase` subclasses emit app/domain events; `BlocxBaseBloc` and `BlocxEventHubMixin` are strictly listeners.
+* **Documentation Overhaul**
+  * Rebuilt `README.md` with concise architecture diagrams, side-by-side comparisons, live `BlocxEventHub` synchronization examples, and cross-references to `flutter_blocx`.
+
+### Fixed
+
+* **Safe Collection Item Insertion & Update (`BlocxCollectionCoreMixin`)**
+  * `addItem` (`BlocxCollectionEventAddItem`) now clamps `event.index` to `[0, list.length]` instead of throwing a `RangeError` when out of bounds.
+  * `updateItem` (`BlocxCollectionEventUpdateItem`) now safely returns a no-op when the item's identifier is not present in the current list instead of throwing an unhandled `Exception`.
+* **Collection Pull-to-Refresh Limit (`BlocxCollectionRefreshableMixin`)**
+  * Fixed `refreshData` (`BlocxCollectionEventRefreshData`) to request `limit` items instead of `list.length`, ensuring consistent pagination page sizes after refreshing.
+
+---
+
 ## [0.9.0]
 
 ### Fixed
