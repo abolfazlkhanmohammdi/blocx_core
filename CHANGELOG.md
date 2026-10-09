@@ -19,6 +19,8 @@
 * Prevented stale-response race conditions by introducing a monotonically incrementing `loadGeneration` counter and registering `BlocxCollectionEventLoadInitialPage` and `BlocxCollectionEventRefreshData` with `restartable()`, and `BlocxCollectionEventLoadNextPage` with `droppable()`, safely discarding out-of-order in-flight responses across initial load, pagination, refresh, and search.
 * Added in-place deduplication to `addItem` and `insertToListSingle`: if an item with matching `identifier` already exists in the collection, it is updated in-place rather than inserted as a duplicate entry.
 * Isolated entity resolution and EventHub event broadcasting within `BlocxBaseUseCase.execute(input)` in a dedicated `try/catch` with a `handleBroadcastError` hook, ensuring that exceptions thrown during post-execution broadcasting never cause a successful persistent business operation to return a `BlocxUseCaseFailure`.
+* Optimized `BlocxSimpleEventHub.emit` to capture `StackTrace.current` conditionally inside an assert block (`assert(() { event.debugTrace ??= StackTrace.current; return true; }())`), eliminating expensive stack trace capture overhead in release builds while preserving diagnostics in debug/test environments.
+* Enhanced `BlocxSimpleEventHub.onEntity<T>` to support heterogeneous entity batches using `entities.any((item) => item is T)` and `whereType<T>()`, and preserved original event `id` and `createdAt` timestamps when re-wrapping typed `BlocxEntityEvent`s.
 
 ## [1.0.0]
 

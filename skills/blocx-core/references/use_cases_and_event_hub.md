@@ -365,6 +365,7 @@ Emitted on `BlocxEventHub` whenever a UseCase with `eventHub` and `commandType`/
 final BlocxEventHub eventHub = BlocxSimpleEventHub();
 
 // Subscribe to entity events for a specific entity type and optional command filter:
+// Note: onEntity<T> supports heterogeneous entity batches and filters matching entities via whereType<T>():
 Stream<BlocxEntityEvent<ProductEntity>> stream = eventHub.onEntity<ProductEntity>(
   commands: const [BlocxCommandType.create, BlocxCommandType.update],
 );
@@ -372,6 +373,11 @@ Stream<BlocxEntityEvent<ProductEntity>> stream = eventHub.onEntity<ProductEntity
 // Synchronous cleanup:
 eventHub.dispose(); // returns void
 ```
+
+#### EventHub Performance & Metadata Guarantees:
+- **Zero Release Overhead**: `debugTrace` stack capture in `BlocxSimpleEventHub.emit` is assert-guarded (`assert(() { event.debugTrace ??= StackTrace.current; return true; }())`), ensuring no expensive `StackTrace.current` allocations in production/release mode.
+- **Heterogeneous Batch Support**: `onEntity<T>` triggers if any entity matches `T` (`entities.any((e) => e is T)`), extracting all matching entities with `whereType<T>()`.
+- **Event Metadata Preservation**: Typed re-wrapping in `onEntity<T>` preserves the original event `id` and `createdAt` timestamp for full auditability.
 
 ---
 

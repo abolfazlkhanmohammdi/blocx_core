@@ -53,7 +53,10 @@ class BlocxSimpleEventHub implements BlocxEventHub {
   @override
   void emit(BlocxAppEvent event) {
     if (!_controller.isClosed) {
-      event.debugTrace = StackTrace.current;
+      assert(() {
+        event.debugTrace ??= StackTrace.current;
+        return true;
+      }());
       _controller.add(event);
     }
   }
@@ -103,14 +106,16 @@ class BlocxSimpleEventHub implements BlocxEventHub {
         return false;
       }
       if (e is BlocxEntityEvent<T>) return true;
-      return e.entities.isNotEmpty && e.entities.every((item) => item is T);
+      return e.entities.any((item) => item is T);
     }).map((e) {
       if (e is BlocxEntityEvent<T>) return e;
       return BlocxEntityEvent<T>(
-        entities: List<T>.from(e.entities),
+        entities: e.entities.whereType<T>().toList(),
         command: e.command,
         origin: e.origin,
         debugTrace: e.debugTrace,
+        id: e.id,
+        createdAt: e.createdAt,
       );
     });
   }
