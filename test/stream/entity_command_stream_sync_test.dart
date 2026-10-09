@@ -161,6 +161,18 @@ class SyncedNotesCollectionBloc extends BlocxCollectionBloc<NoteEntity, int?>
           );
 }
 
+class SortedNotesCollectionBloc extends BlocxCollectionBloc<NoteEntity, int?>
+    with BlocxCollectionSyncStreamMixin<NoteEntity, int?> {
+  @override
+  final BlocxEventHub eventHub;
+
+  SortedNotesCollectionBloc(this.eventHub) : super();
+
+  @override
+  Comparator<NoteEntity>? get sortComparator =>
+      (a, b) => a.title.compareTo(b.title);
+}
+
 enum NoteFormField { title }
 
 class NoteFormData extends BlocxBaseFormEntity<NoteFormData, NoteFormField> {
@@ -496,6 +508,35 @@ void main() {
       expect(customBloc.list.any((e) => e.id == '777'), isTrue);
 
       await customBloc.close();
+    });
+
+    test('sortComparator inserts items at sorted position rather than index 0',
+        () async {
+      final sortedBloc = SortedNotesCollectionBloc(eventHub);
+      await sortedBloc.insertToList([
+        const NoteEntity(id: '10', title: 'B Note'),
+        const NoteEntity(id: '30', title: 'D Note'),
+      ], false, DataInsertSource.init);
+
+      // Create Note with title 'A Note' -> should be inserted at index 0
+      final createA = CreateNoteUseCase(eventHub);
+      await createA.execute(const NoteEntity(id: '5', title: 'A Note'));
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+
+      // Create Note with title 'C Note' -> should be inserted between B and D
+      final createC = CreateNoteUseCase(eventHub);
+      await createC.execute(const NoteEntity(id: '20', title: 'C Note'));
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+
+      // Create Note with title 'E Note' -> should be inserted at end
+      final createE = CreateNoteUseCase(eventHub);
+      await createE.execute(const NoteEntity(id: '40', title: 'E Note'));
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+
+      final titles = sortedBloc.state.list.map((n) => n.title).toList();
+      expect(
+          titles, equals(['A Note', 'B Note', 'C Note', 'D Note', 'E Note']));
+      await sortedBloc.close();
     });
   });
 

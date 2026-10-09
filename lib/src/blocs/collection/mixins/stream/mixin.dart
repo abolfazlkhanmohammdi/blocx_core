@@ -186,8 +186,11 @@ mixin BlocxCollectionSyncStreamMixin<T extends BlocxBaseEntity, P>
   Stream<T>? get itemUpdateStream => null;
 
   /// Returns the target insertion index for a newly created [value].
+  ///
+  /// Uses [sortComparator] if provided, or defaults to index 0.
+  @override
   int getInsertIndexForItem(T value) {
-    return 0;
+    return super.getInsertIndexForItem(value);
   }
 
   /// Cancels all active stream subscriptions.

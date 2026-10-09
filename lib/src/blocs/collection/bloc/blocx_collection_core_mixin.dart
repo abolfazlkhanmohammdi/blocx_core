@@ -273,6 +273,29 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   /// Allows modification of incoming data before insertion.
   Future<List<Entity>> modifyListBeforeInsert(List<Entity> data) async => data;
 
+  /// Optional comparator used to maintain sorted order in the collection list.
+  ///
+  /// When non-null, [getInsertIndexForItem] locates the sorted insertion position.
+  /// When null, defaults to inserting at index 0.
+  Comparator<Entity>? get sortComparator => null;
+
+  /// Returns the target insertion index for [item] using [sortComparator] if present.
+  ///
+  /// If [sortComparator] is non-null, iterates through [list] to find the index where
+  /// [item] should be placed to preserve order. Otherwise, returns 0.
+  int getInsertIndexForItem(Entity item) {
+    final comparator = sortComparator;
+    if (comparator == null) return 0;
+
+    final currentList = list;
+    for (var i = 0; i < currentList.length; i++) {
+      if (comparator(item, currentList[i]) < 0) {
+        return i;
+      }
+    }
+    return currentList.length;
+  }
+
   /// Registers core collection event handlers.
   void initCoreMixin() {
     on<BlocxCollectionEventLoadInitialPage<Entity, Payload>>(

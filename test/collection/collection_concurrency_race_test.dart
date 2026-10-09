@@ -206,16 +206,12 @@ void main() {
 
       // Search 'first' (slow)
       bloc.add(BlocxCollectionEventSearch<TestItem>(searchText: 'first'));
-      await Future<void>.delayed(const Duration(milliseconds: 15));
-      expect(searchUseCase.calls.length, equals(1));
-      final firstSearchCall = searchUseCase.calls[0];
+      final firstSearchCall = await searchUseCase.nextCall;
 
       // Search 'second' (faster)
       bloc.add(BlocxCollectionEventSearch<TestItem>(searchText: 'second'));
-      await Future<void>.delayed(const Duration(milliseconds: 15));
+      final secondSearchCall = await searchUseCase.nextCall;
 
-      expect(searchUseCase.calls.length, greaterThanOrEqualTo(1));
-      final secondSearchCall = searchUseCase.calls.last;
       secondSearchCall.completeSuccess([
         const TestItem(id: 'search_v2', title: 'Second Search Result'),
       ]);
@@ -242,6 +238,14 @@ void main() {
 class ControlledSearchUseCase
     extends BlocxSearchUseCase<BlocxSearchInput, TestItem> {
   final List<ControlledSearchCall> calls = [];
+  Completer<ControlledSearchCall> _nextCallCompleter = Completer();
+
+  Future<ControlledSearchCall> get nextCall {
+    if (calls.isNotEmpty && _nextCallCompleter.isCompleted) {
+      _nextCallCompleter = Completer();
+    }
+    return _nextCallCompleter.future;
+  }
 
   ControlledSearchUseCase() : super();
 
@@ -250,6 +254,9 @@ class ControlledSearchUseCase
       BlocxSearchInput input) async {
     final call = ControlledSearchCall(input);
     calls.add(call);
+    if (!_nextCallCompleter.isCompleted) {
+      _nextCallCompleter.complete(call);
+    }
     return call.completer.future;
   }
 }
