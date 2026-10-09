@@ -211,16 +211,16 @@ mixin BlocxCollectionSelectableMixin<Entity extends BlocxBaseEntity, Payload>
   }) {
     emit(
       BlocxCollectionStateSelectionChanged<Entity>(
-        list: list,
+        list: List<Entity>.unmodifiable(list),
         hasReachedEnd: hasReachedEnd,
         isLoadingNextPage: isLoadingNextPage,
         isRefreshing: isRefreshing,
         isSearching: isSearching,
-        selectedItemIds: selectedItemIds,
-        beingSelectedItemIds: beingSelectedItemIds,
-        highlightedItemIds: highlightedItemIds,
-        beingRemovedItemIds: beingRemovedItemIds,
-        expandedItemIds: expandedItemIds,
+        selectedItemIds: Set<String>.unmodifiable(selectedItemIds),
+        beingSelectedItemIds: Set<String>.unmodifiable(beingSelectedItemIds),
+        highlightedItemIds: Set<String>.unmodifiable(highlightedItemIds),
+        beingRemovedItemIds: Set<String>.unmodifiable(beingRemovedItemIds),
+        expandedItemIds: Set<String>.unmodifiable(expandedItemIds),
         selectionData: SelectionChangedData<Entity>(
           selection: selectedItems,
           wasSelected: wasSelected,

@@ -14,6 +14,7 @@
 * Fixed initial load failure leaving collection state stuck in `Loading` forever; now emits `BlocxCollectionStateError` with translated error message while keeping existing list and status flags intact.
 * Added `readableErrorOf` helper on `BlocxBaseBloc` to centralize readable error translation.
 * Ensured `isLoadingNextPage`, `isRefreshing`, and `isSearching` flags and states are consistently reset and emitted on failure paths.
+* Prevented emitted states from aliasing live mutable lists and identifier sets by emitting true unmodifiable snapshots (`List<Entity>.unmodifiable` and `Set<String>.unmodifiable`), eliminating retroactive state mutations.
 
 ## [1.0.0]
 

@@ -131,16 +131,16 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
       emit(
         BlocxCollectionStateError<Entity>(
           message: readableError.message,
-          list: list,
+          list: List<Entity>.unmodifiable(_list),
           hasReachedEnd: hasReachedEnd,
           isLoadingNextPage: isLoadingNextPage,
           isRefreshing: isRefreshing,
           isSearching: isSearching,
-          selectedItemIds: selectedItemIds,
-          beingSelectedItemIds: beingSelectedItemIds,
-          highlightedItemIds: highlightedItemIds,
-          beingRemovedItemIds: beingRemovedItemIds,
-          expandedItemIds: expandedItemIds,
+          selectedItemIds: Set<String>.unmodifiable(selectedItemIds),
+          beingSelectedItemIds: Set<String>.unmodifiable(beingSelectedItemIds),
+          highlightedItemIds: Set<String>.unmodifiable(highlightedItemIds),
+          beingRemovedItemIds: Set<String>.unmodifiable(beingRemovedItemIds),
+          expandedItemIds: Set<String>.unmodifiable(expandedItemIds),
           additionalInfo: additionalInfo,
         ),
       );
@@ -180,20 +180,24 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   }
 
   /// Emits the current loaded collection state.
+  ///
+  /// Emitted states receive unmodifiable snapshot copies of the collection
+  /// items and ID sets to guarantee true state immutability. Creating these
+  /// snapshots incurs an O(n) cost per emission.
   void emitState(Emitter<BlocxCollectionState<Entity>> emit) {
     emit(
       BlocxCollectionStateLoaded(
         additionalInfo: additionalInfo,
-        list: list,
+        list: List<Entity>.unmodifiable(_list),
         hasReachedEnd: hasReachedEnd,
         isLoadingNextPage: isLoadingNextPage,
         isRefreshing: isRefreshing,
         isSearching: isSearching,
-        selectedItemIds: selectedItemIds,
-        beingSelectedItemIds: beingSelectedItemIds,
-        highlightedItemIds: highlightedItemIds,
-        beingRemovedItemIds: beingRemovedItemIds,
-        expandedItemIds: expandedItemIds,
+        selectedItemIds: Set<String>.unmodifiable(selectedItemIds),
+        beingSelectedItemIds: Set<String>.unmodifiable(beingSelectedItemIds),
+        highlightedItemIds: Set<String>.unmodifiable(highlightedItemIds),
+        beingRemovedItemIds: Set<String>.unmodifiable(beingRemovedItemIds),
+        expandedItemIds: Set<String>.unmodifiable(expandedItemIds),
       ),
     );
   }
