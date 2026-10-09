@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.1] - Unreleased
+
+### Documentation
+* Recorded baseline test and analysis results in `docs/fix-notes.md`.
+
 ## [1.0.0]
 
 ### Added
