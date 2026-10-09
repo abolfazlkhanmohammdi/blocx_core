@@ -14,6 +14,8 @@ abstract class BlocXLocalizations {
   String get errorDetailsCopied;
   String get somethingWentWrong;
   String get loadingText;
+  String get searchingText => 'Searching data, please wait';
+  String get searchHint => 'Search...';
   String get emptyListText;
   String get thisFieldIsRequired;
   String get invalidEmail;
@@ -220,4 +222,10 @@ class _DefaultLocalizations extends BlocXLocalizations {
 
   @override
   String get deleteItem => "Delete Item";
+
+  @override
+  String get searchingText => "Searching data, please wait";
+
+  @override
+  String get searchHint => "Search...";
 }
