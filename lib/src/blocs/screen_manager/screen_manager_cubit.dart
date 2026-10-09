@@ -36,6 +36,11 @@ class ScreenManagerCubit extends Cubit<ScreenManagerCubitState> {
   void pop() {
     emit(ScreenManagerCubitStatePop());
   }
+
+  /// Clears any currently displayed full-page error, restoring the initial state with [shouldRebuild] set to true.
+  void clearError() {
+    emit(const ScreenManagerCubitStateInitial(shouldRebuild: true));
+  }
 }
 
 enum BlocXSnackbarType { error, info, warning }

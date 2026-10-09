@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.1.0] - Unreleased
+
+### Added
+* Added `clearError()` to `ScreenManagerCubit` and `BlocxBaseBloc`, which emits `ScreenManagerCubitStateInitial(shouldRebuild: true)` to dismiss full-page errors and restore normal screen display without resurrecting error states on subsequent snackbars.
+
 ## [1.0.1]
 
 ### Documentation

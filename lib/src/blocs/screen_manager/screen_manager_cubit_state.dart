@@ -8,8 +8,8 @@ class ScreenManagerCubitState extends BlocxBaseState {
 
 @immutable
 class ScreenManagerCubitStateInitial extends ScreenManagerCubitState {
-  const ScreenManagerCubitStateInitial()
-      : super(shouldRebuild: false, shouldListen: false);
+  const ScreenManagerCubitStateInitial({super.shouldRebuild = false})
+      : super(shouldListen: false);
 }
 
 @immutable

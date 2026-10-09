@@ -45,5 +45,42 @@ void main() {
 
       cubit.displayErrorWidget(error);
     });
+
+    test(
+        'clearError emits ScreenManagerCubitStateInitial with shouldRebuild == true',
+        () async {
+      final error = ReadableError(message: 'Something broke');
+      cubit.displayErrorWidget(error);
+
+      expectLater(
+        cubit.stream,
+        emits(predicate<ScreenManagerCubitState>((s) =>
+            s is ScreenManagerCubitStateInitial && s.shouldRebuild == true)),
+      );
+
+      cubit.clearError();
+      expect(cubit.state, isA<ScreenManagerCubitStateInitial>());
+      expect(cubit.state.shouldRebuild, isTrue);
+    });
+
+    test(
+        'snackbar emitted after clearError restores initial state, not error page',
+        () async {
+      final error = ReadableError(message: 'Fatal page crash');
+      cubit.displayErrorWidget(error);
+      cubit.clearError();
+
+      expectLater(
+        cubit.stream,
+        emitsInOrder([
+          isA<ScreenManagerCubitStateDisplaySnackbar>(),
+          predicate<ScreenManagerCubitState>((s) =>
+              s is ScreenManagerCubitStateInitial && s.shouldRebuild == true),
+        ]),
+      );
+
+      cubit.displaySnackbar('Info notification', BlocXSnackbarType.info);
+      expect(cubit.state, isA<ScreenManagerCubitStateInitial>());
+    });
   });
 }

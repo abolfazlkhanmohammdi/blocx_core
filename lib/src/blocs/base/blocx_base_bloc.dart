@@ -62,6 +62,9 @@ abstract class BlocxBaseBloc<E extends BlocxBaseEvent, S extends BlocxBaseState>
   /// Triggers a pop/back-navigation signal.
   void pop() => _screenManagerCubit.pop();
 
+  /// Clears any currently displayed full-page error, resetting the screen manager to its initial state.
+  void clearError() => _screenManagerCubit.clearError();
+
   /// Displays a full-page error widget for [error].
   void displayErrorWidget(ReadableError error) =>
       _screenManagerCubit.displayErrorWidget(error);
