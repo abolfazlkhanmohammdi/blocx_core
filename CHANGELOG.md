@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.0.1] - Unreleased
+## [1.0.1]
 
 ### Documentation
 * Recorded baseline test and analysis results in `docs/fix-notes.md`.
@@ -8,15 +8,17 @@
 * Corrected `resolveCommandEntities(input, output)` signature in `README.md` to reflect the 2-parameter signature in source.
 * Updated `BlocxCollectionSearchableMixin` doc descriptions in `blocx_collection_bloc.dart` to clarify that search filters the active collection list in-place rather than maintaining a disconnected secondary list.
 
-### Infrastructure
+### Infrastructure & Testing
 * Added GitHub Actions CI workflow (`.github/workflows/ci.yml`) covering formatting, static analysis (`--fatal-infos`), tests with coverage, and dry-run publishing across SDK matrix (`3.5.0` and `stable`).
 * Added `bloc_test` and `fake_async` dev dependencies and test harness fixtures in `test/helpers/` (fake use cases, paginated source, entity models).
+* Added comprehensive multi-mixin combination test suite (`test/collection/collection_combination_test.dart`) exercising the flagship combination of Infinite, Refreshable, Searchable, Selectable, Deletable, and SyncStream mixins working together.
 * Replaced arbitrary `Future.delayed` sleeps in existing collection and form tests with reactive stream synchronization.
 
 ### Fixed
 * Fixed initial load failure leaving collection state stuck in `Loading` forever; now emits `BlocxCollectionStateError` with translated error message while keeping existing list and status flags intact.
 * Added `readableErrorOf` helper on `BlocxBaseBloc` to centralize readable error translation.
 * Ensured `isLoadingNextPage`, `isRefreshing`, and `isSearching` flags and states are consistently reset and emitted on failure paths.
+* Fixed `BlocxCollectionInfiniteMixin` to emit `isLoadingNextPage: true` upon fetch initiation and reset to `false` upon page arrival/completion, keeping state snapshots synchronized with bloc status.
 * Prevented emitted states from aliasing live mutable lists and identifier sets by emitting true unmodifiable snapshots (`List<Entity>.unmodifiable` and `Set<String>.unmodifiable`), eliminating retroactive state mutations.
 * Decoupled pagination offset (`offset` and `searchOffset`) from local list length (`list.length`) by tracking datasource-loaded counts (`_loadedCount` and `_searchLoadedCount`), preventing pagination offset drift when entities are added or deleted locally via sync streams or user actions.
 * Prevented stale-response race conditions by introducing a monotonically incrementing `loadGeneration` counter and registering `BlocxCollectionEventLoadInitialPage` and `BlocxCollectionEventRefreshData` with `restartable()`, and `BlocxCollectionEventLoadNextPage` with `droppable()`, safely discarding out-of-order in-flight responses across initial load, pagination, refresh, and search.

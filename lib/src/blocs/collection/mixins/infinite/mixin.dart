@@ -69,6 +69,7 @@ mixin BlocxCollectionInfiniteMixin<Entity extends BlocxBaseEntity, Payload>
   ) async {
     final gen = loadGeneration;
     isLoadingNextPage = true;
+    emitState(emit);
 
     try {
       final result = await task.execute(offset: offset, limit: limit);
@@ -83,9 +84,6 @@ mixin BlocxCollectionInfiniteMixin<Entity extends BlocxBaseEntity, Payload>
             hasReachedEnd,
           ),
         );
-
-        isLoadingNextPage = false;
-        emitState(emit);
         return;
       }
 
@@ -98,11 +96,10 @@ mixin BlocxCollectionInfiniteMixin<Entity extends BlocxBaseEntity, Payload>
       );
 
       offset += page.items.length;
-
-      emitState(emit);
     } finally {
       if (gen == loadGeneration) {
         isLoadingNextPage = false;
+        emitState(emit);
       }
     }
   }
