@@ -64,7 +64,7 @@ abstract class BlocxCollectionBloc<Entity extends BlocxBaseEntity, Payload>
 - `void replaceList(List<Entity> newList)`
 - `void replaceItemInList(Entity item)`
 - `void removeItemFromList(Entity item)`
-- `void insertToListSingle(Entity item, {int index = 0})`
+- `void insertToListSingle(Entity item, {int index = 0})` (inserts or updates in-place if already present)
 - `void sortList(Comparator<Entity> comparator)`
 - `void emitState(Emitter<BlocxCollectionState<Entity>> emit)` (emits `BlocxCollectionStateLoaded<Entity>` with all current list and mixin sets)
 
@@ -75,7 +75,7 @@ abstract class BlocxCollectionBloc<Entity extends BlocxBaseEntity, Payload>
 | Event Class | Constructor / Properties | Behavior |
 |---|---|---|
 | `BlocxCollectionEventLoadInitialPage<T, P>` | `BlocxCollectionEventLoadInitialPage({required P? payload})` | Handled with `restartable()`. Stores `payload`, increments `loadGeneration`, emits `BlocxCollectionStateLoading<T>()`, executes `loadInitialPageTask(offset: 0, limit: limit)`, clears old list, inserts items, applies initial selection if selectable, and emits `BlocxCollectionStateLoaded<T>`. Discards stale responses if generation has advanced. |
-| `BlocxCollectionEventAddItem<T>` | `BlocxCollectionEventAddItem({required T item, int index = 0})` | Inserts `item` into `list` at `index.clamp(0, list.length)` and emits `BlocxCollectionStateLoaded<T>`. |
+| `BlocxCollectionEventAddItem<T>` | `BlocxCollectionEventAddItem({required T item, int index = 0})` | Inserts `item` into `list` at `index.clamp(0, list.length)`, or updates it in-place if an item with matching `identifier` already exists (preventing duplicate rows), and emits `BlocxCollectionStateLoaded<T>`. |
 | `BlocxCollectionEventUpdateItem<T>` | `BlocxCollectionEventUpdateItem({required T item})` | Finds item in `list` by `identifier` and replaces it (no-op if not found). Triggers highlight if `isHighlightable` is `true`, and emits state. |
 | `BlocxCollectionEventReplaceList<T>` | `BlocxCollectionEventReplaceList({required List<T> newItems})` | Replaces the entire `list` with `newItems` and emits state. |
 | `BlocxCollectionEventRemoveFromList<T>` | `BlocxCollectionEventRemoveFromList({required T item})` | Removes `item` locally by `identifier` and emits state. |

@@ -308,10 +308,23 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   bool get isSelectable;
 
   /// Adds [event.item] to the collection.
+  ///
+  /// If an item with matching [identifier] already exists in the collection,
+  /// it is updated in-place instead of creating a duplicate row.
   Future<void> addItem(
     BlocxCollectionEventAddItem<Entity> event,
     Emitter<BlocxCollectionState<Entity>> emit,
   ) async {
+    final existingIndex = _list.indexById(event.item);
+    if (existingIndex != -1) {
+      _list[existingIndex] = event.item;
+      if (isHighlightable) {
+        add(BlocxCollectionEventHighlightItem(item: event.item));
+      }
+      emitState(emit);
+      return;
+    }
+
     final safeIndex = event.index.clamp(0, _list.length);
     _list.insert(safeIndex, event.item);
     emitState(emit);
@@ -338,8 +351,16 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   }
 
   /// Inserts a single [item] at [index].
+  ///
+  /// If an item with matching [identifier] already exists, it is updated in place.
   void insertToListSingle(Entity item, {int index = 0}) {
-    _list.insert(index, item);
+    final existingIndex = _list.indexById(item);
+    if (existingIndex != -1) {
+      _list[existingIndex] = item;
+      return;
+    }
+    final safeIndex = index.clamp(0, _list.length);
+    _list.insert(safeIndex, item);
   }
 
   /// Sorts the collection using [comparator].
