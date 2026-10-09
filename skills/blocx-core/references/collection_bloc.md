@@ -48,7 +48,7 @@ abstract class BlocxCollectionBloc<Entity extends BlocxBaseEntity, Payload>
 - `BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Entity>? get loadInitialPageTask => paginationTask;`
   Override only if initial loading uses a different UseCase from `paginationTask`.
 - `int get limit => 20;` (page size per request)
-- `int get offset => list.length;` (current item count)
+- `int get offset => _loadedCount;` (tracks items loaded from datasource independently of local mutations to prevent pagination offset drift)
 
 ### State & List Properties
 - `Payload? payload`: Stored from the latest `BlocxCollectionEventLoadInitialPage`.
@@ -105,7 +105,7 @@ abstract class BlocxCollectionBloc<Entity extends BlocxBaseEntity, Payload>
 - **Events**: `BlocxCollectionEventLoadNextPage<Entity>()`
 - **Overrides**:
   - `BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Entity>? get loadNextPageTask => paginationTask;`
-- **Behavior**: Guards against `hasReachedEnd || isLoadingNextPage`. If `isSearchable` and `searchText.isNotEmpty`, automatically dispatches `BlocxCollectionEventSearchNextPage<Entity>()`. Otherwise executes `loadNextPageTask(offset: list.length, limit: limit)` and appends items.
+- **Behavior**: Guards against `hasReachedEnd || isLoadingNextPage`. If `isSearchable` and `searchText.isNotEmpty`, automatically dispatches `BlocxCollectionEventSearchNextPage<Entity>()`. Otherwise executes `loadNextPageTask(offset: offset, limit: limit)` and appends items.
 
 ### 5.2 `BlocxCollectionRefreshableMixin<Entity, Payload>` (Pull-to-Refresh)
 - **Events**: `BlocxCollectionEventRefreshData<Entity>({bool clearSelection = true})`

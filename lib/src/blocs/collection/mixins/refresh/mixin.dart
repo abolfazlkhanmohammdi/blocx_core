@@ -89,6 +89,7 @@ mixin BlocxCollectionRefreshableMixin<Entity extends BlocxBaseEntity, Payload>
       final page = result.data!;
 
       clearList();
+      offset = page.items.length;
 
       await insertToList(
         page.items,

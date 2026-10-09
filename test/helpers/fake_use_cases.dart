@@ -87,9 +87,12 @@ class FakeSearchUseCase extends BlocxSearchUseCase<BlocxSearchInput, TestItem> {
     super.eventHub,
   }) : source = source ?? FakePaginatedSource();
 
+  final List<BlocxSearchInput> recordedInputs = [];
+
   @override
   Future<BlocxUseCaseResult<BlocxPage<TestItem>>> perform(
       BlocxSearchInput input) async {
+    recordedInputs.add(input);
     if (completer != null) {
       await completer!.future;
     }

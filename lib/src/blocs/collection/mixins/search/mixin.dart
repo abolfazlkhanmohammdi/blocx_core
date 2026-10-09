@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:meta/meta.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/collection_bloc.dart'
     show
@@ -23,6 +24,15 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
     on BlocxCollectionBloc<Entity, Payload> {
   /// Current active search query.
   String searchText = '';
+
+  int _searchLoadedCount = 0;
+
+  /// Current pagination offset for active search results.
+  int get searchOffset => _searchLoadedCount;
+
+  /// Updates the search pagination offset cursor.
+  @protected
+  set searchOffset(int value) => _searchLoadedCount = value;
 
   /// Registers search event handlers.
   @override
@@ -92,6 +102,7 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
 
     if (searchText.isEmpty) {
       isSearching = false;
+      _searchLoadedCount = 0;
 
       clearList();
 
@@ -124,6 +135,7 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
       final page = result.data!;
 
       clearList();
+      _searchLoadedCount = page.items.length;
 
       await insertToList(
         page.items,
@@ -145,6 +157,7 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
   ) {
     searchText = '';
     hasReachedEnd = false;
+    _searchLoadedCount = 0;
 
     clearList();
 
@@ -186,7 +199,7 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
       );
     }
 
-    final result = await task.execute(offset: list.length, limit: limit);
+    final result = await task.execute(offset: _searchLoadedCount, limit: limit);
 
     if (result.isFailure) {
       await handleError(
@@ -212,6 +225,8 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
       !page.hasNext,
       DataInsertSource.nextPage,
     );
+
+    _searchLoadedCount += page.items.length;
 
     infiniteListBloc.add(
       BlocxInfiniteListEventChangeLoadBottomDataStatus(
@@ -264,6 +279,7 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
       final page = result.data!;
 
       clearList();
+      _searchLoadedCount = page.items.length;
 
       await insertToList(
         page.items,

@@ -66,7 +66,7 @@ mixin BlocxCollectionInfiniteMixin<Entity extends BlocxBaseEntity, Payload>
     isLoadingNextPage = true;
 
     try {
-      final result = await task.execute(offset: list.length, limit: limit);
+      final result = await task.execute(offset: offset, limit: limit);
 
       if (result.isFailure) {
         await handleError(result.error!, emit, stacktrace: result.stackTrace);
@@ -90,6 +90,8 @@ mixin BlocxCollectionInfiniteMixin<Entity extends BlocxBaseEntity, Payload>
         !page.hasNext,
         DataInsertSource.nextPage,
       );
+
+      offset += page.items.length;
 
       emitState(emit);
     } finally {

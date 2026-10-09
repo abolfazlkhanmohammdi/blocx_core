@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:bloc/bloc.dart';
+import 'package:meta/meta.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/collection_bloc.dart'
     show
@@ -150,6 +151,7 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
     final page = result.data!;
 
     clearList();
+    offset = page.items.length;
 
     await insertToList(
       page.items,
@@ -164,8 +166,18 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   /// Default number of items to load per page.
   int get limit => 20;
 
-  /// Current offset based on loaded items.
-  int get offset => list.length;
+  int _loadedCount = 0;
+
+  /// Current pagination offset based on items fetched from the datasource.
+  ///
+  /// This tracks the server pagination cursor independently of local additions
+  /// or removals (e.g. from sync streams or local mutations), preventing
+  /// pagination offset drift when loading subsequent pages.
+  int get offset => _loadedCount;
+
+  /// Updates the pagination offset cursor.
+  @protected
+  set offset(int value) => _loadedCount = value;
 
   /// Allows modification of incoming data before insertion.
   Future<List<Entity>> modifyListBeforeInsert(List<Entity> data) async => data;
@@ -229,8 +241,11 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
     }
   }
 
-  /// Clears all collection items.
-  void clearList() => _list.clear();
+  /// Clears all collection items and resets pagination offset.
+  void clearList() {
+    _list.clear();
+    _loadedCount = 0;
+  }
 
   /// Replaces the entire collection with [newList].
   void replaceList(List<Entity> newList) {

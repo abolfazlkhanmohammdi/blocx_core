@@ -15,6 +15,7 @@
 * Added `readableErrorOf` helper on `BlocxBaseBloc` to centralize readable error translation.
 * Ensured `isLoadingNextPage`, `isRefreshing`, and `isSearching` flags and states are consistently reset and emitted on failure paths.
 * Prevented emitted states from aliasing live mutable lists and identifier sets by emitting true unmodifiable snapshots (`List<Entity>.unmodifiable` and `Set<String>.unmodifiable`), eliminating retroactive state mutations.
+* Decoupled pagination offset (`offset` and `searchOffset`) from local list length (`list.length`) by tracking datasource-loaded counts (`_loadedCount` and `_searchLoadedCount`), preventing pagination offset drift when entities are added or deleted locally via sync streams or user actions.
 
 ## [1.0.0]
 
