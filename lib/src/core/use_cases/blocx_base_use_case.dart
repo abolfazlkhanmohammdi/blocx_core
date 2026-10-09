@@ -113,16 +113,23 @@ abstract class BlocxBaseUseCase<Input, Output> {
   /// 2. [failureResult] wraps the error and is returned.
   @nonVirtual
   Future<BlocxUseCaseResult<Output>> execute(Input input) async {
+    BlocxUseCaseResult<Output> result;
     try {
-      final result = await perform(input);
-      if (result.isSuccess) {
-        _broadcastCommandEventsIfNeeded(input, result.data as Output);
-      }
-      return result;
+      result = await perform(input);
     } catch (error, stackTrace) {
       handleError(error, stackTrace);
       return failureResult(error, stackTrace);
     }
+
+    if (result.isSuccess) {
+      try {
+        _broadcastCommandEventsIfNeeded(input, result.data as Output);
+      } catch (broadcastError, broadcastStackTrace) {
+        handleBroadcastError(broadcastError, broadcastStackTrace);
+      }
+    }
+
+    return result;
   }
 
   void _broadcastCommandEventsIfNeeded(Input input, Output output) {
@@ -204,6 +211,16 @@ abstract class BlocxBaseUseCase<Input, Output> {
   /// Called before [failureResult] on every unhandled exception.
   /// Must not throw or affect control flow.
   void handleError(Object error, StackTrace stackTrace) {}
+
+  /// Optional side-effect hook for logging or reporting errors that occur during
+  /// entity resolution or event broadcasting after a successful [perform].
+  ///
+  /// By default, calls [handleError]. This hook ensures broadcasting failures do
+  /// not cause a successful operation to return a [BlocxUseCaseFailure].
+  @protected
+  void handleBroadcastError(Object error, StackTrace stackTrace) {
+    handleError(error, stackTrace);
+  }
 
   /// Shorthand for `BlocxUseCaseSuccess(data)`.
   ///

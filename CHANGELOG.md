@@ -18,6 +18,7 @@
 * Decoupled pagination offset (`offset` and `searchOffset`) from local list length (`list.length`) by tracking datasource-loaded counts (`_loadedCount` and `_searchLoadedCount`), preventing pagination offset drift when entities are added or deleted locally via sync streams or user actions.
 * Prevented stale-response race conditions by introducing a monotonically incrementing `loadGeneration` counter and registering `BlocxCollectionEventLoadInitialPage` and `BlocxCollectionEventRefreshData` with `restartable()`, and `BlocxCollectionEventLoadNextPage` with `droppable()`, safely discarding out-of-order in-flight responses across initial load, pagination, refresh, and search.
 * Added in-place deduplication to `addItem` and `insertToListSingle`: if an item with matching `identifier` already exists in the collection, it is updated in-place rather than inserted as a duplicate entry.
+* Isolated entity resolution and EventHub event broadcasting within `BlocxBaseUseCase.execute(input)` in a dedicated `try/catch` with a `handleBroadcastError` hook, ensuring that exceptions thrown during post-execution broadcasting never cause a successful persistent business operation to return a `BlocxUseCaseFailure`.
 
 ## [1.0.0]
 

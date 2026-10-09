@@ -82,12 +82,16 @@ abstract class BlocxBaseUseCase<Input, Output> {
       BlocxUseCaseFailure<Output>(error, stackTrace);
 
   void handleError(Object error, StackTrace stackTrace) {}
+
+  @protected
+  void handleBroadcastError(Object error, StackTrace stackTrace) {}
 }
 ```
 
 ### Implementing a UseCase
 - **Always override `perform(Input input)`** (never `call` or `execute`).
 - Inside `perform`, return `success(myOutput)`. You may throw exceptions freely inside `perform`—`execute(input)` catches all unhandled exceptions, calls `handleError(error, stackTrace)`, and returns `failureResult(error, stackTrace)`.
+- **Broadcasting isolation**: If `perform` succeeds, entity resolution and EventHub broadcasting are executed inside an isolated `try/catch`. Any error during broadcasting calls `handleBroadcastError` (which defaults to `handleError`) without failing the use case result.
 - **Callers always invoke `await useCase.execute(input)`**.
 
 ```dart
