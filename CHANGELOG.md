@@ -7,6 +7,8 @@
 
 ### Infrastructure
 * Added GitHub Actions CI workflow (`.github/workflows/ci.yml`) covering formatting, static analysis (`--fatal-infos`), tests with coverage, and dry-run publishing across SDK matrix (`3.5.0` and `stable`).
+* Added `bloc_test` and `fake_async` dev dependencies and test harness fixtures in `test/helpers/` (fake use cases, paginated source, entity models).
+* Replaced arbitrary `Future.delayed` sleeps in existing collection and form tests with reactive stream synchronization.
 
 ## [1.0.0]
 

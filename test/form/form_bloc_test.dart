@@ -133,17 +133,21 @@ void main() {
     test('updates field and triggers field validation', () async {
       expect(bloc.formData.email, isEmpty);
 
+      final updateFuture =
+          bloc.stream.firstWhere((s) => s.formData.email == 'user@domain.com');
       bloc.add(BlocxFormEventUpdateData(
           key: TestField.email, data: 'user@domain.com'));
-      await Future.delayed(const Duration(milliseconds: 50));
+      await updateFuture;
 
       expect(bloc.formData.email, equals('user@domain.com'));
       expect(bloc.hasError(TestField.email), isFalse);
     });
 
     test('validates invalid field and records error', () async {
+      final errorFuture = bloc.stream
+          .firstWhere((s) => s.errors.containsKey(TestField.password));
       bloc.add(BlocxFormEventUpdateData(key: TestField.password, data: '123'));
-      await Future.delayed(const Duration(milliseconds: 50));
+      await errorFuture;
 
       expect(bloc.hasError(TestField.password), isTrue);
       expect(bloc.errors[TestField.password], contains('Password too short'));
@@ -151,20 +155,29 @@ void main() {
 
     test('blocks submit when form is invalid and submits when valid', () async {
       // Initially invalid
+      final invalidFuture = bloc.stream.firstWhere((s) => s.errors.isNotEmpty);
       bloc.add(BlocxFormEventSubmit());
-      await Future.delayed(const Duration(milliseconds: 50));
+      await invalidFuture;
 
       // Update valid values
+      final emailFuture =
+          bloc.stream.firstWhere((s) => s.formData.email == 'test@example.com');
       bloc.add(BlocxFormEventUpdateData(
           key: TestField.email, data: 'test@example.com'));
+      await emailFuture;
+
+      final passFuture =
+          bloc.stream.firstWhere((s) => s.formData.password == '123456');
       bloc.add(
           BlocxFormEventUpdateData(key: TestField.password, data: '123456'));
-      await Future.delayed(const Duration(milliseconds: 50));
+      await passFuture;
 
       expect(bloc.isFormSubmittable, isTrue);
 
+      final submitFuture = bloc.stream.firstWhere(
+          (s) => s is BlocxFormStateLoaded<TestFormEntity, TestField>);
       bloc.add(BlocxFormEventSubmit());
-      await Future.delayed(const Duration(milliseconds: 50));
+      await submitFuture;
 
       expect(
           bloc.state, isA<BlocxFormStateLoaded<TestFormEntity, TestField>>());

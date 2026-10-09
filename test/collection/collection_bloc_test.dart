@@ -61,8 +61,9 @@ void main() {
     test('loads initial page on event dispatch', () async {
       expect(bloc.list, isEmpty);
 
+      final stateFuture = bloc.stream.firstWhere((s) => s.list.isNotEmpty);
       bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
-      await Future.delayed(const Duration(milliseconds: 50));
+      await stateFuture;
 
       expect(bloc.list.length, equals(10));
       expect(bloc.list.first.title, equals('Item 0'));
@@ -70,33 +71,43 @@ void main() {
     });
 
     test('adds and updates items in list', () async {
+      final initFuture = bloc.stream.firstWhere((s) => s.list.isNotEmpty);
       bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
-      await Future.delayed(const Duration(milliseconds: 50));
+      await initFuture;
 
       const newItem = TestEntity(id: '999', title: 'New Item');
+      final addFuture =
+          bloc.stream.firstWhere((s) => s.list.any((e) => e.id == '999'));
       bloc.add(BlocxCollectionEventAddItem(item: newItem, index: 0));
-      await Future.delayed(const Duration(milliseconds: 50));
+      await addFuture;
 
       expect(bloc.list.first.id, equals('999'));
 
       const updatedItem = TestEntity(id: '999', title: 'Updated Title');
+      final updateFuture = bloc.stream.firstWhere((s) =>
+          s.list.any((e) => e.id == '999' && e.title == 'Updated Title'));
       bloc.add(BlocxCollectionEventUpdateItem(item: updatedItem));
-      await Future.delayed(const Duration(milliseconds: 50));
+      await updateFuture;
 
       expect(bloc.list.first.title, equals('Updated Title'));
     });
 
     test('item selection mixin selects and deselects items', () async {
+      final initFuture = bloc.stream.firstWhere((s) => s.list.isNotEmpty);
       bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
-      await Future.delayed(const Duration(milliseconds: 50));
+      await initFuture;
 
+      final selectFuture =
+          bloc.stream.firstWhere((s) => s.selectedItemIds.contains('0'));
       bloc.add(BlocxCollectionEventSelectItem(item: bloc.list.first));
-      await Future.delayed(const Duration(milliseconds: 50));
+      await selectFuture;
 
       expect(bloc.selectedItemIds, contains('0'));
 
+      final deselectFuture =
+          bloc.stream.firstWhere((s) => !s.selectedItemIds.contains('0'));
       bloc.add(BlocxCollectionEventDeselectItem(item: bloc.list.first));
-      await Future.delayed(const Duration(milliseconds: 50));
+      await deselectFuture;
 
       expect(bloc.selectedItemIds, isNot(contains('0')));
     });
