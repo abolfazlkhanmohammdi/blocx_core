@@ -1,10 +1,10 @@
 import 'package:blocx_core/blocx_core.dart';
 
 abstract class BlocXLocalizations {
+  static final BlocXLocalizations _default = _DefaultLocalizations();
   static BlocXLocalizations? _loc;
   static set localizations(BlocXLocalizations? value) => _loc = value;
-  static BlocXLocalizations get localizations =>
-      _loc ?? _DefaultLocalizations();
+  static BlocXLocalizations get localizations => _loc ?? _default;
 
   String get tryAgain;
   String get copyDetails;
