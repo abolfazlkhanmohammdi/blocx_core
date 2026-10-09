@@ -1,29 +1,33 @@
 part of 'screen_manager_cubit.dart';
 
 @immutable
-class ScreenManagerCubitState extends BaseState {
-  const ScreenManagerCubitState({required super.shouldRebuild, required super.shouldListen});
+class ScreenManagerCubitState extends BlocxBaseState {
+  const ScreenManagerCubitState(
+      {required super.shouldRebuild, required super.shouldListen});
 }
 
 @immutable
 class ScreenManagerCubitStateInitial extends ScreenManagerCubitState {
-  const ScreenManagerCubitStateInitial() : super(shouldRebuild: false, shouldListen: false);
+  const ScreenManagerCubitStateInitial()
+      : super(shouldRebuild: false, shouldListen: false);
 }
 
 @immutable
 class ScreenManagerCubitStateDisplayErrorPage extends ScreenManagerCubitState {
   final ReadableError error;
   const ScreenManagerCubitStateDisplayErrorPage({required this.error})
-    : super(shouldRebuild: true, shouldListen: false);
+      : super(shouldRebuild: true, shouldListen: false);
 }
 
 @immutable
-class ScreenManagerCubitStateDisplayErrorPageByErrorCode extends ScreenManagerCubitState {
+class ScreenManagerCubitStateDisplayErrorPageByErrorCode
+    extends ScreenManagerCubitState {
   final BlocXErrorCode errorCode;
   final Object? error;
   final StackTrace? stackTrace;
-  const ScreenManagerCubitStateDisplayErrorPageByErrorCode(this.errorCode, {this.error, this.stackTrace})
-    : super(shouldRebuild: true, shouldListen: false);
+  const ScreenManagerCubitStateDisplayErrorPageByErrorCode(this.errorCode,
+      {this.error, this.stackTrace})
+      : super(shouldRebuild: true, shouldListen: false);
 }
 
 @immutable
@@ -39,7 +43,8 @@ class ScreenManagerCubitStateDisplaySnackbar extends ScreenManagerCubitState {
 }
 
 @immutable
-class ScreenManagerCubitStateDisplaySnackbarByErrorCode extends ScreenManagerCubitState {
+class ScreenManagerCubitStateDisplaySnackbarByErrorCode
+    extends ScreenManagerCubitState {
   final BlocXErrorCode errorCode;
   final BlocXSnackbarType snackbarType;
   const ScreenManagerCubitStateDisplaySnackbarByErrorCode({
@@ -50,5 +55,6 @@ class ScreenManagerCubitStateDisplaySnackbarByErrorCode extends ScreenManagerCub
 
 @immutable
 class ScreenManagerCubitStatePop extends ScreenManagerCubitState {
-  const ScreenManagerCubitStatePop() : super(shouldListen: true, shouldRebuild: false);
+  const ScreenManagerCubitStatePop()
+      : super(shouldListen: true, shouldRebuild: false);
 }

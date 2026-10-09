@@ -1,5 +1,6 @@
 import 'package:blocx_core/blocx_core.dart';
 import 'package:meta/meta.dart';
+import 'package:collection/collection.dart';
 
 /// Base class for all immutable form entities used by [BlocxFormBloc].
 ///
@@ -49,8 +50,8 @@ import 'package:meta/meta.dart';
 /// Equality is inherited from [BlocxBaseEntity] and is based solely on
 /// [identifier]. Two form entity instances with the same [identifier] are
 /// considered equal regardless of field values.
-abstract class BlocxBaseFormEntity<F extends BlocxBaseFormEntity<F, E>, E extends Enum>
-    extends BlocxBaseEntity {
+abstract class BlocxBaseFormEntity<F extends BlocxBaseFormEntity<F, E>,
+    E extends Enum> extends BlocxBaseEntity {
   const BlocxBaseFormEntity();
 
   /// Updates the field identified by [key] and returns a new instance.
@@ -103,19 +104,24 @@ abstract class BlocxBaseFormEntity<F extends BlocxBaseFormEntity<F, E>, E extend
   /// is incorrectly implemented.
   ///
   /// In release builds the assertion is stripped — no runtime overhead.
+
   @nonVirtual
   F updateByKeySafe(E key, dynamic value) {
     final result = updateByKey(key, value);
 
     assert(() {
       final setValue = result.getValueByKey(key);
-      if (setValue != value) {
+
+      const equality = DeepCollectionEquality();
+
+      if (!equality.equals(setValue, value)) {
         throw Exception(
           'Failed to update key $key with value $value.\n'
           'Either "updateByKey" or "getValueByKey" is incorrectly implemented '
           'in the subclass. Expected "$value" but got "$setValue".',
         );
       }
+
       return true;
     }());
 

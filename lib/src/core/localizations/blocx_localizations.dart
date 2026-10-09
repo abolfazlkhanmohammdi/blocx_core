@@ -2,8 +2,9 @@ import 'package:blocx_core/blocx_core.dart';
 
 abstract class BlocXLocalizations {
   static BlocXLocalizations? _loc;
-  static set localizations(value) => _loc = value;
-  static BlocXLocalizations get localizations => _loc ?? _DefaultLocalizations();
+  static set localizations(BlocXLocalizations? value) => _loc = value;
+  static BlocXLocalizations get localizations =>
+      _loc ?? _DefaultLocalizations();
 
   String get tryAgain;
   String get copyDetails;
@@ -22,6 +23,11 @@ abstract class BlocXLocalizations {
   String get valuesDoNotMatch;
   String get invalidPhoneNumber;
   String get selectedItemsMustBeUnique;
+  String get cancel;
+  String get delete;
+  String get deleteItem;
+  String get areYouSure;
+  String get areYouSureYouWantToDeleteThisItem;
 
   String errorCodeMessage(BlocXErrorCode errorCode);
 
@@ -57,10 +63,12 @@ class _DefaultLocalizations extends BlocXLocalizations {
   @override
   String errorCodeMessage(BlocXErrorCode errorCode) {
     return switch (errorCode) {
-      BlocXErrorCode.checkingUniqueValue => "Checking unique value, please wait...",
+      BlocXErrorCode.checkingUniqueValue =>
+        "Checking unique value, please wait...",
       BlocXErrorCode.unknown => "Unknown error",
       BlocXErrorCode.valueNotAvailable => "Value not available",
-      BlocXErrorCode.errorGettingInitialFormData => "Error getting initial form data",
+      BlocXErrorCode.errorGettingInitialFormData =>
+        "Error getting initial form data",
       BlocXErrorCode.fieldCannotBeEmpty => "This field cannot be empty",
     };
   }
@@ -73,6 +81,9 @@ class _DefaultLocalizations extends BlocXLocalizations {
 
   @override
   String get close => "Close";
+
+  @override
+  String get cancel => "Cancel";
 
   @override
   String get report => "Report";
@@ -111,32 +122,40 @@ class _DefaultLocalizations extends BlocXLocalizations {
   String get valuesDoNotMatch => "Values do not match";
 
   @override
-  String maxLengthError(maxLength) => "This field cannot exceed $maxLength characters";
+  String maxLengthError(maxLength) =>
+      "This field cannot exceed $maxLength characters";
 
   @override
-  String minLengthError(minLength) => "This field must be at least $minLength characters long";
+  String minLengthError(minLength) =>
+      "This field must be at least $minLength characters long";
 
   @override
   String lengthRangeError(minLength, maxLength) =>
       "This field must be between $minLength and $maxLength characters long";
 
   @override
-  String exactLengthFieldError(int length) => "This field must be exactly $length characters long";
+  String exactLengthFieldError(int length) =>
+      "This field must be exactly $length characters long";
 
   @override
-  String maxValueError(num maxValue) => "This value must be less than or equal to $maxValue";
+  String maxValueError(num maxValue) =>
+      "This value must be less than or equal to $maxValue";
 
   @override
-  String minValueError(num minValue) => "This value must be greater than or equal to $minValue";
+  String minValueError(num minValue) =>
+      "This value must be greater than or equal to $minValue";
 
   @override
-  String numberRangeError(num minValue, num maxValue) => "This value must be between $minValue and $maxValue";
+  String numberRangeError(num minValue, num maxValue) =>
+      "This value must be between $minValue and $maxValue";
 
   @override
-  String minDateError(DateTime minDate) => "Date must be after ${_formatDate(minDate)}";
+  String minDateError(DateTime minDate) =>
+      "Date must be after ${_formatDate(minDate)}";
 
   @override
-  String maxDateError(DateTime maxDate) => "Date must be before ${_formatDate(maxDate)}";
+  String maxDateError(DateTime maxDate) =>
+      "Date must be before ${_formatDate(maxDate)}";
 
   @override
   String dateRangeError(DateTime minDate, DateTime maxDate) =>
@@ -188,4 +207,17 @@ class _DefaultLocalizations extends BlocXLocalizations {
   String fileSizeMustBeSmallerThan(String format) {
     return "This file's size must be smaller than $format";
   }
+
+  @override
+  String get areYouSure => "Are you sure?";
+
+  @override
+  String get areYouSureYouWantToDeleteThisItem =>
+      "Are you sure you want to delete this item?";
+
+  @override
+  String get delete => "Delete";
+
+  @override
+  String get deleteItem => "Delete Item";
 }

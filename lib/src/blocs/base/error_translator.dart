@@ -1,6 +1,7 @@
 import 'package:blocx_core/blocx_core.dart' show ReadableError;
 
-BlocxErrorTranslator? get errorTranslator => BlocxErrorTranslator.errorTranslator;
+BlocxErrorTranslator? get errorTranslator =>
+    BlocxErrorTranslator.errorTranslator;
 
 abstract class BlocxErrorTranslator {
   static BlocxErrorTranslator? _instance;

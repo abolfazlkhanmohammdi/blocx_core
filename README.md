@@ -1,60 +1,120 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/abolfazlkhanmohammdi/blocx_core/main/assets/pub/logo.png" width="200" alt="blocx_core logo" />
+  <img src="https://raw.githubusercontent.com/abolfazlkhanmohammdi/blocx_core/main/assets/pub/logo.png" width="180" alt="blocx_core logo" />
 </p>
 
 <h1 align="center">blocx_core</h1>
 
 <p align="center">
-  Composable BLoC building blocks for lists and forms in pure Dart.<br/>
-  Framework-agnostic. Minimal boilerplate. Maximum control.
+  <strong>Composable, Pure-Dart BLoC Architecture for Paginated Collections, Reactive Forms, Use-Case Orchestration & Real-Time Event Sync</strong>
 </p>
 
 <p align="center">
-  <a href="https://pub.dev/packages/blocx_core"><img src="https://img.shields.io/pub/v/blocx_core.svg" alt="pub version"/></a>
-  <a href="https://pub.dev/packages/blocx_core"><img src="https://img.shields.io/pub/points/blocx_core" alt="pub points"/></a>
-  <a href="https://pub.dev/packages/blocx_core"><img src="https://img.shields.io/badge/platform-dart%20%7C%20flutter-blue" alt="platform"/></a>
-  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-green" alt="license"/></a>
+  <a href="https://pub.dev/packages/blocx_core"><img src="https://img.shields.io/pub/v/blocx_core.svg" alt="pub version" /></a>
+  <a href="https://pub.dev/packages/blocx_core/score"><img src="https://img.shields.io/pub/points/blocx_core" alt="pub points" /></a>
+  <a href="https://dart.dev"><img src="https://img.shields.io/badge/sdk-%3E%3D3.5.0%20%3C4.0.0-blue" alt="Dart SDK" /></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-green" alt="License: MIT" /></a>
+</p>
+
+<p align="center">
+  <a href="#why-blocx_core">Why blocx_core?</a> •
+  <a href="#the-blocx-ecosystem-better-together">BlocX Ecosystem</a> •
+  <a href="#installation">Installation</a> •
+  <a href="#use-cases--live-eventhub-sync">EventHub Sync</a> •
+  <a href="#collection-bloc">Collection BLoC</a> •
+  <a href="#form-bloc">Form BLoC</a> •
+  <a href="https://pub.dev/packages/flutter_blocx">flutter_blocx UI →</a>
 </p>
 
 ---
 
-## Overview
+## Why `blocx_core`?
 
-`blocx_core` is a Dart-only library that provides composable, mixin-based primitives for building BLoC-pattern state management layers in Dart and Flutter applications.
+Real-world applications rarely become hard to maintain because domain rules are complex—they become hard to maintain because every screen quietly rebuilds the same state-management plumbing:
 
-Rather than shipping monolithic blocs that bundle every feature together, `blocx_core` lets you opt in to only the capabilities you need — infinite scrolling, search, pull-to-refresh, selection, expansion, highlight, and more — by mixing lightweight, focused mixins into your own domain blocs.
+- Paginated loading, infinite scrolling, pull-to-refresh, and debounced search
+- Multi-selection, row expansion, item highlighting, and optimistic/remote deletion
+- Immutable form state, per-field/on-submit validation, async uniqueness checks, and multi-step wizards
+- Keeping open list and form screens synchronized when an entity is created, updated, or deleted elsewhere
+- Routing errors and side effects (snackbars, full-page errors, back navigation) without coupling BLoCs to Flutter `BuildContext`
 
-> **Framework-agnostic.** `blocx_core` has no Flutter dependency. Pair it with [`flutter_blocx`](https://pub.dev/packages/flutter_blocx) for ready-made UI widgets built on top of this core.
+**`blocx_core` turns all of that recurring plumbing into composable, pure-Dart BLoC mixins and typed UseCase tasks.**
+
+### Before vs. After
+
+<table>
+<tr>
+<th>Traditional BLoC (~350+ lines per screen)</th>
+<th>With <code>blocx_core</code> (~25 lines)</th>
+</tr>
+<tr>
+<td>
+
+```dart
+class ProductsBloc extends Bloc<Event, State> {
+  // Manual offset, limit & hasNext flags
+  // Manual search debounce & cancellation
+  // Manual selectedIds / deletingIds sets
+  // Manual stream subscriptions & cleanup
+  // Manual try/catch error translation
+  // Manual 12+ on<Event> handlers...
+}
+```
+
+</td>
+<td>
+
+```dart
+class ProductsBloc extends BlocxCollectionBloc<Product, void>
+    with
+        BlocxCollectionInfiniteMixin<Product, void>,
+        BlocxCollectionRefreshableMixin<Product, void>,
+        BlocxCollectionSearchableMixin<Product, void>,
+        BlocxCollectionSelectableMixin<Product, void>,
+        BlocxCollectionDeletableMixin<Product, void>,
+        BlocxCollectionSyncStreamMixin<Product, void> {
+  ProductsBloc({required this.eventHub}) : super();
+  // Override only your UseCase tasks!
+}
+```
+
+</td>
+</tr>
+</table>
 
 ---
 
-## Table of Contents
+## The BlocX Ecosystem: Better Together
 
-- [Installation](#installation)
-- [Architecture Overview](#architecture-overview)
-- [Core Concepts](#core-concepts)
-  - [BaseEntity](#baseentity)
-  - [UseCase & UseCaseResult](#usecase--usecaseresult)
-  - [Page\<T\>](#paget)
-  - [BlocxListBloc\<T, P\>](#blocxlistbloc)
-  - [BlocxFormBloc\<F, P, E\>](#blocxformbloc)
-  - [ScreenManagerCubit](#screenmanagercubit)
-- [List BLoC](#list-bloc)
-  - [Available Mixins](#available-list-mixins)
-  - [Available Events](#available-list-events)
-  - [Available States](#available-list-states)
-- [Form BLoC](#form-bloc)
-  - [BaseFormEntity](#baseformentity)
-  - [Built-in Validators](#built-in-validators)
-  - [Form Events](#form-events)
-  - [Form States](#form-states)
-  - [Form Mixins](#form-mixins)
-- [Error & Screen Management](#error--screen-management)
-- [Quickstart: Paged & Searchable List](#quickstart-paged--searchable-list)
-- [Quickstart: Form with Validation](#quickstart-form-with-validation)
-- [Migrating from 0.7.x](#migrating-from-07x)
-- [Contributing](#contributing)
-- [License](#license)
+`blocx_core` is the **pure-Dart domain and state layer** of the BlocX ecosystem. For Flutter apps, pair it with **[`flutter_blocx`](https://pub.dev/packages/flutter_blocx)**—the official Flutter UI companion package that connects directly to your `blocx_core` BLoCs with zero `BlocConsumer`, `ScrollController`, or `TextEditingController` boilerplate.
+
+| Layer | Package | What It Gives You |
+| :--- | :--- | :--- |
+| **Domain & State (Pure Dart)** | **[`blocx_core`](https://pub.dev/packages/blocx_core)** *(you are here)* | `BlocxCollectionBloc`, `BlocxFormBloc`, 15+ composable mixins, 35+ validators, `BlocxBaseUseCase`, `BlocxEventHub` live sync, `ScreenManagerCubit` |
+| **Presentation & Widgets (Flutter)** | **[`flutter_blocx`](https://pub.dev/packages/flutter_blocx)** | `BlocxCollectionWidget`, `BlocxFormWidget`, `InfiniteList` / `InfiniteGrid` / `AnimatedInfiniteList`, `BlocxCollectionItem`, `BlocxFormTextField`, `BlocxFormDropdown`, `BlocxScreenManagerState`, `BlocxErrorWidget`, `ConfirmActionWidget` |
+
+> **Building a Flutter app?** Install both [`blocx_core`](https://pub.dev/packages/blocx_core) and [`flutter_blocx`](https://pub.dev/packages/flutter_blocx) together to get a complete, end-to-end architecture from domain UseCases all the way to animated lists, grids, and validated forms.
+
+---
+
+## Feature Highlights
+
+### 📦 Collections & Paginated Lists (`package:blocx_core/collection_bloc.dart`)
+- **Offset/Limit Pagination & Infinite Scroll**: Built-in `BlocxPage<T>` tracking and `BlocxCollectionInfiniteMixin`.
+- **Debounced Search & Dynamic Filters**: `BlocxCollectionSearchableMixin` and `BlocxCollectionFilterMixin` with automatic page resets.
+- **Interactive Item States**: Single/multi-selection (`SelectableMixin`), row expansion (`ExpandableMixin`), temporary row highlighting (`HighlightableMixin`), and programmatic scroll-to-item (`ScrollableMixin`).
+- **Single & Bulk Deletion**: Local or remote deletion with per-item loading indicators (`DeletableMixin`).
+- **Live EventHub Sync**: Automatically insert, update, or remove items in real time when UseCases broadcast CRUD commands (`SyncStreamMixin`).
+
+### 📝 Reactive Forms & Validation (`package:blocx_core/form_bloc.dart`)
+- **Strongly Typed Form Entities**: Immutable `BlocxBaseFormEntity<F, E>` keyed by a field ` enum`.
+- **4 Validation Modes**: `none`, `onSubmit`, `onUserInteraction`, and `always`.
+- **35+ Built-in Validators**: Ready-made validators for `String`, `int`, `double`, `DateTime`, `List`, `File`, `Phone`, and cross-field matching.
+- **Advanced Form Mixins**: Debounced server-side uniqueness checks (`BlocxUniqueFieldValidatorMixin`), reference data prefetching (`BlocxFormPrefetchMixin`), multi-step wizards (`BlocxFormSteppedMixin`), and live entity sync (`BlocxFormSyncStreamMixin`).
+
+### ⚡ UseCases, EventHub & Screen Side Effects (`package:blocx_core/blocx_core.dart`)
+- **Standardized UseCases**: `BlocxBaseUseCase`, `BlocxPaginatedUseCase`, and `BlocxSearchUseCase` with automatic exception-to-`BlocxUseCaseResult` conversion.
+- **Unidirectional Command EventHub**: UseCases broadcast `BlocxCommandType` (`create`, `read`, `update`, `delete`) events to `BlocxEventHub`; BLoCs subscribe and update their states automatically.
+- **UI-Agnostic Side Effects**: `ScreenManagerCubit` lets pure-Dart BLoCs trigger snackbars, full-page errors, and navigation pops without importing Flutter.
 
 ---
 
@@ -64,719 +124,423 @@ Add `blocx_core` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  blocx_core: ^0.8.0
+  blocx_core: ^1.0.0
 ```
 
-Or install via the command line:
+Or via the CLI:
 
 ```sh
 dart pub add blocx_core
-# Inside a Flutter project:
-flutter pub add blocx_core
 ```
 
-Import the library:
+> **Using Flutter?** Add [`flutter_blocx`](https://pub.dev/packages/flutter_blocx) alongside `blocx_core`:
+> ```sh
+> flutter pub add blocx_core flutter_blocx
+> ```
+
+### Barrel Imports
+
+Import only what your file needs:
 
 ```dart
+// 1. Core: Entities, UseCases, Tasks, EventHub, ScreenManagerCubit, Error Translation, Localization
 import 'package:blocx_core/blocx_core.dart';
-// For form-specific types:
+
+// 2. Collections: BlocxCollectionBloc, Collection Events/States, BlocxPage, and all 10 Collection Mixins
+import 'package:blocx_core/collection_bloc.dart';
+
+// 3. Forms: BlocxFormBloc, Form Events/States, BlocxBaseFormEntity, Validators, and all 5 Form Mixins
 import 'package:blocx_core/form_bloc.dart';
 ```
-
-**Requirements:** Dart SDK `>=3.5.0`
 
 ---
 
 ## Architecture Overview
 
-`blocx_core` is organised around three pillars:
-
-```
-┌─────────────────────────────────────────────────┐
-│                  Your Domain BLoC                │
-│  extends BlocxListBloc / BlocxFormBloc           │
-│  with  <only the mixins you need>                │
-└───────────────────┬─────────────────────────────┘
-                    │ delegates async work to
-┌───────────────────▼─────────────────────────────┐
-│               Use Cases                          │
-│  BlocxBaseUseCase → UseCaseResult<T>             │
-│  BlocxPaginationUseCase / SearchUseCase          │
-└───────────────────┬─────────────────────────────┘
-                    │ UI intents via
-┌───────────────────▼─────────────────────────────┐
-│           ScreenManagerCubit                     │
-│  Emits snackbar / error-page / pop intents       │
-│  UI layer decides how to render them             │
-└─────────────────────────────────────────────────┘
+```txt
+┌──────────────────────────────────────────────────────────────────────┐
+│                         UseCases (Domain)                            │
+│  BlocxBaseUseCase / BlocxPaginatedUseCase / BlocxSearchUseCase       │
+└───────────────┬──────────────────────────────────────┬───────────────┘
+                │ returns BlocxUseCaseResult           │ broadcasts CRUD commands
+                ▼                                      ▼
+┌───────────────────────────────────┐    ┌─────────────────────────────┐
+│     Your BLoC (State Layer)       │    │        BlocxEventHub        │
+│  BlocxCollectionBloc + Mixins     │◄───│  create / read / update /   │
+│  BlocxFormBloc + Mixins           │    │  delete BlocxEntityEvents   │
+└───────────────┬───────────────────┘    └─────────────────────────────┘
+                │ emits state & ScreenManagerCubit intents
+                ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│                    UI Layer (flutter_blocx)                          │
+│  BlocxCollectionWidget / BlocxFormWidget / BlocxScreenManagerState   │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Core Concepts
+## Core Concepts: Entities, UseCases & Live EventHub Sync
 
-### BaseEntity
+### 1. Domain Entities (`BlocxBaseEntity`)
 
-All domain objects used with list blocs must extend `BaseEntity`. It provides stable identity and equality semantics based on a unique `id`.
+Every domain model managed by a collection or broadcasted through `BlocxEventHub` extends `BlocxBaseEntity` and provides a unique `identifier`:
 
 ```dart
-class Product extends BaseEntity {
-  @override
-  final String id;
+import 'package:blocx_core/blocx_core.dart';
 
+class ProductEntity extends BlocxBaseEntity {
+  final String id;
   final String name;
   final double price;
+  final bool isAvailable;
 
-  const Product({required this.id, required this.name, required this.price});
+  const ProductEntity({
+    required this.id,
+    required this.name,
+    required this.price,
+    this.isAvailable = true,
+  });
+
+  @override
+  String get identifier => id;
 }
 ```
 
-The `identifier` getter (also on `BaseEntity`) is used internally for scroll-to operations.
+### 2. UseCases & Automatic `BlocxEventHub` Command Broadcasting
 
----
-
-### UseCase & UseCaseResult
-
-Every piece of async business logic is encapsulated in a `BlocxBaseUseCase<T>` subclass. Use cases return a `UseCaseResult<T>`, which is either a success carrying data or a failure carrying an error and optional stack trace.
+In `blocx_core`, **only UseCases emit app-wide domain events—BLoCs never emit them**.
+When you pass an `eventHub` and `commandType` (or `commandTypes`) to a `BlocxBaseUseCase`, calling `await useCase.execute(input)` automatically broadcasts `BlocxEntityEvent`s for every affected entity as soon as `perform(input)` succeeds:
 
 ```dart
-class FetchProducts extends BlocxBaseUseCase<List<Product>> {
-  final ProductRepository repo;
-  FetchProducts({required this.repo});
+import 'package:blocx_core/blocx_core.dart';
+import 'package:blocx_core/collection_bloc.dart';
+
+// Paginated Read UseCase (defaults to BlocxCommandType.read)
+class LoadProductsUseCase extends BlocxPaginatedUseCase<BlocxPaginatedInput, ProductEntity> {
+  final ProductRepository repository;
+
+  LoadProductsUseCase(this.repository, {super.eventHub});
 
   @override
-  Future<UseCaseResult<List<Product>>> perform() async {
-    try {
-      final data = await repo.getAll();
-      return UseCaseResult.success(data);
-    } catch (e, s) {
-      return UseCaseResult.failure(e, stackTrace: s);
-    }
+  Future<BlocxUseCaseResult<BlocxPage<ProductEntity>>> perform(
+    BlocxPaginatedInput input,
+  ) async {
+    final items = await repository.fetchPage(offset: input.offset, limit: input.limit);
+    return success(BlocxPage(items: items, offset: input.offset, limit: input.limit));
+  }
+}
+
+// Create / Update UseCase (Output is ProductEntity -> auto-resolved for EventHub)
+class SaveProductUseCase extends BlocxBaseUseCase<ProductEntity, ProductEntity> {
+  final ProductRepository repository;
+
+  SaveProductUseCase(this.repository, {required bool isCreate, super.eventHub})
+      : super(
+          commandType: isCreate ? BlocxCommandType.create : BlocxCommandType.update,
+        );
+
+  @override
+  Future<BlocxUseCaseResult<ProductEntity>> perform(ProductEntity input) async {
+    final saved = await repository.save(input);
+    return success(saved);
+  }
+}
+
+// Delete UseCase (Input is ProductEntity, Output is bool -> auto-resolved from Input)
+class DeleteProductUseCase extends BlocxBaseUseCase<ProductEntity, bool> {
+  final ProductRepository repository;
+
+  DeleteProductUseCase(this.repository, {super.eventHub})
+      : super(commandType: BlocxCommandType.delete);
+
+  @override
+  Future<BlocxUseCaseResult<bool>> perform(ProductEntity input) async {
+    await repository.delete(input.id);
+    return success(true);
   }
 }
 ```
 
-For paginated data, extend `BlocxPaginationUseCase<T>` (which adds `loadCount` and `offset` parameters) or `SearchUseCase<T>` (which additionally provides `searchText`).
+> **Tip:** A single UseCase can also emit multiple commands by passing `commandTypes: const [BlocxCommandType.update, BlocxCommandType.read]` to `super(...)`, or customize entity extraction by overriding `resolveCommandEntities(input, output, command)`.
 
 ---
 
-### Page\<T\>
+## Collection BLoC
 
-`Page<T>` is the normalized container for a page of items returned by pagination use cases. It carries the list of items and signals whether the end of the data source has been reached.
+`BlocxCollectionBloc<Entity, Payload>` orchestrates list/grid state. Compose it with any of the **10 built-in collection mixins**:
+
+| Mixin | Capability Added |
+| :--- | :--- |
+| `BlocxCollectionInfiniteMixin<T, P>` | Infinite scrolling (`paginationTask` / `loadNextPageTask`) |
+| `BlocxCollectionRefreshableMixin<T, P>` | Pull-to-refresh list reload (`refreshTask`) |
+| `BlocxCollectionSearchableMixin<T, P>` | Debounced search & paginated search results (`searchUseCaseTask`) |
+| `BlocxCollectionFilterMixin<T, P, F>` | Strongly typed filter state (`currentFilter`) with automatic reload |
+| `BlocxCollectionSelectableMixin<T, P>` | Single/multi-selection (`selectedItems`) with optional remote sync |
+| `BlocxCollectionDeletableMixin<T, P>` | Single & bulk deletion (`deleteItemTask`, `deleteMultipleItemsTask`) |
+| `BlocxCollectionHighlightableMixin<T, P>` | Row highlight state (`highlightedItems`) |
+| `BlocxCollectionExpandableMixin<T, P>` | Single or multi-row expansion (`expandedItems`) |
+| `BlocxCollectionScrollableMixin<T, P>` | Programmatic scroll-to-item with optional highlight after scroll |
+| `BlocxCollectionSyncStreamMixin<T, P>` | Real-time list updates from `BlocxEventHub` or custom entity streams |
+
+### Quickstart: Paginated, Searchable, Deletable & Live-Synced Collection BLoC
 
 ```dart
-// successResult() is a helper on BlocxPaginationUseCase that
-// wraps a List<T> into a Page<T> automatically.
-return successResult(items);
+import 'package:blocx_core/blocx_core.dart';
+import 'package:blocx_core/collection_bloc.dart';
 
-// To signal the last page:
-return successResult(items, isLastPage: true);
-```
+class ProductsCollectionBloc extends BlocxCollectionBloc<ProductEntity, void>
+    with
+        BlocxCollectionInfiniteMixin<ProductEntity, void>,
+        BlocxCollectionRefreshableMixin<ProductEntity, void>,
+        BlocxCollectionSearchableMixin<ProductEntity, void>,
+        BlocxCollectionSelectableMixin<ProductEntity, void>,
+        BlocxCollectionDeletableMixin<ProductEntity, void>,
+        BlocxCollectionSyncStreamMixin<ProductEntity, void> {
+  final LoadProductsUseCase loadProductsUseCase;
+  final BlocxSearchUseCase<BlocxSearchInput, ProductEntity> searchProductsUseCase;
+  final DeleteProductUseCase deleteProductUseCase;
 
----
+  @override
+  final BlocxEventHub eventHub;
 
-### BlocxListBloc
+  ProductsCollectionBloc({
+    required this.loadProductsUseCase,
+    required this.searchProductsUseCase,
+    required this.deleteProductUseCase,
+    required this.eventHub,
+  }) : super();
 
-`BlocxListBloc<T, P>` is the central class for list state management, where `T` is your entity type and `P` is an optional payload type passed when loading the initial page (use `void` if no payload is needed).
+  // Shared pagination task used by initial load, infinite scroll, and pull-to-refresh
+  @override
+  BlocxPaginatedUseCaseTask<BlocxPaginatedInput, ProductEntity>? get paginationTask {
+    return BlocxPaginatedUseCaseTask<BlocxPaginatedInput, ProductEntity>(
+      useCase: loadProductsUseCase,
+      inputBuilder: (offset, limit) => BlocxPaginatedInput(offset: offset, limit: limit),
+    );
+  }
 
-Extend it and compose only the mixins you require. Each mixin is initialized via a corresponding `init*()` call in the constructor.
+  @override
+  BlocxPaginatedUseCaseTask<BlocxSearchInput, ProductEntity>? get searchUseCaseTask {
+    return BlocxPaginatedUseCaseTask<BlocxSearchInput, ProductEntity>(
+      useCase: searchProductsUseCase,
+      inputBuilder: (offset, limit) => BlocxSearchInput(
+        searchText: searchText,
+        offset: offset,
+        limit: limit,
+      ),
+    );
+  }
 
----
+  @override
+  BlocxUseCaseTask<Object?, bool>? deleteItemTask(ProductEntity item) {
+    return BlocxUseCaseTask<ProductEntity, bool>(
+      useCase: deleteProductUseCase,
+      inputBuilder: () => item,
+    );
+  }
 
-### BlocxFormBloc
-
-`BlocxFormBloc<F, P, E>` manages a form backed by a `BlocxBaseFormEntity` subclass (`F`), an optional initialization payload (`P`), and an enum (`E`) that enumerates the form's fields.
-
----
-
-### ScreenManagerCubit
-
-`ScreenManagerCubit` is owned and managed internally by `BaseBloc` — you no longer need to construct or pass one explicitly. Simply call `super(initialState)` in your bloc's constructor:
-
-```dart
-class CounterBloc extends BaseBloc<CounterEvent, CounterState> {
-  CounterBloc() : super(CounterStateInitial());
+  // Optional filter for live EventHub synchronization:
+  @override
+  bool shouldSyncEntity(ProductEntity entity, BlocxCommandType command) {
+    if (command == BlocxCommandType.delete) return true;
+    return entity.isAvailable;
+  }
 }
 ```
-
-`ScreenManagerCubit` acts as a communication channel between your BLoC layer and the presentation layer. Instead of importing Flutter from within a BLoC, you emit typed intents that the UI listens to and renders.
-
-Available intent methods (callable from any bloc):
-
-| Method | Emitted State |
-|---|---|
-| `displaySnackBar(...)` | `ScreenManagerCubitStateDisplaySnackbar` |
-| `displayErrorWidget(...)` | `ScreenManagerCubitStateDisplayErrorPage` |
-| `displayErrorWidgetByErrorCode(...)` | `ScreenManagerCubitStateDisplayErrorPageByErrorCode` |
-| `pop()` | `ScreenManagerCubitStatePop` |
-
----
-
-## List BLoC
-
-### Available List Mixins
-
-Mix these into your `BlocxListBloc` subclass. Call the corresponding `init*()` method in your constructor.
-
-| Mixin | `init` call | Capability |
-|---|---|---|
-| `BlocxCollectionInfiniteMixin` | `initInfiniteList()` | Next-page loading, reached-end flag, scroll-triggered pagination |
-| `BlocxCollectionSearchableMixin` | `initSearchable()` | Debounced search, search-next-page, search-refresh |
-| `BlocxCollectionRefreshableMixin` | `initRefresh()` | Pull-to-refresh semantics |
-| `BlocxCollectionSelectableMixin` | `initSelectable()` | Single and multi-item selection and deselection |
-| `BlocxCollectionHighlightableMixin` | _(auto)_ | Highlight and clear-highlight on individual items |
-| `BlocxCollectionExpandableMixin` | _(auto)_ | Expand, collapse, and toggle expansion on individual items |
-| `BlocxCollectionScrollableMixin` | _(auto)_ | Programmatic scroll-to-item and scroll-to-identifier |
-| `BlocxCollectionDeletableMixin` | _(auto)_ | Remove single items, remove by ID, remove multiple items |
-| `BlocxCollectionSyncStreamMixin` | _(auto)_ | Sync list state from an external stream |
-
----
-
-### Available List Events
-
-| Event | Description |
-|---|---|
-| `BlocxListEventLoadInitialPage<T, P>` | Load the first page of data |
-| `BlocxListEventLoadNextPage<T>` | Append the next page to the existing list |
-| `BlocxListEventRefreshData<T>` | Reload the list from the source |
-| `BlocxListEventSearch<T>` | Run a debounced search query |
-| `BlocxListEventSearchNextPage<T>` | Load the next page of search results |
-| `BlocxListEventSearchRefresh<T>` | Refresh the current search results |
-| `BlocxListEventClearSearch<T>` | Clear search and restore the base list |
-| `BlocxListEventSelectItem<T>` | Select a single item |
-| `BlocxListEventDeselectItem<T>` | Deselect a single item |
-| `BlocxListEventSelectMultipleItems<T>` | Select multiple items at once |
-| `BlocxListEventDeselectMultipleItems<T>` | Deselect multiple items at once |
-| `BlocxListEventClearSelection<T>` | Clear all selections |
-| `BlocxListEventHighlightItem<T>` | Highlight a specific item |
-| `BlocxListEventClearHighlightedItem<T>` | Clear the highlight on an item |
-| `BlocxListEventExpandItem<T>` | Expand an item's details |
-| `BlocxListEventCollapseItem<T>` | Collapse an item's details |
-| `BlocxListEventToggleItemExpansion<T>` | Toggle expansion state of an item |
-| `BlocxListEventScrollToItem<T>` | Scroll to a given item |
-| `BlocxListEventScrollToIdentifier<T>` | Scroll to an item by its identifier |
-| `BlocxListEventAddItem<T>` | Insert an item into the list |
-| `BlocxListEventUpdateItem<T>` | Replace an item in the list |
-| `BlocxListEventRemoveItem<T>` | Remove a single item |
-| `BlocxListEventRemoveItemById<T>` | Remove an item by its ID |
-| `BlocxListEventRemoveMultipleItems<T>` | Remove multiple items at once |
-| `BlocxListEventReplaceList<T>` | Replace the entire list |
-
----
-
-### Available List States
-
-| State | Description |
-|---|---|
-| `BlocxListStateLoading<T>` | Initial load or refresh in progress |
-| `BlocxListStateLoaded<T>` | Data is available |
-| `BlocxListStateError<T>` | An error occurred while loading |
-| `BlocxListStateSelectionChanged<T>` | Selection has been updated |
-| `BlocxListStateScrollToItem<T>` | Scroll-to intent emitted |
-
-Use the `ListStateExtensions` extension on `BlocxListState<T>` for convenience accessors.
 
 ---
 
 ## Form BLoC
 
-### BaseFormEntity
+`BlocxFormBloc<F, P, E>` manages form data (`F extends BlocxBaseFormEntity<F, E>`), edit-mode hydration payload (`P`), and field keys (`E extends Enum`). Compose it with any of the **5 built-in form mixins**:
 
-Your form's data model must extend `BlocxBaseFormEntity<F, E>`, where `F` is the form entity itself and `E` is an enum enumerating the form's fields. The entity must be immutable and implement `copyWith`.
+| Mixin | Capability Added |
+| :--- | :--- |
+| `BlocxFormValidationMixin<F, P, E>` | Per-field and full-form validation (`none`, `onSubmit`, `onUserInteraction`, `always`) |
+| `BlocxUniqueFieldValidatorMixin<F, P, E>` | Debounced async uniqueness checks per field (e.g. username/email availability) |
+| `BlocxFormPrefetchMixin<F, P, E>` | Prefetch remote reference data (e.g. dropdown options) before form interaction |
+| `BlocxFormSteppedMixin<F, P, E>` | Multi-step wizard progression (`currentStep`, `totalSteps`) |
+| `BlocxFormSyncStreamMixin<F, P, E, WatchedEntity>` | Live form updates when the watched entity is modified—and auto-`pop()` if deleted |
 
-```dart
-enum ProfileField { name, email, phone }
-
-class ProfileForm extends BlocxBaseFormEntity<ProfileForm, ProfileField> {
-  final String name;
-  final String email;
-  final String phone;
-
-  const ProfileForm({
-    this.name = '',
-    this.email = '',
-    this.phone = '',
-  });
-
-  @override
-  ProfileForm copyWith({String? name, String? email, String? phone}) =>
-      ProfileForm(
-        name: name ?? this.name,
-        email: email ?? this.email,
-        phone: phone ?? this.phone,
-      );
-}
-```
-
----
-
-### Built-in Validators
-
-Validators extend `BlocxFieldValidator<T>` and are composed per field inside a `BlocxFormValidator` subclass.
-
-| Validator | Description |
-|---|---|
-| `BlocxRequiredValidator` | Field must not be null or empty |
-| `BlocxMinLengthValidator` | String must have at least N characters |
-| `BlocxMaxLengthValidator` | String must not exceed N characters |
-| `BlocxExactLengthValidator` | String must be exactly N characters |
-| `BlocxLengthRangeValidator` | String length within `[min, max]` |
-| `BlocxRegexValidator` | String must match a regular expression |
-| `BlocxMinValueValidator<T>` | Numeric value >= min |
-| `BlocxMaxValueValidator<T>` | Numeric value <= max |
-| `BlocxRangeValueValidator` | Numeric value within `[min, max]` |
-| `BlocxMinDateValidator` | DateTime not before `minDate` |
-| `BlocxMaxDateValidator` | DateTime not after `maxDate` |
-| `BlocxDateRangeValidator` | DateTime within `[minDate, maxDate]` |
-| `BlocxMatchFieldValidator<T>` | Field value must match another field's value |
-| `BlocxConditionalRequiredValidator` | Required only when a condition is true |
-
----
-
-### Form Events
-
-| Event | Description |
-|---|---|
-| `BlocxFormEventInit<P>` | Initialize the form, optionally with a payload |
-| `BlocxFormEventFetchRequiredInfo` | Fetch any data the form depends on before rendering |
-| `BlocxFormEventUpdateData<E>` | Update the value of a single field |
-| `BlocxFormEventUpdateFormData<P>` | Replace the entire form data object |
-| `BlocxFormEventSubmit` | Validate and submit the form |
-| `BlocxFormEventSetErrorToField<E>` | Manually set an error on a specific field |
-| `BlocxFormEventSetTimedErrorToField<E>` | Set a time-limited error on a field |
-| `BlocxFormEventClearFieldError<E>` | Clear the error on a specific field |
-| `BlocxFormEventCheckUniqueValue<E>` | Trigger async uniqueness check for a field |
-| `BlocxFormEventNextStep` | Advance to the next step (stepped forms) |
-| `BlocxFormEventPreviousStep` | Return to the previous step (stepped forms) |
-| `BlocxFormEventGoToStep` | Jump to a specific step (stepped forms) |
-
----
-
-### Form States
-
-| State | Description |
-|---|---|
-| `BlocxFormStateInitial<F, E>` | Form not yet initialized |
-| `BlocxFormStateLoaded<F, E>` | Form loaded and ready for interaction |
-| `BlocxFormStateFormUpdated<F, E>` | A field value or error has changed |
-| `BlocxFormStateApplyInitialDataToForm<F, E>` | Initial data applied to the form |
-| `BlocxFormStateSubmittingForm<F, E>` | Submission in progress |
-| `BlocxFormStateFormSubmitted<F, E>` | Submission completed successfully |
-
----
-
-### Form Mixins
-
-| Mixin | Capability |
-|---|---|
-| `BlocxFormValidationMixin` | Per-field and whole-form validation |
-| `BlocxFormErrorsMixin` | Programmatic error setting and clearing |
-| `BlocxFormInfoFetcherMixin` | Fetch remote data required before the form is ready |
-| `BlocxFormSteppedMixin` | Multi-step form navigation (next, previous, go-to) |
-| `BlocxUniqueFieldValidatorMixin` | Async server-side uniqueness validation per field |
-
----
-
-## Use Case Tasks
-
-`BlocxUseCaseTask` and `BlocxPaginatedUseCaseTask` pair a use case with a lazily evaluated input builder, so input is always constructed from the latest runtime state at execution time rather than at registration time.
-
-### BlocxUseCaseTask
+### Quickstart: Validated Edit Form BLoC with Live Sync
 
 ```dart
-BlocxUseCaseTask(
-  useCase: getUserUseCase,
-  inputBuilder: () => GetUserInput(id: currentUserId),
-);
-```
-
-### BlocxPaginatedUseCaseTask
-
-Use this as the standard task type for `BlocxCollectionBloc.paginationTask`. The `inputBuilder` receives the current `limit` (page size) and `offset` (number of already-loaded items) at execution time:
-
-```dart
-@override
-BlocxPaginatedUseCaseTask get paginationTask => BlocxPaginatedUseCaseTask(
-  useCase: _getOrdersUseCase,
-  inputBuilder: ({required limit, required offset}) =>
-      BlocxPaginationInput(limit: limit, offset: offset),
-);
-```
-
-To include extra fields from bloc state:
-
-```dart
-@override
-BlocxPaginatedUseCaseTask get paginationTask => BlocxPaginatedUseCaseTask(
-  useCase: _getOrdersUseCase,
-  inputBuilder: ({required limit, required offset}) => GetOrdersInput(
-    limit: limit,
-    offset: offset,
-    userId: payload!.id,
-    status: currentFilter,
-  ),
-);
-```
-
-If initial load, next-page, and refresh each hit different endpoints, override `BlocxCollectionBloc.loadInitialPageTask` individually instead.
-
----
-
-## Error & Screen Management
-
-Any bloc can emit UI intents without importing Flutter. Error handling is built into `BaseBloc` — call `handleError` from event handlers to log and surface errors via the configured `errorDisplayPolicy` (snackbar by default):
-
-```dart
-} catch (e, st) {
-  handleError(e, emit, stacktrace: st);
-}
-```
-
-To display a full-page error instead, override `errorDisplayPolicy` in your bloc:
-
-```dart
-@override
-ErrorDisplayPolicy get errorDisplayPolicy => ErrorDisplayPolicy.page;
-```
-
-Register a `BlocxErrorTranslator` once at app startup to map raw exceptions to human-readable `ReadableError` instances — blocs pick it up automatically.
-
-The presentation layer listens to `ScreenManagerCubit` and handles each intent:
-
-```dart
-// Inside a BLoC event handler:
-displaySnackBar(
-  message: 'Item deleted successfully.',
-  type: BlocXSnackbarType.success,
-);
-
-displayErrorWidget(
-  error: ReadableError(title: 'Not Found', message: 'The resource could not be loaded.'),
-);
-
-pop();
-```
-
-```dart
-// In your Flutter widget or BlocListener:
-BlocListener<ScreenManagerCubit, ScreenManagerCubitState>(
-  bloc: screenCubit,
-  listener: (context, state) {
-    if (state is ScreenManagerCubitStateDisplaySnackbar) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(state.message)),
-      );
-    } else if (state is ScreenManagerCubitStatePop) {
-      Navigator.of(context).pop();
-    }
-  },
-);
-```
-
-`BlocXErrorCode` and `BlocXSnackbarType` enums give you typed control over the intent payload.
-
----
-
-## Quickstart: Paged & Searchable List
-
-The following example wires up a fully paginated, searchable, refreshable, and selectable list for a `Todo` entity.
-
-### 1. Define the Entity
-
-```dart
+import 'dart:async';
+import 'package:bloc/bloc.dart';
 import 'package:blocx_core/blocx_core.dart';
-
-class Todo extends BaseEntity {
-  @override
-  final String id;
-  final String title;
-  final bool completed;
-
-  const Todo({required this.id, required this.title, this.completed = false});
-}
-```
-
-### 2. Define the Repository Contract
-
-```dart
-abstract class TodoRepository {
-  Future<List<Todo>> fetchPage({required int limit, required int offset});
-  Future<List<Todo>> search({required String query, required int limit, required int offset});
-}
-```
-
-### 3. Implement Use Cases
-
-```dart
-class FetchTodosUseCase extends BlocxPaginationUseCase<Todo> {
-  final TodoRepository repo;
-
-  FetchTodosUseCase({
-    required this.repo,
-    required super.loadCount,
-    required super.offset,
-  });
-
-  @override
-  Future<UseCaseResult<Page<Todo>>> perform() async {
-    try {
-      final items = await repo.fetchPage(limit: loadCount, offset: offset);
-      return successResult(items);
-    } catch (e, s) {
-      return UseCaseResult.failure(e, stackTrace: s);
-    }
-  }
-}
-
-class SearchTodosUseCase extends SearchUseCase<Todo> {
-  final TodoRepository repo;
-
-  SearchTodosUseCase({
-    required this.repo,
-    required super.searchText,
-    required super.loadCount,
-    required super.offset,
-  });
-
-  @override
-  Future<UseCaseResult<Page<Todo>>> perform() async {
-    try {
-      final items = await repo.search(
-        query: searchText,
-        limit: loadCount,
-        offset: offset,
-      );
-      return successResult(items);
-    } catch (e, s) {
-      return UseCaseResult.failure(e, stackTrace: s);
-    }
-  }
-}
-```
-
-### 4. Compose the BLoC
-
-```dart
-class TodosBloc extends BlocxListBloc<Todo, void>
-    with
-        BlocxCollectionInfiniteMixin<Todo, void>,
-        BlocxCollectionSearchableMixin<Todo, void>,
-        BlocxCollectionRefreshableMixin<Todo, void>,
-        BlocxCollectionSelectableMixin<Todo, void> {
-  final TodoRepository repo;
-
-  TodosBloc({required this.repo}) : super(BlocxInfiniteListBloc()) {
-    initInfiniteList();
-    initSearchable();
-    initRefresh();
-    initSelectable();
-    add(BlocxListEventLoadInitialPage<Todo, void>());
-  }
-
-  @override
-  BlocxPaginationUseCase<Todo>? get loadInitialPageUseCase =>
-      FetchTodosUseCase(repo: repo, loadCount: 20, offset: 0);
-
-  @override
-  BlocxPaginationUseCase<Todo>? get loadNextPageUseCase =>
-      FetchTodosUseCase(repo: repo, loadCount: 20, offset: list.length);
-
-  @override
-  BlocxPaginationUseCase<Todo>? get refreshPageUseCase =>
-      FetchTodosUseCase(repo: repo, loadCount: list.length, offset: 0);
-
-  @override
-  SearchUseCase<Todo>? searchUseCase(String q, {int? loadCount, int? offset}) =>
-      SearchTodosUseCase(
-        repo: repo,
-        searchText: q,
-        loadCount: loadCount ?? 20,
-        offset: offset ?? 0,
-      );
-
-  @override
-  (String, String?) convertErrorToMessageAndTitle(Object error) =>
-      ('Failed to load todos. Please try again.', null);
-}
-```
-
-> **Note:** `ScreenManagerCubit` is now owned internally by `BaseBloc`. The `screen` parameter has been removed from the constructor — just call `super(initialState)`.
-
-### 5. Drive the BLoC
-
-```dart
-final bloc = TodosBloc(repo: myRepo);
-
-// Pagination
-bloc.add(BlocxListEventLoadNextPage<Todo>());
-
-// Search
-bloc.add(BlocxListEventSearch<Todo>(searchText: 'urgent'));
-bloc.add(BlocxListEventClearSearch<Todo>());
-
-// Selection
-bloc.add(BlocxListEventSelectItem<Todo>(item: someTodo));
-bloc.add(BlocxListEventClearSelection<Todo>());
-
-// Refresh
-bloc.add(BlocxListEventRefreshData<Todo>());
-```
-
----
-
-## Quickstart: Form with Validation
-
-### 1. Define the Field Enum and Form Entity
-
-```dart
 import 'package:blocx_core/form_bloc.dart';
 
-enum SignUpField { email, password, confirmPassword }
+enum ProductFormField { name, price }
 
-class SignUpForm extends BlocxBaseFormEntity<SignUpForm, SignUpField> {
-  final String email;
-  final String password;
-  final String confirmPassword;
+class ProductFormEntity extends BlocxBaseFormEntity<ProductFormEntity, ProductFormField> {
+  final String id;
+  final String name;
+  final double price;
 
-  const SignUpForm({
-    this.email = '',
-    this.password = '',
-    this.confirmPassword = '',
-  });
+  const ProductFormEntity({this.id = 'new', this.name = '', this.price = 0.0});
 
   @override
-  SignUpForm copyWith({
-    String? email,
-    String? password,
-    String? confirmPassword,
-  }) =>
-      SignUpForm(
-        email: email ?? this.email,
-        password: password ?? this.password,
-        confirmPassword: confirmPassword ?? this.confirmPassword,
+  String get identifier => id;
+
+  ProductFormEntity copyWith({String? id, String? name, double? price}) =>
+      ProductFormEntity(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        price: price ?? this.price,
       );
-}
-```
 
-### 2. Define the Validator
-
-```dart
-class SignUpValidator extends BlocxFormValidator<SignUpForm, SignUpField> {
   @override
-  Map<SignUpField, List<BlocxFieldValidator>> get validators => {
-        SignUpField.email: [
-          BlocxRequiredValidator(),
-          BlocxRegexValidator(
-            pattern: r'^[^@]+@[^@]+\.[^@]+$',
-            errorMessage: 'Enter a valid email address.',
-          ),
-        ],
-        SignUpField.password: [
-          BlocxRequiredValidator(),
-          BlocxMinLengthValidator(minLength: 8),
-        ],
-        SignUpField.confirmPassword: [
-          BlocxRequiredValidator(),
-          BlocxMatchFieldValidator<String>(
-            otherFieldValue: (form) => form.password,
-            errorMessage: 'Passwords do not match.',
-          ),
-        ],
+  ProductFormEntity updateByKey(ProductFormField key, dynamic value) => switch (key) {
+        ProductFormField.name => copyWith(name: value as String? ?? ''),
+        ProductFormField.price => copyWith(price: (value as num?)?.toDouble() ?? 0.0),
+      };
+
+  @override
+  dynamic getValueByKey(ProductFormField key) => switch (key) {
+        ProductFormField.name => name,
+        ProductFormField.price => price,
+      };
+
+  @override
+  String? getFormattedValueByKey(ProductFormField key) => getValueByKey(key)?.toString();
+}
+
+class ProductFormValidator extends BlocxFormValidator<ProductFormEntity, ProductFormField> {
+  @override
+  List<ProductFormField> formKeys() => ProductFormField.values;
+
+  @override
+  List<BlocxFieldValidator<ProductFormEntity, ProductFormField, dynamic>> getValidatorsByKey(
+    ProductFormEntity formData,
+    ProductFormField key,
+  ) =>
+      switch (key) {
+        ProductFormField.name => [
+            BlocxStringRequiredValidator(),
+            const BlocxStringMinLengthValidator(3),
+          ],
+        ProductFormField.price => [
+            BlocxDoubleRequiredValidator(),
+            BlocxDoublePositiveValidator(),
+          ],
       };
 }
-```
 
-### 3. Implement the FormBloc
-
-```dart
-class SignUpBloc extends BlocxFormBloc<SignUpForm, void, SignUpField>
-    with BlocxFormValidationMixin<SignUpForm, void, SignUpField> {
-  SignUpBloc() : super(const SignUpForm(), SignUpValidator());
+class ProductFormBloc
+    extends BlocxFormBloc<ProductFormEntity, ProductEntity, ProductFormField>
+    with
+        BlocxFormValidationMixin<ProductFormEntity, ProductEntity, ProductFormField>,
+        BlocxFormSyncStreamMixin<ProductFormEntity, ProductEntity, ProductFormField,
+            ProductEntity> {
+  final SaveProductUseCase saveProductUseCase;
 
   @override
-  Future<void> onSubmit(SignUpForm form) async {
-    // Perform submission logic, e.g. call a use case.
-    // Call displaySnackBar or pop() on success/failure.
+  final BlocxEventHub eventHub;
+
+  @override
+  final BlocxFormValidator<ProductFormEntity, ProductFormField> validator =
+      ProductFormValidator();
+
+  ProductFormBloc({
+    required this.saveProductUseCase,
+    required this.eventHub,
+  }) : super(const ProductFormEntity());
+
+  @override
+  List<ProductFormField> get formKeysList => ProductFormField.values;
+
+  @override
+  FormValidationMode get formValidationMode => FormValidationMode.onUserInteraction;
+
+  @override
+  FutureOr<ProductFormEntity> applyPayloadToFormData(ProductEntity payload) {
+    return formData.copyWith(id: payload.id, name: payload.name, price: payload.price);
+  }
+
+  @override
+  BlocxUseCaseTask<Object?, Object?> get submitUseCaseTask {
+    return BlocxUseCaseTask<ProductEntity, ProductEntity>(
+      useCase: saveProductUseCase,
+      inputBuilder: () => ProductEntity(
+        id: formData.id,
+        name: formData.name,
+        price: formData.price,
+      ),
+    );
+  }
+
+  @override
+  FutureOr<bool> onFormSubmitted(
+    Emitter<BlocxFormState<ProductFormEntity, ProductFormField>> emit,
+    BlocxUseCaseResult<Object?> result,
+  ) {
+    displayInfoSnackbar('Product saved successfully!');
+    return true;
+  }
+
+  @override
+  FutureOr<ProductFormEntity?> mapSyncedEntityToFormData(
+    ProductEntity entity,
+    BlocxCommandType command,
+  ) {
+    return formData.copyWith(id: entity.id, name: entity.name, price: entity.price);
   }
 }
 ```
 
-### 4. Interact with the FormBloc
+### Built-in Field Validators (`package:blocx_core/form_bloc.dart`)
+
+- **String**: `BlocxStringRequiredValidator`, `BlocxStringMinLengthValidator(minLength)`, `BlocxStringMaxLengthValidator(maxLength)`, `BlocxStringLengthRangeValidator(minLength: ..., maxLength: ...)`, `BlocxStringExactLengthValidator(length)`, `BlocxStringEmailValidator`, `BlocxStringNumericValidator`, `BlocxStringAlphanumericValidator`, `BlocxStringUrlValidator`, `BlocxStringMatchValidator(otherKey)`
+- **Integer**: `BlocxIntegerRequiredValidator`, `BlocxIntegerMinValueValidator(minValue)`, `BlocxIntegerMaxValueValidator(maxValue)`, `BlocxIntegerPositiveValidator`, `BlocxIntegerNonZeroValidator`, `BlocxIntegerRangeValidator(minValue, maxValue)`, `BlocxIntegerGreaterThanFieldValidator(otherKey)`, `BlocxIntegerLessThanFieldValidator(otherKey)`
+- **Double**: `BlocxDoubleRequiredValidator`, `BlocxDoubleMinValueValidator(minValue)`, `BlocxDoubleMaxValueValidator(maxValue)`, `BlocxDoublePositiveValidator`, `BlocxDoubleRangeValidator(minValue, maxValue)`
+- **DateTime**: `BlocxDateTimeRequiredValidator`, `BlocxDateTimeMinValidator(minDate)`, `BlocxDateTimeMaxValidator(maxDate)`, `BlocxDateTimeRangeValidator(minDate: ..., maxDate: ...)`, `BlocxDateTimeAfterFieldValidator(otherKey)`, `BlocxDateTimeBeforeFieldValidator(otherKey)`
+- **Phone**: `BlocxPhoneRequiredValidator`, `BlocxPhoneBasicFormatValidator`, `BlocxPhoneE164Validator`, `BlocxPhoneMinLengthValidator(minDigits)`, `BlocxPhoneMaxLengthValidator(maxDigits)`
+- **List, File & Object**: `BlocxListRequiredValidator`, `BlocxListMinItemsValidator(minItems)`, `BlocxListMaxItemsValidator(maxItems)`, `BlocxListUniqueItemsValidator`, `BlocxFileRequiredValidator`, `BlocxFileMaxSizeValidator(maxBytes)`, `BlocxRequiredFieldValidator`
+
+---
+
+## Screen Side Effects, Error Translation & Localization
+
+Every `BlocxBaseBloc` (including `BlocxCollectionBloc` and `BlocxFormBloc`) owns an internal `ScreenManagerCubit` to trigger UI side effects cleanly from pure Dart:
 
 ```dart
-// Update a field value:
-bloc.add(BlocxFormEventUpdateData<SignUpField>(
-  field: SignUpField.email,
-  value: 'user@example.com',
-));
-
-// Submit the form:
-bloc.add(BlocxFormEventSubmit());
+// Inside any BlocxBaseBloc subclass:
+displayInfoSnackbar('Saved!', title: 'Success');
+displayWarningSnackbar('Connection is slow');
+displayErrorSnackbar('Could not delete item');
+displayErrorWidget(ReadableError(title: 'Offline', message: 'Check your connection'));
+pop(); // Instructs the UI screen to pop the current route
 ```
 
----
-
-## Migrating from 0.7.x
-
-### Breaking: mixin renames
-
-All collection mixin names have had the redundant `_bloc` segment removed for a cleaner, consistent naming scheme. Update your `with` clauses and any direct imports:
-
-| Before (0.7.x) | After (0.8.0) |
-|---|---|
-| `BlocxInfiniteListBlocMixin` | `BlocxCollectionInfiniteMixin` |
-| `BlocxSelectableListBlocMixin` | `BlocxCollectionSelectableMixin` |
-| `BlocxRefreshableListBlocMixin` | `BlocxCollectionRefreshableMixin` |
-| `BlocxSearchableListBlocMixin` | `BlocxCollectionSearchableMixin` |
-| `BlocxDeletableListBlocMixin` | `BlocxCollectionDeletableMixin` |
-| `BlocxExpandableListBlocMixin` | `BlocxCollectionExpandableMixin` |
-| `BlocxHighlightableListBlocMixin` | `BlocxCollectionHighlightableMixin` |
-| `BlocxScrollableListBlocMixin` | `BlocxCollectionScrollableMixin` |
-| `BlocxListBlocSyncStreamMixin` | `BlocxCollectionSyncStreamMixin` |
-
-Form mixins follow the same `blocx_form_*` prefix pattern:
-
-| Before (0.7.x) | After (0.8.0) |
-|---|---|
-| `BlocxInfoFetcherFormMixin` | `BlocxFormInfoFetcherMixin` |
-| `BlocxSteppedFormMixin` | `BlocxFormSteppedMixin` |
-
-### Breaking: model rename
-
-`BaseFormEntity` is now `BlocxBaseFormEntity`. Update all subclasses and type references.
-
-### Breaking: ScreenManagerCubit ownership
-
-`ScreenManagerCubit` is now owned internally by `BaseBloc`. Remove the `screen` parameter from your bloc constructors and call sites:
+Customize global error translation and localization at app startup:
 
 ```dart
-// Before
-MyBloc({required ScreenManagerCubit screen}) : super(screen, MyStateInitial());
-
-// After
-MyBloc() : super(MyStateInitial());
-```
-
-### pubspec constraint
-
-```yaml
-dependencies:
-  blocx_core: ^0.8.0
+BlocxErrorTranslator.instance = MyCustomErrorTranslator();
+BlocXLocalizations.localizations = MyCustomLocalizations();
 ```
 
 ---
 
-## Contributing
+## Render Your BLoCs in Flutter with `flutter_blocx`
 
-Contributions are welcome. Please follow these guidelines:
+Don't write repetitive `BlocConsumer`, `ScrollController`, or `TextEditingController` glue code in Flutter! Pair `blocx_core` with **[`flutter_blocx`](https://pub.dev/packages/flutter_blocx)** ([GitHub](https://github.com/abolfazlkhanmohammdi/flutter_blocx)):
 
-- **Code style:** Run `dart format .` before committing. All lints in `analysis_options.yaml` must pass (`dart analyze`).
-- **Documentation:** All public APIs must be documented with dartdoc comments.
-- **Tests:** Add or update tests for every new mixin, event, state, or validator. Run `dart test` to verify the full test suite passes.
-- **Pull requests:** Keep changes focused. One feature or fix per pull request.
+- **`BlocxCollectionWidget` & `BlocxCollectionWidgetState`**: Automatically wires `ProductsCollectionBloc` to animated lists, infinite grids, slivers, pull-to-refresh, `BlocxSearchField`, and `BlocxCollectionItem` cards.
+- **`BlocxFormWidget` & `BlocxFormWidgetState`**: Automatically manages `TextEditingController`s and `FocusNode`s, binds `textField()`, `dropdown()`, `checkbox()`, and `BlocxFormButtonRow`, and handles edit-mode hydration.
+- **`BlocxScreenManagerState`**: Automatically listens to `ScreenManagerCubit` to show `BlocxSnackBar`, render `BlocxErrorWidget` with retry callbacks, and pop routes.
+
+👉 **[Explore `flutter_blocx` on pub.dev](https://pub.dev/packages/flutter_blocx)**
 
 ---
 
-## License
+## Included AI Coding Skill
 
-This project is licensed under the MIT License. See the [`LICENSE`](LICENSE) file at the repository root for details.
+This repository includes an AI agent skill at [`skills/blocx-core/SKILL.md`](skills/blocx-core/SKILL.md) (compatible with Claude Code, Antigravity, and Cursor) containing full architectural rules, blueprints, and progressive-disclosure reference guides for `blocx_core`.
+
+---
+
+## Contributing & License
+
+Contributions, issues, and feature requests are welcome at the [issue tracker](https://github.com/abolfazlkhanmohammdi/blocx_core/issues).
+
+Released under the **MIT License**.

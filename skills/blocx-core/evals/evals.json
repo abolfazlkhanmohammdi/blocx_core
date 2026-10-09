@@ -1,0 +1,46 @@
+{
+  "skill_name": "blocx-core",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create a ProductsCollectionBloc using blocx_core for a ProductEntity (with id, name, price, isAvailable). Support initial page loading, infinite scroll pagination, debounced search, single-item remote deletion, and live stream synchronization via BlocxEventHub that only syncs available products (isAvailable == true) on create/update/read and always removes on delete. Include the UseCases (LoadProductsUseCase, SearchProductsUseCase, DeleteProductUseCase) and make sure DeleteProductUseCase broadcasts a delete command event to BlocxEventHub.",
+      "expected_output": "Complete pure-Dart implementation of ProductEntity, LoadProductsUseCase, SearchProductsUseCase, DeleteProductUseCase (with commandType: BlocxCommandType.delete and resolveCommandEntities), and ProductsCollectionBloc mixing in BlocxCollectionInfiniteMixin, BlocxCollectionSearchableMixin, BlocxCollectionDeletableMixin, and BlocxCollectionSyncStreamMixin.",
+      "files": [],
+      "assertions": [
+        "ProductEntity extends BlocxBaseEntity and implements String get identifier",
+        "LoadProductsUseCase extends BlocxPaginatedUseCase and SearchProductsUseCase extends BlocxSearchUseCase",
+        "DeleteProductUseCase extends BlocxBaseUseCase, overrides commandType => BlocxCommandType.delete, and overrides resolveCommandEntities",
+        "ProductsCollectionBloc extends BlocxCollectionBloc<ProductEntity, ...> with 2 type parameters and does not pass ScreenManagerCubit to super()",
+        "ProductsCollectionBloc mixes in BlocxCollectionInfiniteMixin, BlocxCollectionSearchableMixin, BlocxCollectionDeletableMixin, and BlocxCollectionSyncStreamMixin",
+        "ProductsCollectionBloc uses BlocxPaginatedUseCaseTask with positional (offset, limit) inputBuilder and BlocxUseCaseTask for deleteItemTask",
+        "ProductsCollectionBloc overrides shouldSyncEntity to allow delete commands and check entity.isAvailable for create/update/read"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Build an edit-mode ProfileFormBloc using blocx_core for editing a UserProfileEntity (id, username, email, age). Include: ProfileFormField enum and ProfileFormEntity extending BlocxBaseFormEntity; ProfileFormValidator with required/min-length username, email validation, and minimum age 18; async username uniqueness checking via BlocxUniqueFieldValidatorMixin and a CheckUsernameUniqueUseCase; edit-mode hydration from a UserProfileEntity payload; and live stream synchronization via BlocxFormSyncStreamMixin that updates the form when the watched user profile is updated and pops the screen if the watched user profile is deleted.",
+      "expected_output": "Complete pure-Dart implementation of UserProfileEntity, ProfileFormField, ProfileFormEntity, ProfileFormValidator using built-in validators, CheckUsernameUniqueUseCase, SaveProfileUseCase, and ProfileFormBloc with BlocxFormValidationMixin, BlocxUniqueFieldValidatorMixin, and BlocxFormSyncStreamMixin.",
+      "files": [],
+      "assertions": [
+        "ProfileFormEntity extends BlocxBaseFormEntity<ProfileFormEntity, ProfileFormField> and implements identifier, updateByKey, and getValueByKey",
+        "ProfileFormValidator extends BlocxFormValidator<ProfileFormEntity, ProfileFormField> and uses built-in validators (BlocxStringRequiredValidator, BlocxStringMinLengthValidator, BlocxStringEmailValidator, BlocxIntegerMinValueValidator)",
+        "ProfileFormBloc extends BlocxFormBloc<ProfileFormEntity, UserProfileEntity, ProfileFormField> with 3 type parameters",
+        "ProfileFormBloc mixes in BlocxFormValidationMixin, BlocxUniqueFieldValidatorMixin, and BlocxFormSyncStreamMixin<ProfileFormEntity, UserProfileEntity, ProfileFormField, UserProfileEntity>",
+        "ProfileFormBloc implements applyPayloadToFormData(UserProfileEntity payload), uniqueFieldKeys, and useCaseIsUniqueValueAvailable",
+        "ProfileFormBloc implements applySyncedEntityToFormData and sets popScreenOnWatchedEntityDeleted => true (or calls pop() in onWatchedEntityDeleted)"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Write a pure-Dart OrderCheckoutUseCase and OrdersCollectionBloc in blocx_core where checking out an order (OrderEntity) emits both update and read commands to BlocxEventHub, and show how OrdersCollectionBloc listens to those events without the BLoC ever emitting app events itself.",
+      "expected_output": "Pure-Dart OrderEntity, OrderCheckoutUseCase overriding commandTypes => [BlocxCommandType.update, BlocxCommandType.read] with super.eventHub, and OrdersCollectionBloc with BlocxCollectionSyncStreamMixin receiving eventHub only as a listener.",
+      "files": [],
+      "assertions": [
+        "Code is pure Dart with no package:flutter imports",
+        "OrderCheckoutUseCase extends BlocxBaseUseCase, accepts super.eventHub, and overrides commandTypes => [BlocxCommandType.update, BlocxCommandType.read]",
+        "OrdersCollectionBloc mixes in BlocxCollectionSyncStreamMixin and initializes final BlocxEventHub eventHub in the constructor parameter list",
+        "OrdersCollectionBloc never calls emit, emitEntity, or emitEntities on eventHub"
+      ]
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 part of 'blocx_form_bloc.dart';
 
-class BlocxFormEvent extends BaseEvent {}
+class BlocxFormEvent extends BlocxBaseEvent {}
 
 class BlocxFormEventInit<P> extends BlocxFormEvent {
   final P? payload;
@@ -13,30 +13,15 @@ class BlocxFormEventUpdateData<E> extends BlocxFormEvent {
   BlocxFormEventUpdateData({required this.data, required this.key});
 }
 
-class BlocxFormEventNextStep extends BlocxFormEvent {}
-
-class BlocxFormEventPreviousStep extends BlocxFormEvent {}
-
-class BlocxFormEventGoToStep extends BlocxFormEvent {
-  final int stepIndex;
-  BlocxFormEventGoToStep(this.stepIndex);
-}
-
-class BlocxFormEventCheckUniqueValue<E extends Enum> extends BlocxFormEvent {
-  final E key;
-  final Object data;
-  BlocxFormEventCheckUniqueValue({required this.key, required this.data});
-}
-
-class BlocxFormEventFetchRequiredInfo extends BlocxFormEvent {}
-
 class BlocxFormEventSubmit extends BlocxFormEvent {}
 
-class BlocxFormEventSetTimedErrorToField<E extends Enum> extends BlocxFormEvent {
+class BlocxFormEventSetTimedErrorToField<E extends Enum>
+    extends BlocxFormEvent {
   final String message;
   final E key;
   final Duration? duration;
-  BlocxFormEventSetTimedErrorToField({required this.message, required this.key, this.duration});
+  BlocxFormEventSetTimedErrorToField(
+      {required this.message, required this.key, this.duration});
 }
 
 class BlocxFormEventSetErrorToField<E extends Enum> extends BlocxFormEvent {
@@ -56,4 +41,16 @@ class BlocxFormEventUpdateFormData<P> extends BlocxFormEvent {
   final P payload;
   final bool isUpdate;
   BlocxFormEventUpdateFormData({required this.payload, this.isUpdate = true});
+}
+
+class BlocxFormEventSyncFormData<F> extends BlocxFormEvent {
+  final F formData;
+  final bool applyToControllers;
+  final bool validate;
+
+  BlocxFormEventSyncFormData({
+    required this.formData,
+    this.applyToControllers = true,
+    this.validate = false,
+  });
 }
