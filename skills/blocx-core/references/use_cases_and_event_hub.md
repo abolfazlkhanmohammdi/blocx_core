@@ -50,7 +50,7 @@ class ProductEntity extends BlocxBaseEntity {
   }
 }
 ```
-- **Equality**: `BlocxBaseEntity` overrides `operator ==` and `hashCode` using `identifier` (and `runtimeType`). Two instances with the same `identifier` are considered the same item when replacing, removing, selecting, or syncing items in collections.
+- **Identity & Equality**: `BlocxBaseEntity` defines the contractual `identifier` getter used by BlocX collection extensions, selection, deduplication, and live stream sync. `BlocxBaseEntity` does not override `operator ==` or `hashCode` by default to avoid interfering with value equality packages (such as `equatable` or `freezed`) or reference equality semantics; subclasses may implement them if value equality is required.
 
 ---
 

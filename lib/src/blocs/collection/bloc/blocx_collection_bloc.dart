@@ -37,7 +37,7 @@ part 'blocx_collection_state.dart';
 ///   @override
 ///   BlocxPaginatedUseCaseTask get paginationTask => BlocxPaginatedUseCaseTask(
 ///     useCase: _getOrdersUseCase,
-///     inputBuilder: ({required limit, required offset}) =>
+///     inputBuilder: (offset, limit) =>
 ///         BlocxPaginatedInput(limit: limit, offset: offset),
 ///   );
 /// }
@@ -49,7 +49,7 @@ part 'blocx_collection_state.dart';
 /// |---|---|
 /// | [BlocxCollectionRefreshableMixin] | Pull-to-refresh |
 /// | [BlocxCollectionInfiniteMixin] | Infinite scroll / next-page loading |
-/// | [BlocxCollectionSearchableMixin] | Debounced search with separate result list |
+/// | [BlocxCollectionSearchableMixin] | Debounced search over collection list |
 /// | [BlocxCollectionSelectableMixin] | Multi-item selection |
 /// | [BlocxCollectionDeletableMixin] | Animated item removal |
 /// | [BlocxCollectionHighlightableMixin] | Temporary item highlighting |

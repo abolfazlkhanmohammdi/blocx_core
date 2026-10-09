@@ -206,6 +206,8 @@ class ProductEntity extends BlocxBaseEntity {
 }
 ```
 
+> **Note on Equality:** `BlocxBaseEntity` defines `identifier` for collection matching, deduplication, and sync. `BlocxBaseEntity` does not override `operator ==` or `hashCode` by default to avoid interfering with custom value equality solutions (such as `equatable` or `freezed`) or reference equality semantics. Subclasses may implement `operator ==` and `hashCode` if value-based equality is needed.
+
 ### 2. UseCases & Automatic `BlocxEventHub` Command Broadcasting
 
 In `blocx_core`, **only UseCases emit app-wide domain events—BLoCs never emit them**.
@@ -261,7 +263,7 @@ class DeleteProductUseCase extends BlocxBaseUseCase<ProductEntity, bool> {
 }
 ```
 
-> **Tip:** A single UseCase can also emit multiple commands by passing `commandTypes: const [BlocxCommandType.update, BlocxCommandType.read]` to `super(...)`, or customize entity extraction by overriding `resolveCommandEntities(input, output, command)`.
+> **Tip:** A single UseCase can also emit multiple commands by passing `commandTypes: const [BlocxCommandType.update, BlocxCommandType.read]` to `super(...)`, or customize entity extraction by overriding `resolveCommandEntities(input, output)`.
 
 ---
 

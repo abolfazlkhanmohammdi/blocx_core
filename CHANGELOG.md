@@ -4,6 +4,9 @@
 
 ### Documentation
 * Recorded baseline test and analysis results in `docs/fix-notes.md`.
+* Aligned `BlocxBaseEntity` documentation and examples to accurately reflect that entity matching, deduplication, and sync operate via the contractual `identifier` getter, while Dart `operator ==` and `hashCode` remain standard `Object` identity unless overridden by subclasses.
+* Corrected `resolveCommandEntities(input, output)` signature in `README.md` to reflect the 2-parameter signature in source.
+* Updated `BlocxCollectionSearchableMixin` doc descriptions in `blocx_collection_bloc.dart` to clarify that search filters the active collection list in-place rather than maintaining a disconnected secondary list.
 
 ### Infrastructure
 * Added GitHub Actions CI workflow (`.github/workflows/ci.yml`) covering formatting, static analysis (`--fatal-infos`), tests with coverage, and dry-run publishing across SDK matrix (`3.5.0` and `stable`).
