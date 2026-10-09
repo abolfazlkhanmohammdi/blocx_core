@@ -102,6 +102,12 @@ abstract class BlocxBaseBloc<E extends BlocxBaseEvent, S extends BlocxBaseState>
         title: title,
       );
 
+  /// Translates [error] to a [ReadableError] using [errorTranslator] or [defaultError].
+  ReadableError readableErrorOf(Object error, {StackTrace? stacktrace}) {
+    return errorTranslator?.makeErrorReadable(error, stackTrace: stacktrace) ??
+        defaultError;
+  }
+
   /// Logs [error], translates it to a [ReadableError], then surfaces it
   /// according to [errorDisplayPolicy].
   ///
@@ -114,9 +120,7 @@ abstract class BlocxBaseBloc<E extends BlocxBaseEvent, S extends BlocxBaseState>
   }) {
     dev.log(error.toString());
     if (stacktrace != null) dev.log(stacktrace.toString());
-    final readableError =
-        errorTranslator?.makeErrorReadable(error, stackTrace: stacktrace) ??
-            defaultError;
+    final readableError = readableErrorOf(error, stacktrace: stacktrace);
     if (errorDisplayPolicy == ErrorDisplayPolicy.snackBar) {
       displayErrorSnackbar(readableError.message, title: readableError.title);
     } else {

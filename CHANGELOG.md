@@ -10,6 +10,11 @@
 * Added `bloc_test` and `fake_async` dev dependencies and test harness fixtures in `test/helpers/` (fake use cases, paginated source, entity models).
 * Replaced arbitrary `Future.delayed` sleeps in existing collection and form tests with reactive stream synchronization.
 
+### Fixed
+* Fixed initial load failure leaving collection state stuck in `Loading` forever; now emits `BlocxCollectionStateError` with translated error message while keeping existing list and status flags intact.
+* Added `readableErrorOf` helper on `BlocxBaseBloc` to centralize readable error translation.
+* Ensured `isLoadingNextPage`, `isRefreshing`, and `isSearching` flags and states are consistently reset and emitted on failure paths.
+
 ## [1.0.0]
 
 ### Added

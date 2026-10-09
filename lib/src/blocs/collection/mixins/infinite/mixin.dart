@@ -78,6 +78,8 @@ mixin BlocxCollectionInfiniteMixin<Entity extends BlocxBaseEntity, Payload>
           ),
         );
 
+        isLoadingNextPage = false;
+        emitState(emit);
         return;
       }
 

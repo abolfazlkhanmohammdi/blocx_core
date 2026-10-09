@@ -20,8 +20,10 @@ Every BLoC in `blocx_core` extends `BlocxBaseBloc<E extends BlocxBaseEvent, S ex
 - `void displayErrorSnackbar(String message, {String? title})` -> emits `ScreenManagerCubitStateDisplaySnackbar(..., BlocXSnackbarType.error)` then restores previous state
 - `void displayErrorWidget(ReadableError error)` -> emits `ScreenManagerCubitStateDisplayErrorPage(error: error)`
 - `void displayErrorWidgetByErrorCode(BlocXErrorCode errorCode, {Object? error, StackTrace? stackTrace})` -> emits `ScreenManagerCubitStateDisplayErrorPageByErrorCode`
+- `ReadableError readableErrorOf(Object error, {StackTrace? stacktrace})`:
+  Translates `error` to a `ReadableError` using `BlocxErrorTranslator` or `defaultError`.
 - `FutureOr<void> handleError(Object error, Emitter<BlocxBaseState> emit, {StackTrace? stacktrace})`:
-  Translates `error` using `BlocxErrorTranslator.errorTranslator` (or falls back to `defaultError`) and surfaces it according to `errorDisplayPolicy`.
+  Translates `error` using `readableErrorOf` and surfaces it according to `errorDisplayPolicy`.
 
 ### `ErrorDisplayPolicy`
 ```dart

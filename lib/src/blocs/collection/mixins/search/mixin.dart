@@ -194,6 +194,14 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
         emit,
         stacktrace: result.stackTrace,
       );
+      infiniteListBloc.add(
+        BlocxInfiniteListEventChangeLoadBottomDataStatus(
+          false,
+          hasReachedEnd,
+        ),
+      );
+      isLoadingNextPage = false;
+      emitState(emit);
       return;
     }
 

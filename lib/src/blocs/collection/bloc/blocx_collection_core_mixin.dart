@@ -126,6 +126,24 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
 
     if (result.isFailure) {
       await handleError(result.error!, emit, stacktrace: result.stackTrace);
+      final readableError =
+          readableErrorOf(result.error!, stacktrace: result.stackTrace);
+      emit(
+        BlocxCollectionStateError<Entity>(
+          message: readableError.message,
+          list: list,
+          hasReachedEnd: hasReachedEnd,
+          isLoadingNextPage: isLoadingNextPage,
+          isRefreshing: isRefreshing,
+          isSearching: isSearching,
+          selectedItemIds: selectedItemIds,
+          beingSelectedItemIds: beingSelectedItemIds,
+          highlightedItemIds: highlightedItemIds,
+          beingRemovedItemIds: beingRemovedItemIds,
+          expandedItemIds: expandedItemIds,
+          additionalInfo: additionalInfo,
+        ),
+      );
       return;
     }
 

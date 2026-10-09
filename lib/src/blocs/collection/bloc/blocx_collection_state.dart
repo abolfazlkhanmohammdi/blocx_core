@@ -109,6 +109,8 @@ class BlocxCollectionStateError<T extends BlocxBaseEntity>
     super.beingSelectedItemIds = const {},
     super.highlightedItemIds = const {},
     super.beingRemovedItemIds = const {},
+    super.expandedItemIds = const {},
+    super.additionalInfo,
   }) : super(shouldRebuild: true, shouldListen: false);
 }
 
