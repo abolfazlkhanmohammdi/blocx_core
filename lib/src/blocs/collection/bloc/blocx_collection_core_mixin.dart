@@ -92,12 +92,23 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Entity>? get paginationTask =>
       null;
 
+  /// Shared cursor-based paginated task used by initial load and next-page load.
+  BlocxCursorPaginatedUseCaseTask<BlocxCursorPaginatedInput, Entity>?
+      get cursorPaginationTask => null;
+
   /// Task responsible for loading the initial page.
   ///
   /// Defaults to [paginationTask]. Override this only when initial loading uses
   /// a different use case or input shape.
   BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Entity>?
       get loadInitialPageTask => paginationTask;
+
+  /// Task responsible for loading the initial page using cursor pagination.
+  ///
+  /// Defaults to [cursorPaginationTask]. Override this only when initial loading
+  /// uses a different cursor task or input shape.
+  BlocxCursorPaginatedUseCaseTask<BlocxCursorPaginatedInput, Entity>?
+      get loadInitialPageCursorTask => cursorPaginationTask;
 
   /// Loads the first page of collection data.
   Future<void> loadInitialPage(
@@ -106,15 +117,70 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   ) async {
     payload = event.payload;
 
+    final cursorTask = loadInitialPageCursorTask;
+    if (cursorTask != null) {
+      return _fetchInitialPageWithCursor(cursorTask, emit);
+    }
+
     final task = loadInitialPageTask;
     if (task != null) {
       return _fetchInitialPage(task, emit);
     }
 
     throw UnimplementedError(
-      'Provide `paginationTask` or `loadInitialPageTask`, '
-      'or override `loadInitialPage()`.',
+      'Provide `paginationTask`, `cursorPaginationTask`, `loadInitialPageTask`, '
+      'or `loadInitialPageCursorTask`, or override `loadInitialPage()`.',
     );
+  }
+
+  /// Executes the initial load task using cursor pagination.
+  Future<void> _fetchInitialPageWithCursor(
+    BlocxCursorPaginatedUseCaseTask<BlocxCursorPaginatedInput, Entity> task,
+    Emitter<BlocxCollectionState<Entity>> emit,
+  ) async {
+    final gen = nextLoadGeneration();
+    emit(BlocxCollectionStateLoading<Entity>());
+
+    final result = await task.execute(cursor: null, limit: limit);
+    if (gen != _loadGeneration) return;
+
+    if (result.isFailure) {
+      await handleError(result.error!, emit, stacktrace: result.stackTrace);
+      final readableError =
+          readableErrorOf(result.error!, stacktrace: result.stackTrace);
+      emit(
+        BlocxCollectionStateError<Entity>(
+          message: readableError.message,
+          list: List<Entity>.unmodifiable(_list),
+          hasReachedEnd: hasReachedEnd,
+          isLoadingNextPage: isLoadingNextPage,
+          isRefreshing: isRefreshing,
+          isSearching: isSearching,
+          selectedItemIds: Set<String>.unmodifiable(selectedItemIds),
+          beingSelectedItemIds: Set<String>.unmodifiable(beingSelectedItemIds),
+          highlightedItemIds: Set<String>.unmodifiable(highlightedItemIds),
+          beingRemovedItemIds: Set<String>.unmodifiable(beingRemovedItemIds),
+          expandedItemIds: Set<String>.unmodifiable(expandedItemIds),
+          additionalInfo: additionalInfo,
+        ),
+      );
+      return;
+    }
+
+    final page = result.data!;
+
+    clearList();
+    offset = page.items.length;
+    nextCursor = page.nextCursor;
+
+    await insertToList(
+      page.items,
+      !page.hasNext,
+      DataInsertSource.init,
+    );
+    if (isSelectable) await applyInitialSelection();
+
+    emitState(emit);
   }
 
   /// Executes the initial load task.
@@ -155,6 +221,7 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
 
     clearList();
     offset = page.items.length;
+    nextCursor = page.nextCursor;
 
     await insertToList(
       page.items,
@@ -170,6 +237,14 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   int get limit => 20;
 
   int _loadedCount = 0;
+  String? _nextCursor;
+
+  /// Current pagination cursor returned by the datasource.
+  String? get nextCursor => _nextCursor;
+
+  /// Updates the pagination cursor.
+  @protected
+  set nextCursor(String? value) => _nextCursor = value;
 
   /// Current pagination offset based on items fetched from the datasource.
   ///
@@ -264,6 +339,7 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   void clearList() {
     _list.clear();
     _loadedCount = 0;
+    _nextCursor = null;
   }
 
   /// Replaces the entire collection with [newList].

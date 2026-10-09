@@ -4,6 +4,7 @@
 
 ### Added
 * Added `clearError()` to `ScreenManagerCubit` and `BlocxBaseBloc`, which emits `ScreenManagerCubitStateInitial(shouldRebuild: true)` to dismiss full-page errors and restore normal screen display without resurrecting error states on subsequent snackbars.
+* Added cursor-based pagination support with `BlocxPage.nextCursor`, `BlocxCursorPaginatedInput`, `BlocxCursorPaginatedUseCase`, `BlocxCursorPaginatedUseCaseTask`, and datasource cursor tracking (`nextCursor`) in `BlocxCollectionCoreMixin` and `BlocxCollectionInfiniteMixin`.
 
 ## [1.0.1]
 
