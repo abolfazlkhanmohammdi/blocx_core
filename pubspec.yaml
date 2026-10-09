@@ -1,6 +1,6 @@
 name: blocx_core
 description: Pure-Dart composable BLoC architecture with mixins and use-cases for paginated collections, reactive forms, and cross-feature event synchronization.
-version: 1.0.1
+version: 1.1.0
 repository: https://github.com/abolfazlkhanmohammdi/blocx_core
 issue_tracker: https://github.com/abolfazlkhanmohammdi/blocx_core/issues
 topics: [bloc, architecture, lists, forms, state-management]
