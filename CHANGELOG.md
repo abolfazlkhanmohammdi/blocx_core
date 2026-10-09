@@ -8,6 +8,7 @@
 * Added `sortComparator` and sort-aware item insertion (`getInsertIndexForItem`) to `BlocxCollectionCoreMixin` and `BlocxCollectionSyncStreamMixin` to preserve ordered placement of newly created or synced items.
 * Added per-bloc injectable `errorTranslator` and `localizations` constructor parameters and getters to `BlocxBaseBloc`, `BlocxCollectionBloc`, and `BlocxFormBloc`, falling back to `BlocxErrorTranslator.instance` and `BlocXLocalizations.localizations`.
 * Added `searchingText` and `searchHint` keys to `BlocXLocalizations` with default implementations.
+* Added `package:blocx_core/testing.dart` exporting test utilities: in-memory `BlocxTestEventHub`, `BlocxTestEntity`, `BlocxTestFormEntity`, `FakePaginatedSource`, `FakePaginatedUseCase`, `FakeCursorPaginatedUseCase`, `FakeSearchUseCase`, `FakeUseCase`, and task construction helpers.
 
 ## [1.0.1]
 
