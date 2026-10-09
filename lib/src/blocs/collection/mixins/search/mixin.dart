@@ -115,12 +115,14 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
       return;
     }
 
+    final gen = nextLoadGeneration();
+
     try {
       isSearching = true;
       emitState(emit);
 
       final result = await task.execute(offset: 0, limit: limit);
-
+      if (gen != loadGeneration) return;
       if (searchText != event.searchText) return;
 
       if (result.isFailure) {
@@ -145,8 +147,10 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
 
       emitState(emit);
     } finally {
-      isSearching = false;
-      emitState(emit);
+      if (gen == loadGeneration) {
+        isSearching = false;
+        emitState(emit);
+      }
     }
   }
 
@@ -155,6 +159,7 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
     BlocxCollectionEventClearSearch<Entity> event,
     Emitter<BlocxCollectionState<Entity>> emit,
   ) {
+    nextLoadGeneration();
     searchText = '';
     hasReachedEnd = false;
     _searchLoadedCount = 0;
@@ -199,7 +204,9 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
       );
     }
 
+    final gen = loadGeneration;
     final result = await task.execute(offset: _searchLoadedCount, limit: limit);
+    if (gen != loadGeneration) return;
 
     if (result.isFailure) {
       await handleError(
@@ -260,12 +267,14 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
     BlocxPaginatedUseCaseTask<BlocxSearchInput, Entity> task,
     Emitter<BlocxCollectionState<Entity>> emit,
   ) async {
+    final gen = nextLoadGeneration();
     isSearching = true;
     emitState(emit);
 
     try {
       final result = await task.execute(
           offset: 0, limit: list.isNotEmpty ? list.length : limit);
+      if (gen != loadGeneration) return;
 
       if (result.isFailure) {
         await handleError(
@@ -289,8 +298,10 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
 
       emitState(emit);
     } finally {
-      isSearching = false;
-      emitState(emit);
+      if (gen == loadGeneration) {
+        isSearching = false;
+        emitState(emit);
+      }
     }
   }
 }

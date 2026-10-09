@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/collection_bloc.dart'
     show
@@ -21,7 +22,10 @@ mixin BlocxCollectionInfiniteMixin<Entity extends BlocxBaseEntity, Payload>
   /// Registers next-page event handling.
   @override
   bool initInfiniteList() {
-    on<BlocxCollectionEventLoadNextPage<Entity>>(loadNextPage);
+    on<BlocxCollectionEventLoadNextPage<Entity>>(
+      loadNextPage,
+      transformer: droppable(),
+    );
     return true;
   }
 
@@ -63,10 +67,12 @@ mixin BlocxCollectionInfiniteMixin<Entity extends BlocxBaseEntity, Payload>
     BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Entity> task,
     Emitter<BlocxCollectionState<Entity>> emit,
   ) async {
+    final gen = loadGeneration;
     isLoadingNextPage = true;
 
     try {
       final result = await task.execute(offset: offset, limit: limit);
+      if (gen != loadGeneration) return;
 
       if (result.isFailure) {
         await handleError(result.error!, emit, stacktrace: result.stackTrace);
@@ -95,7 +101,9 @@ mixin BlocxCollectionInfiniteMixin<Entity extends BlocxBaseEntity, Payload>
 
       emitState(emit);
     } finally {
-      isLoadingNextPage = false;
+      if (gen == loadGeneration) {
+        isLoadingNextPage = false;
+      }
     }
   }
 }

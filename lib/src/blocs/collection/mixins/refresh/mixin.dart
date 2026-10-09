@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/collection_bloc.dart'
     show
@@ -23,7 +24,10 @@ mixin BlocxCollectionRefreshableMixin<Entity extends BlocxBaseEntity, Payload>
   /// Registers refresh event handling.
   @override
   bool initRefresh() {
-    on<BlocxCollectionEventRefreshData<Entity>>(refreshPage);
+    on<BlocxCollectionEventRefreshData<Entity>>(
+      refreshPage,
+      transformer: restartable(),
+    );
     return true;
   }
 
@@ -75,11 +79,13 @@ mixin BlocxCollectionRefreshableMixin<Entity extends BlocxBaseEntity, Payload>
     BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Entity> task,
     Emitter<BlocxCollectionState<Entity>> emit,
   ) async {
+    final gen = nextLoadGeneration();
     isRefreshing = true;
     emitState(emit);
 
     try {
       final result = await task.execute(offset: 0, limit: limit);
+      if (gen != loadGeneration) return;
 
       if (result.isFailure) {
         await handleError(result.error!, emit, stacktrace: result.stackTrace);
@@ -99,9 +105,11 @@ mixin BlocxCollectionRefreshableMixin<Entity extends BlocxBaseEntity, Payload>
 
       emitState(emit);
     } finally {
-      isRefreshing = false;
-      infiniteListBloc.add(BlocxInfiniteListEventCloseRefresh());
-      emitState(emit);
+      if (gen == loadGeneration) {
+        isRefreshing = false;
+        infiniteListBloc.add(BlocxInfiniteListEventCloseRefresh());
+        emitState(emit);
+      }
     }
   }
 }

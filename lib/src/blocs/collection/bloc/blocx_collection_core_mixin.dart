@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:meta/meta.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/collection_bloc.dart'
@@ -121,9 +122,11 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
     BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Entity> task,
     Emitter<BlocxCollectionState<Entity>> emit,
   ) async {
+    final gen = nextLoadGeneration();
     emit(BlocxCollectionStateLoading<Entity>());
 
     final result = await task.execute(offset: 0, limit: limit);
+    if (gen != _loadGeneration) return;
 
     if (result.isFailure) {
       await handleError(result.error!, emit, stacktrace: result.stackTrace);
@@ -179,12 +182,28 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   @protected
   set offset(int value) => _loadedCount = value;
 
+  int _loadGeneration = 0;
+
+  /// Current generation counter of collection loads.
+  ///
+  /// Incremented on each new major collection load (initial load, refresh,
+  /// search, or clear) to ensure stale in-flight asynchronous operations are
+  /// safely discarded and cannot overwrite newer state.
+  int get loadGeneration => _loadGeneration;
+
+  /// Increments and returns the next load generation identifier.
+  @protected
+  int nextLoadGeneration() => ++_loadGeneration;
+
   /// Allows modification of incoming data before insertion.
   Future<List<Entity>> modifyListBeforeInsert(List<Entity> data) async => data;
 
   /// Registers core collection event handlers.
   void initCoreMixin() {
-    on<BlocxCollectionEventLoadInitialPage<Entity, Payload>>(loadInitialPage);
+    on<BlocxCollectionEventLoadInitialPage<Entity, Payload>>(
+      loadInitialPage,
+      transformer: restartable(),
+    );
     on<BlocxCollectionEventAddItem<Entity>>(addItem);
     on<BlocxCollectionEventUpdateItem<Entity>>(updateItem);
     on<BlocxCollectionEventReplaceList<Entity>>(handleReplaceList);
