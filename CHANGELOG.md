@@ -5,6 +5,9 @@
 ### Documentation
 * Recorded baseline test and analysis results in `docs/fix-notes.md`.
 
+### Infrastructure
+* Added GitHub Actions CI workflow (`.github/workflows/ci.yml`) covering formatting, static analysis (`--fatal-infos`), tests with coverage, and dry-run publishing across SDK matrix (`3.5.0` and `stable`).
+
 ## [1.0.0]
 
 ### Added
