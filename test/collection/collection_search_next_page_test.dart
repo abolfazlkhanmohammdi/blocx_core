@@ -101,7 +101,9 @@ void main() {
           const TestItem(id: 's1', title: 'Search 1'),
           const TestItem(id: 's2', title: 'Search 2'),
         ], hasNext: true);
-        await bloc.stream.firstWhere((s) => s.list.length == 2 && !s.isSearching);
+        await bloc.stream.firstWhere(
+          (s) => s.list.length == 2 && !s.isSearching,
+        );
 
         expect(bloc.isLoadingNextPage, isFalse);
         expect(bloc.state.isLoadingNextPage, isFalse);
@@ -111,10 +113,17 @@ void main() {
         await Future<void>.delayed(Duration.zero);
 
         expect(searchUseCase.calls.length, equals(2));
-        expect(bloc.isLoadingNextPage, isTrue,
-            reason: 'bloc.isLoadingNextPage must be true during search next page');
-        expect(bloc.state.isLoadingNextPage, isTrue,
-            reason: 'state.isLoadingNextPage must be emitted as true during search next page');
+        expect(
+          bloc.isLoadingNextPage,
+          isTrue,
+          reason: 'bloc.isLoadingNextPage must be true during search next page',
+        );
+        expect(
+          bloc.state.isLoadingNextPage,
+          isTrue,
+          reason:
+              'state.isLoadingNextPage must be emitted as true during search next page',
+        );
 
         // Complete next page
         searchUseCase.calls.last.completeSuccess([
@@ -129,8 +138,12 @@ void main() {
         // Additional LoadNextPage events after reaching end must produce ZERO extra use-case calls
         bloc.add(BlocxCollectionEventLoadNextPage<TestItem>());
         await Future<void>.delayed(const Duration(milliseconds: 20));
-        expect(searchUseCase.calls.length, equals(2),
-            reason: 'No additional calls should be made after hasReachedEnd is true');
+        expect(
+          searchUseCase.calls.length,
+          equals(2),
+          reason:
+              'No additional calls should be made after hasReachedEnd is true',
+        );
 
         await bloc.close();
       },
@@ -152,18 +165,25 @@ void main() {
         searchUseCase.calls.first.completeSuccess([
           const TestItem(id: 's1', title: 'Search 1'),
         ], hasNext: true);
-        await bloc.stream.firstWhere((s) => s.list.length == 1 && !s.isSearching);
+        await bloc.stream.firstWhere(
+          (s) => s.list.length == 1 && !s.isSearching,
+        );
 
         // Request next page (fails)
         bloc.add(BlocxCollectionEventLoadNextPage<TestItem>());
         await Future<void>.delayed(Duration.zero);
         expect(bloc.isLoadingNextPage, isTrue);
 
-        searchUseCase.calls.last.completeFailure(Exception('Search network timeout'));
+        searchUseCase.calls.last.completeFailure(
+          Exception('Search network timeout'),
+        );
         await Future<void>.delayed(const Duration(milliseconds: 20));
 
-        expect(bloc.isLoadingNextPage, isFalse,
-            reason: 'isLoadingNextPage must reset to false on failure');
+        expect(
+          bloc.isLoadingNextPage,
+          isFalse,
+          reason: 'isLoadingNextPage must reset to false on failure',
+        );
         expect(bloc.state.isLoadingNextPage, isFalse);
 
         await bloc.close();

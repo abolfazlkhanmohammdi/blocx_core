@@ -67,6 +67,7 @@ import 'package:meta/meta.dart';
 ///
 /// Override [handleError] for side-effects (crash reporting, analytics).
 /// It must not affect control flow — [failureResult] is still called after it.
+/// Errors surfaced to the bloc layer can also be captured via `BlocxBaseBloc.reportError`.
 abstract class BlocxBaseUseCase<Input, Output> {
   final BlocxEventHub? _eventHub;
   final BlocxCommandType? _commandType;

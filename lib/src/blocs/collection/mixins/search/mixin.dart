@@ -206,7 +206,10 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
       if (result.isFailure) {
         await handleError(result.error!, emit, stacktrace: result.stackTrace);
         infiniteListBloc.add(
-          BlocxInfiniteListEventChangeLoadBottomDataStatus(false, hasReachedEnd),
+          BlocxInfiniteListEventChangeLoadBottomDataStatus(
+            false,
+            hasReachedEnd,
+          ),
         );
         return;
       }
@@ -220,7 +223,10 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
       if (gen == loadGeneration) {
         isLoadingNextPage = false;
         infiniteListBloc.add(
-          BlocxInfiniteListEventChangeLoadBottomDataStatus(false, hasReachedEnd),
+          BlocxInfiniteListEventChangeLoadBottomDataStatus(
+            false,
+            hasReachedEnd,
+          ),
         );
         emitState(emit);
       }

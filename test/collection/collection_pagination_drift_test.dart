@@ -19,8 +19,8 @@ class SyncInfiniteCollectionBloc extends BlocxCollectionBloc<TestItem, void>
     required this.paginatedUseCase,
     required this.eventHub,
     bool adjustOffset = true,
-  })  : _adjustOffset = adjustOffset,
-        super();
+  }) : _adjustOffset = adjustOffset,
+       super();
 
   @override
   bool get adjustOffsetForLocalChanges => _adjustOffset;
@@ -126,7 +126,11 @@ void main() {
 
         // Verify loaded list has no duplicates and is contiguous with server order
         final ids = bloc.list.map((e) => e.id).toList();
-        expect(ids.toSet().length, equals(ids.length), reason: 'Duplicate ids found');
+        expect(
+          ids.toSet().length,
+          equals(ids.length),
+          reason: 'Duplicate ids found',
+        );
         expect(ids.first, equals('new_999'));
         // The remaining 20 items match source items 1..20
         for (var i = 1; i <= 20; i++) {
@@ -253,34 +257,50 @@ void main() {
         expect(bloc.offset, equals(10));
 
         // Add brand new item -> delta becomes 1, offset becomes 11
-        bloc.add(BlocxCollectionEventAddItem(
-          item: const TestItem(id: 'fresh_1', title: 'Fresh 1'),
-        ));
-        await bloc.stream.firstWhere((s) => s.list.any((e) => e.id == 'fresh_1'));
+        bloc.add(
+          BlocxCollectionEventAddItem(
+            item: const TestItem(id: 'fresh_1', title: 'Fresh 1'),
+          ),
+        );
+        await bloc.stream.firstWhere(
+          (s) => s.list.any((e) => e.id == 'fresh_1'),
+        );
         expect(bloc.offset, equals(11));
 
         // Add already present item -> delta does NOT change
-        bloc.add(BlocxCollectionEventAddItem(
-          item: const TestItem(id: 'fresh_1', title: 'Updated Fresh 1'),
-        ));
-        await bloc.stream.firstWhere((s) => s.list.any((e) => e.title == 'Updated Fresh 1'));
+        bloc.add(
+          BlocxCollectionEventAddItem(
+            item: const TestItem(id: 'fresh_1', title: 'Updated Fresh 1'),
+          ),
+        );
+        await bloc.stream.firstWhere(
+          (s) => s.list.any((e) => e.title == 'Updated Fresh 1'),
+        );
         expect(bloc.offset, equals(11));
 
         // Refresh -> resets delta and offset
         bloc.add(BlocxCollectionEventRefreshData<TestItem>());
-        await bloc.stream.firstWhere((s) => !s.isRefreshing && s.list.length == 10);
+        await bloc.stream.firstWhere(
+          (s) => !s.isRefreshing && s.list.length == 10,
+        );
         expect(bloc.offset, equals(10));
 
         // Add new item again
-        bloc.add(BlocxCollectionEventAddItem(
-          item: const TestItem(id: 'fresh_2', title: 'Fresh 2'),
-        ));
-        await bloc.stream.firstWhere((s) => s.list.any((e) => e.id == 'fresh_2'));
+        bloc.add(
+          BlocxCollectionEventAddItem(
+            item: const TestItem(id: 'fresh_2', title: 'Fresh 2'),
+          ),
+        );
+        await bloc.stream.firstWhere(
+          (s) => s.list.any((e) => e.id == 'fresh_2'),
+        );
         expect(bloc.offset, equals(11));
 
         // Search start -> clearList resets delta
         bloc.add(BlocxCollectionEventSearch<TestItem>(searchText: 'Item'));
-        await bloc.stream.firstWhere((s) => s.isSearching || s.list.length == 10);
+        await bloc.stream.firstWhere(
+          (s) => s.isSearching || s.list.length == 10,
+        );
         await Future<void>.delayed(const Duration(milliseconds: 50));
         // Search clear restores collection
         bloc.add(BlocxCollectionEventClearSearch<TestItem>());
@@ -318,11 +338,16 @@ void main() {
             final action = random.nextInt(3);
             if (action == 0) {
               // Create at head
-              final newItem = TestItem(id: 'local_${nextCreatedId++}', title: 'Local Created');
+              final newItem = TestItem(
+                id: 'local_${nextCreatedId++}',
+                title: 'Local Created',
+              );
               source.items.insert(0, newItem);
               final lengthBefore = bloc.list.length;
               eventHub.emitEntity<TestItem>(newItem, BlocxCommandType.create);
-              await bloc.stream.firstWhere((s) => s.list.length == lengthBefore + 1);
+              await bloc.stream.firstWhere(
+                (s) => s.list.length == lengthBefore + 1,
+              );
             } else if (action == 1) {
               // Delete a loaded item if any exists
               if (bloc.list.isNotEmpty) {
@@ -330,7 +355,9 @@ void main() {
                 source.items.removeWhere((e) => e.id == target.id);
                 final lengthBefore = bloc.list.length;
                 eventHub.emitEntity<TestItem>(target, BlocxCommandType.delete);
-                await bloc.stream.firstWhere((s) => s.list.length == lengthBefore - 1);
+                await bloc.stream.firstWhere(
+                  (s) => s.list.length == lengthBefore - 1,
+                );
               }
             } else {
               // Next page
@@ -346,8 +373,11 @@ void main() {
 
             // Invariant check
             final ids = bloc.list.map((e) => e.id).toList();
-            expect(ids.toSet().length, equals(ids.length),
-                reason: 'Seed $seed step $step: Duplicate IDs in list');
+            expect(
+              ids.toSet().length,
+              equals(ids.length),
+              reason: 'Seed $seed step $step: Duplicate IDs in list',
+            );
           }
 
           await bloc.close();
