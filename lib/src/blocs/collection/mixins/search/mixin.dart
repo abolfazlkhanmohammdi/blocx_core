@@ -181,6 +181,8 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
     BlocxCollectionEventSearchNextPage<Entity> event,
     Emitter<BlocxCollectionState<Entity>> emit,
   ) async {
+    if (hasReachedEnd || isLoadingNextPage) return;
+
     final task = searchUseCaseTask;
 
     if (task == null) {
@@ -191,33 +193,38 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
     }
 
     final gen = loadGeneration;
-    final result = await task.execute(
-      offset: _searchLoadedCount + localOffsetDelta,
-      limit: limit,
-    );
-    if (gen != loadGeneration) return;
-
-    if (result.isFailure) {
-      await handleError(result.error!, emit, stacktrace: result.stackTrace);
-      infiniteListBloc.add(
-        BlocxInfiniteListEventChangeLoadBottomDataStatus(false, hasReachedEnd),
-      );
-      isLoadingNextPage = false;
-      emitState(emit);
-      return;
-    }
-
-    final page = result.data!;
-
-    await insertToList(page.items, !page.hasNext, DataInsertSource.nextPage);
-
-    _searchLoadedCount += page.items.length;
-
-    infiniteListBloc.add(
-      BlocxInfiniteListEventChangeLoadBottomDataStatus(false, hasReachedEnd),
-    );
-
+    isLoadingNextPage = true;
     emitState(emit);
+
+    try {
+      final result = await task.execute(
+        offset: _searchLoadedCount + localOffsetDelta,
+        limit: limit,
+      );
+      if (gen != loadGeneration) return;
+
+      if (result.isFailure) {
+        await handleError(result.error!, emit, stacktrace: result.stackTrace);
+        infiniteListBloc.add(
+          BlocxInfiniteListEventChangeLoadBottomDataStatus(false, hasReachedEnd),
+        );
+        return;
+      }
+
+      final page = result.data!;
+
+      await insertToList(page.items, !page.hasNext, DataInsertSource.nextPage);
+
+      _searchLoadedCount += page.items.length;
+    } finally {
+      if (gen == loadGeneration) {
+        isLoadingNextPage = false;
+        infiniteListBloc.add(
+          BlocxInfiniteListEventChangeLoadBottomDataStatus(false, hasReachedEnd),
+        );
+        emitState(emit);
+      }
+    }
   }
 
   /// Refreshes the current search results.
