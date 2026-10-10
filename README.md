@@ -124,7 +124,7 @@ Add `blocx_core` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  blocx_core: ^1.0.0
+  blocx_core: ^1.1.0
 ```
 
 Or via the CLI:
@@ -517,9 +517,50 @@ pop(); // Instructs the UI screen to pop the current route
 Customize global error translation and localization at app startup:
 
 ```dart
+// Global singletons (default):
 BlocxErrorTranslator.instance = MyCustomErrorTranslator();
 BlocXLocalizations.localizations = MyCustomLocalizations();
+
+// Or inject per BLoC instance:
+final bloc = ProductsBloc(
+  errorTranslator: MyCustomErrorTranslator(),
+  localizations: MyCustomLocalizations(),
+);
 ```
+
+---
+
+## Unit Testing with `package:blocx_core/testing.dart`
+
+`blocx_core` includes a dedicated testing library with pre-built test doubles and fakes so you can write fast, deterministic unit tests for your domain logic and BLoCs without boilerplate:
+
+```dart
+import 'package:blocx_core/testing.dart';
+import 'package:test/test.dart';
+
+void main() {
+  test('collection loads and syncs with FakePaginatedSource and BlocxTestEventHub', () async {
+    final eventHub = BlocxTestEventHub();
+    final source = FakePaginatedSource<BlocxTestEntity>(
+      items: [
+        const BlocxTestEntity(id: '1', name: 'Item 1'),
+        const BlocxTestEntity(id: '2', name: 'Item 2'),
+      ],
+    );
+
+    final useCase = FakePaginatedUseCase<BlocxTestEntity>(source: source);
+    // Test collection blocs, sync streams, and entity mutations effortlessly!
+  });
+}
+```
+
+Available test utilities:
+- `BlocxTestEventHub`: In-memory synchronous event hub with recorded events.
+- `BlocxTestEntity` & `BlocxTestFormEntity`: Lightweight test entities.
+- `FakePaginatedSource` & `FakePaginatedUseCase`: Offset/limit paginated source.
+- `FakeCursorPaginatedSource` & `FakeCursorPaginatedUseCase`: Cursor-based paginated source.
+- `FakeSearchUseCase`: In-memory searchable use case test double.
+- `FakeUseCase` & `MockUseCase`: Generic use-case stubs.
 
 ---
 
