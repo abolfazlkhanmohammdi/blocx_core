@@ -21,6 +21,7 @@ import 'package:blocx_core/collection_bloc.dart'
 import 'package:blocx_core/src/blocs/collection/bloc/blocx_collection_bloc.dart';
 import 'package:blocx_core/src/blocs/collection/mixins/highlight/events.dart';
 import 'package:blocx_core/src/blocs/collection/mixins/scroll_to/events.dart';
+import 'package:blocx_core/src/blocs/collection/models/blocx_page.dart';
 import 'package:blocx_core/src/blocs/collection/use_cases/blocx_paginated_use_case.dart';
 import 'package:blocx_core/src/core/models/base_entity_extensions.dart';
 
@@ -148,42 +149,14 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
     if (gen != _loadGeneration) return;
 
     if (result.isFailure) {
-      await handleError(result.error!, emit, stacktrace: result.stackTrace);
-      final readableError = readableErrorOf(
-        result.error!,
-        stacktrace: result.stackTrace,
-      );
-      emit(
-        BlocxCollectionStateError<Entity>(
-          message: readableError.message,
-          list: List<Entity>.unmodifiable(_list),
-          hasReachedEnd: hasReachedEnd,
-          isLoadingNextPage: isLoadingNextPage,
-          isRefreshing: isRefreshing,
-          isSearching: isSearching,
-          selectedItemIds: Set<String>.unmodifiable(selectedItemIds),
-          beingSelectedItemIds: Set<String>.unmodifiable(beingSelectedItemIds),
-          highlightedItemIds: Set<String>.unmodifiable(highlightedItemIds),
-          beingRemovedItemIds: Set<String>.unmodifiable(beingRemovedItemIds),
-          expandedItemIds: Set<String>.unmodifiable(expandedItemIds),
-          additionalInfo: additionalInfo,
-        ),
-      );
+      await _emitInitialLoadError(result.error!, result.stackTrace, emit);
       return;
     }
 
     final page = result.data!;
-
-    clearList();
-    offset = page.items.length;
-    nextCursor = page.nextCursor;
     final isLast =
         !page.hasNext || page.nextCursor == null || page.nextCursor!.isEmpty;
-
-    await insertToList(page.items, isLast, DataInsertSource.init);
-    if (isSelectable) await applyInitialSelection();
-
-    emitState(emit);
+    await _applyInitialPage(page, isLast, emit);
   }
 
   /// Executes the initial load task.
@@ -198,37 +171,49 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
     if (gen != _loadGeneration) return;
 
     if (result.isFailure) {
-      await handleError(result.error!, emit, stacktrace: result.stackTrace);
-      final readableError = readableErrorOf(
-        result.error!,
-        stacktrace: result.stackTrace,
-      );
-      emit(
-        BlocxCollectionStateError<Entity>(
-          message: readableError.message,
-          list: List<Entity>.unmodifiable(_list),
-          hasReachedEnd: hasReachedEnd,
-          isLoadingNextPage: isLoadingNextPage,
-          isRefreshing: isRefreshing,
-          isSearching: isSearching,
-          selectedItemIds: Set<String>.unmodifiable(selectedItemIds),
-          beingSelectedItemIds: Set<String>.unmodifiable(beingSelectedItemIds),
-          highlightedItemIds: Set<String>.unmodifiable(highlightedItemIds),
-          beingRemovedItemIds: Set<String>.unmodifiable(beingRemovedItemIds),
-          expandedItemIds: Set<String>.unmodifiable(expandedItemIds),
-          additionalInfo: additionalInfo,
-        ),
-      );
+      await _emitInitialLoadError(result.error!, result.stackTrace, emit);
       return;
     }
 
     final page = result.data!;
+    await _applyInitialPage(page, !page.hasNext, emit);
+  }
 
+  Future<void> _emitInitialLoadError(
+    Object error,
+    StackTrace? st,
+    Emitter<BlocxCollectionState<Entity>> emit,
+  ) async {
+    await handleError(error, emit, stacktrace: st);
+    final readableError = readableErrorOf(error, stacktrace: st);
+    emit(
+      BlocxCollectionStateError<Entity>(
+        message: readableError.message,
+        list: List<Entity>.unmodifiable(_list),
+        hasReachedEnd: hasReachedEnd,
+        isLoadingNextPage: isLoadingNextPage,
+        isRefreshing: isRefreshing,
+        isSearching: isSearching,
+        selectedItemIds: Set<String>.unmodifiable(selectedItemIds),
+        beingSelectedItemIds: Set<String>.unmodifiable(beingSelectedItemIds),
+        highlightedItemIds: Set<String>.unmodifiable(highlightedItemIds),
+        beingRemovedItemIds: Set<String>.unmodifiable(beingRemovedItemIds),
+        expandedItemIds: Set<String>.unmodifiable(expandedItemIds),
+        additionalInfo: additionalInfo,
+      ),
+    );
+  }
+
+  Future<void> _applyInitialPage(
+    BlocxPage<Entity> page,
+    bool isLast,
+    Emitter<BlocxCollectionState<Entity>> emit,
+  ) async {
     clearList();
     offset = page.items.length;
     nextCursor = page.nextCursor;
 
-    await insertToList(page.items, !page.hasNext, DataInsertSource.init);
+    await insertToList(page.items, isLast, DataInsertSource.init);
     if (isSelectable) await applyInitialSelection();
 
     emitState(emit);
