@@ -1,0 +1,26 @@
+name: Publish to pub.dev
+
+# The ONLY workflow that publishes. pub.dev automated publishing accepts tag pushes only.
+# pub.dev tag pattern: v{{version}}
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tag must match pubspec version
+        run: |
+          V=$(grep -m1 '^version:' pubspec.yaml | awk '{print $2}' | tr -d '\r')
+          [ "refs/tags/v$V" = "$GITHUB_REF" ] || { echo "Tag $GITHUB_REF does not match pubspec version $V"; exit 1; }
+
+  publish:
+    needs: verify
+    permissions:
+      id-token: write # OIDC token for pub.dev
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+    with:
+      environment: pub.dev
