@@ -30,6 +30,8 @@ abstract class BlocXLocalizations {
   String get deleteItem;
   String get areYouSure;
   String get areYouSureYouWantToDeleteThisItem;
+  String get itemDeleted => 'Item deleted';
+  String get itemDeleteFailed => 'Failed to delete item';
 
   String errorCodeMessage(BlocXErrorCode errorCode);
 
