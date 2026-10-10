@@ -202,9 +202,9 @@ mixin BlocxCollectionDeletableMixin<Entity extends BlocxBaseEntity, Payload>
     if (!displayDeletedSnackbar) return;
 
     if (deleted) {
-      displayInfoSnackbar('Item deleted');
+      displayInfoSnackbar(loc.itemDeleted);
     } else {
-      displayWarningSnackbar('Failed to delete item');
+      displayWarningSnackbar(loc.itemDeleteFailed);
     }
   }
 

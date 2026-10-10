@@ -1,5 +1,8 @@
 import 'package:blocx_core/blocx_core.dart';
+import 'package:blocx_core/collection_bloc.dart';
 import 'package:test/test.dart';
+
+import '../helpers/helpers.dart';
 
 void main() {
   group('BlocXLocalizations', () {
@@ -7,17 +10,51 @@ void main() {
       final loc = BlocXLocalizations.localizations;
       expect(loc.searchingText, equals('Searching data, please wait'));
       expect(loc.searchHint, equals('Search...'));
+      expect(loc.itemDeleted, equals('Item deleted'));
+      expect(loc.itemDeleteFailed, equals('Failed to delete item'));
     });
 
-    test('custom localizations can override searchingText and searchHint', () {
+    test('custom localizations can override itemDeleted and itemDeleteFailed', () {
       final loc = _CustomSearchLocalizations();
       expect(loc.searchingText, equals('Searching...'));
       expect(loc.searchHint, equals('Find items...'));
+      expect(loc.itemDeleted, equals('Element supprimé'));
+      expect(loc.itemDeleteFailed, equals('Échec de suppression'));
+    });
+
+    test('injected custom localizations are used by onItemDeleted snackbars', () async {
+      final customLoc = _CustomSearchLocalizations();
+      final bloc = _TestDeletableCollectionBloc(localizations: customLoc);
+      final emittedStates = <ScreenManagerCubitState>[];
+      final sub = bloc.screenManagerCubit.stream.listen(emittedStates.add);
+
+      // Trigger successful delete hook
+      bloc.onItemDeleted(const TestItem(id: '1', title: 'Item 1'), true);
+      await Future<void>.delayed(Duration.zero);
+      expect(emittedStates.any((s) =>
+          s is ScreenManagerCubitStateDisplaySnackbar &&
+          s.message == 'Element supprimé'), isTrue);
+
+      // Trigger failed delete hook
+      bloc.onItemDeleted(const TestItem(id: '1', title: 'Item 1'), false);
+      await Future<void>.delayed(Duration.zero);
+      expect(emittedStates.any((s) =>
+          s is ScreenManagerCubitStateDisplaySnackbar &&
+          s.message == 'Échec de suppression'), isTrue);
+
+      await sub.cancel();
+      await bloc.close();
     });
   });
 }
 
 class _CustomSearchLocalizations extends BlocXLocalizations {
+  @override
+  String get itemDeleted => 'Element supprimé';
+
+  @override
+  String get itemDeleteFailed => 'Échec de suppression';
+
   @override
   String get searchingText => 'Searching...';
 
@@ -143,4 +180,13 @@ class _CustomSearchLocalizations extends BlocXLocalizations {
 
   @override
   String get valuesDoNotMatch => '';
+}
+
+class _TestDeletableCollectionBloc
+    extends BlocxCollectionBloc<TestItem, void>
+    with BlocxCollectionDeletableMixin<TestItem, void> {
+  _TestDeletableCollectionBloc({super.localizations});
+
+  @override
+  bool get displayDeletedSnackbar => true;
 }
