@@ -107,9 +107,7 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
       clearList();
 
       add(
-        BlocxCollectionEventLoadInitialPage<Entity, Payload>(
-          payload: payload,
-        ),
+        BlocxCollectionEventLoadInitialPage<Entity, Payload>(payload: payload),
       );
 
       return;
@@ -126,11 +124,7 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
       if (searchText != event.searchText) return;
 
       if (result.isFailure) {
-        await handleError(
-          result.error!,
-          emit,
-          stacktrace: result.stackTrace,
-        );
+        await handleError(result.error!, emit, stacktrace: result.stackTrace);
         return;
       }
 
@@ -139,11 +133,7 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
       clearList();
       _searchLoadedCount = page.items.length;
 
-      await insertToList(
-        page.items,
-        !page.hasNext,
-        DataInsertSource.search,
-      );
+      await insertToList(page.items, !page.hasNext, DataInsertSource.search);
 
       emitState(emit);
     } finally {
@@ -183,11 +173,7 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
     BlocxCollectionEventClearSearch<Entity> event,
     Emitter<BlocxCollectionState<Entity>> emit,
   ) {
-    add(
-      BlocxCollectionEventLoadInitialPage<Entity, Payload>(
-        payload: payload,
-      ),
-    );
+    add(BlocxCollectionEventLoadInitialPage<Entity, Payload>(payload: payload));
   }
 
   /// Loads the next page of search results.
@@ -209,16 +195,9 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
     if (gen != loadGeneration) return;
 
     if (result.isFailure) {
-      await handleError(
-        result.error!,
-        emit,
-        stacktrace: result.stackTrace,
-      );
+      await handleError(result.error!, emit, stacktrace: result.stackTrace);
       infiniteListBloc.add(
-        BlocxInfiniteListEventChangeLoadBottomDataStatus(
-          false,
-          hasReachedEnd,
-        ),
+        BlocxInfiniteListEventChangeLoadBottomDataStatus(false, hasReachedEnd),
       );
       isLoadingNextPage = false;
       emitState(emit);
@@ -227,19 +206,12 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
 
     final page = result.data!;
 
-    await insertToList(
-      page.items,
-      !page.hasNext,
-      DataInsertSource.nextPage,
-    );
+    await insertToList(page.items, !page.hasNext, DataInsertSource.nextPage);
 
     _searchLoadedCount += page.items.length;
 
     infiniteListBloc.add(
-      BlocxInfiniteListEventChangeLoadBottomDataStatus(
-        false,
-        hasReachedEnd,
-      ),
+      BlocxInfiniteListEventChangeLoadBottomDataStatus(false, hasReachedEnd),
     );
 
     emitState(emit);
@@ -273,15 +245,13 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
 
     try {
       final result = await task.execute(
-          offset: 0, limit: list.isNotEmpty ? list.length : limit);
+        offset: 0,
+        limit: list.isNotEmpty ? list.length : limit,
+      );
       if (gen != loadGeneration) return;
 
       if (result.isFailure) {
-        await handleError(
-          result.error!,
-          emit,
-          stacktrace: result.stackTrace,
-        );
+        await handleError(result.error!, emit, stacktrace: result.stackTrace);
         return;
       }
 
@@ -290,11 +260,7 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
       clearList();
       _searchLoadedCount = page.items.length;
 
-      await insertToList(
-        page.items,
-        !page.hasNext,
-        DataInsertSource.search,
-      );
+      await insertToList(page.items, !page.hasNext, DataInsertSource.search);
 
       emitState(emit);
     } finally {

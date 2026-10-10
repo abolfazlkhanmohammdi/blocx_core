@@ -10,7 +10,7 @@ class FakeDeleteUseCase extends BlocxBaseUseCase<TestItem, bool> {
   final List<TestItem> deletedItems = [];
 
   FakeDeleteUseCase({super.eventHub})
-      : super(commandType: BlocxCommandType.delete);
+    : super(commandType: BlocxCommandType.delete);
 
   @override
   Future<BlocxUseCaseResult<bool>> perform(TestItem input) async {
@@ -65,10 +65,7 @@ class CombinationCollectionBloc extends BlocxCollectionBloc<TestItem, void>
 
   @override
   BlocxUseCaseTask<Object?, bool>? deleteItemTask(TestItem item) =>
-      BlocxUseCaseTask(
-        useCase: deleteUseCase,
-        inputBuilder: () => item,
-      );
+      BlocxUseCaseTask(useCase: deleteUseCase, inputBuilder: () => item);
 }
 
 void main() {
@@ -83,7 +80,9 @@ void main() {
       eventHub = BlocxSimpleEventHub();
       source = FakePaginatedSource(
         List.generate(
-            50, (i) => TestItem(id: 'item_$i', title: 'Product $i', order: i)),
+          50,
+          (i) => TestItem(id: 'item_$i', title: 'Product $i', order: i),
+        ),
       );
       paginatedUseCase = FakePaginatedUseCase(source: source);
       searchUseCase = FakeSearchUseCase(source: source);
@@ -112,8 +111,10 @@ void main() {
         expect(bloc.state.list.length, equals(20));
         expect(bloc.offset, equals(20));
         expect(bloc.state.isLoadingNextPage, isFalse);
-        expect(paginatedUseCase.recordedInputs.map((e) => e.offset),
-            equals([0, 10]));
+        expect(
+          paginatedUseCase.recordedInputs.map((e) => e.offset),
+          equals([0, 10]),
+        );
       },
     );
 
@@ -147,8 +148,10 @@ void main() {
         expect(bloc.state.list.first.id, equals('item_new'));
 
         // Next-page input should be offset 10, not 11 (preventing drift)
-        expect(paginatedUseCase.recordedInputs.map((e) => e.offset),
-            equals([0, 10]));
+        expect(
+          paginatedUseCase.recordedInputs.map((e) => e.offset),
+          equals([0, 10]),
+        );
         expect(bloc.offset, equals(20));
       },
     );
@@ -230,8 +233,10 @@ void main() {
         expect(bloc.state.list.length, equals(10));
         expect(bloc.offset, equals(10));
         expect(bloc.state.isRefreshing, isFalse);
-        expect(paginatedUseCase.recordedInputs.map((e) => e.offset),
-            equals([0, 10, 0]));
+        expect(
+          paginatedUseCase.recordedInputs.map((e) => e.offset),
+          equals([0, 10, 0]),
+        );
       },
     );
   });

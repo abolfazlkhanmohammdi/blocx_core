@@ -8,7 +8,7 @@ class ThrowingBroadcastUseCase extends BlocxBaseUseCase<String, TestItem> {
   StackTrace? capturedBroadcastStackTrace;
 
   ThrowingBroadcastUseCase({super.eventHub})
-      : super(commandType: BlocxCommandType.create);
+    : super(commandType: BlocxCommandType.create);
 
   @override
   Future<BlocxUseCaseResult<TestItem>> perform(String input) async {
@@ -18,7 +18,8 @@ class ThrowingBroadcastUseCase extends BlocxBaseUseCase<String, TestItem> {
   @override
   List<BlocxBaseEntity> resolveCommandEntities(String input, TestItem output) {
     throw StateError(
-        'Simulated broadcast resolution failure after successful write');
+      'Simulated broadcast resolution failure after successful write',
+    );
   }
 
   @override
@@ -32,25 +33,29 @@ class ThrowingBroadcastUseCase extends BlocxBaseUseCase<String, TestItem> {
 void main() {
   group('C6: Isolate broadcast in UseCase execute', () {
     test(
-        'successful perform returns success even if resolveCommandEntities throws',
-        () async {
-      final eventHub = BlocxSimpleEventHub();
-      final useCase = ThrowingBroadcastUseCase(eventHub: eventHub);
+      'successful perform returns success even if resolveCommandEntities throws',
+      () async {
+        final eventHub = BlocxSimpleEventHub();
+        final useCase = ThrowingBroadcastUseCase(eventHub: eventHub);
 
-      final result = await useCase.execute('item_1');
+        final result = await useCase.execute('item_1');
 
-      // CRITICAL ASSERTION: The use case must be considered a SUCCESS because perform succeeded
-      expect(result.isSuccess, isTrue,
+        // CRITICAL ASSERTION: The use case must be considered a SUCCESS because perform succeeded
+        expect(
+          result.isSuccess,
+          isTrue,
           reason:
-              'A throwing resolveCommandEntities caused a successful perform to fail');
-      expect(result.data, isNotNull);
-      expect(result.data!.id, equals('item_1'));
-      expect(result.data!.title, equals('Item item_1'));
+              'A throwing resolveCommandEntities caused a successful perform to fail',
+        );
+        expect(result.data, isNotNull);
+        expect(result.data!.id, equals('item_1'));
+        expect(result.data!.title, equals('Item item_1'));
 
-      // The broadcast error must be caught and routed to handleBroadcastError
-      expect(useCase.capturedBroadcastError, isA<StateError>());
+        // The broadcast error must be caught and routed to handleBroadcastError
+        expect(useCase.capturedBroadcastError, isA<StateError>());
 
-      eventHub.dispose();
-    });
+        eventHub.dispose();
+      },
+    );
   });
 }

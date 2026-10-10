@@ -12,8 +12,9 @@ class CursorTestItem extends BlocxBaseEntity {
   String get identifier => id;
 }
 
-class FakeCursorUseCase extends BlocxCursorPaginatedUseCase<
-    BlocxCursorPaginatedInput, CursorTestItem> {
+class FakeCursorUseCase
+    extends
+        BlocxCursorPaginatedUseCase<BlocxCursorPaginatedInput, CursorTestItem> {
   final List<String?> requestedCursors = [];
 
   @override
@@ -32,9 +33,7 @@ class FakeCursorUseCase extends BlocxCursorPaginatedUseCase<
       );
     } else if (input.cursor == 'cursor_page_2') {
       return successResult(
-        items: [
-          const CursorTestItem(id: '3', label: 'Item 3'),
-        ],
+        items: [const CursorTestItem(id: '3', label: 'Item 3')],
         input: input,
         nextCursor: null,
       );
@@ -51,11 +50,11 @@ class CursorCollectionBloc extends BlocxCollectionBloc<CursorTestItem, void>
 
   @override
   BlocxCursorPaginatedUseCaseTask<BlocxCursorPaginatedInput, CursorTestItem>?
-      get cursorPaginationTask => BlocxCursorPaginatedUseCaseTask(
-            useCase: cursorUseCase,
-            inputBuilder: (cursor, limit) =>
-                BlocxCursorPaginatedInput(cursor: cursor, limit: limit),
-          );
+  get cursorPaginationTask => BlocxCursorPaginatedUseCaseTask(
+    useCase: cursorUseCase,
+    inputBuilder: (cursor, limit) =>
+        BlocxCursorPaginatedInput(cursor: cursor, limit: limit),
+  );
 }
 
 void main() {
@@ -79,34 +78,35 @@ void main() {
     });
 
     test(
-        'CursorCollectionBloc tracks cursor across initial load and pagination',
-        () async {
-      final useCase = FakeCursorUseCase();
-      final bloc = CursorCollectionBloc(useCase);
+      'CursorCollectionBloc tracks cursor across initial load and pagination',
+      () async {
+        final useCase = FakeCursorUseCase();
+        final bloc = CursorCollectionBloc(useCase);
 
-      expect(bloc.nextCursor, isNull);
+        expect(bloc.nextCursor, isNull);
 
-      bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
-      await bloc.stream.firstWhere((s) => s.list.isNotEmpty);
+        bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
+        await bloc.stream.firstWhere((s) => s.list.isNotEmpty);
 
-      expect(useCase.requestedCursors, equals([null]));
-      expect(bloc.nextCursor, equals('cursor_page_2'));
-      expect(bloc.state.list.length, equals(2));
-      expect(bloc.offset, equals(2));
+        expect(useCase.requestedCursors, equals([null]));
+        expect(bloc.nextCursor, equals('cursor_page_2'));
+        expect(bloc.state.list.length, equals(2));
+        expect(bloc.offset, equals(2));
 
-      bloc.add(BlocxCollectionEventLoadNextPage());
-      await bloc.stream.firstWhere((s) => s.list.length == 3);
+        bloc.add(BlocxCollectionEventLoadNextPage());
+        await bloc.stream.firstWhere((s) => s.list.length == 3);
 
-      expect(useCase.requestedCursors, equals([null, 'cursor_page_2']));
-      expect(bloc.nextCursor, isNull);
-      expect(bloc.state.list.length, equals(3));
-      expect(bloc.offset, equals(3));
+        expect(useCase.requestedCursors, equals([null, 'cursor_page_2']));
+        expect(bloc.nextCursor, isNull);
+        expect(bloc.state.list.length, equals(3));
+        expect(bloc.offset, equals(3));
 
-      bloc.clearList();
-      expect(bloc.nextCursor, isNull);
-      expect(bloc.offset, equals(0));
+        bloc.clearList();
+        expect(bloc.nextCursor, isNull);
+        expect(bloc.offset, equals(0));
 
-      await bloc.close();
-    });
+        await bloc.close();
+      },
+    );
   });
 }

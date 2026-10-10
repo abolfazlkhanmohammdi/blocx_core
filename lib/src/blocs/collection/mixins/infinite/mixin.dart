@@ -34,14 +34,14 @@ mixin BlocxCollectionInfiniteMixin<Entity extends BlocxBaseEntity, Payload>
   /// Defaults to [paginationTask]. Override this only when next-page loading
   /// requires a different use case or input shape.
   BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Entity>?
-      get loadNextPageTask => paginationTask;
+  get loadNextPageTask => paginationTask;
 
   /// Task responsible for loading the next page using cursor pagination.
   ///
   /// Defaults to [cursorPaginationTask]. Override this only when next-page loading
   /// requires a different cursor task or input shape.
   BlocxCursorPaginatedUseCaseTask<BlocxCursorPaginatedInput, Entity>?
-      get loadNextPageCursorTask => cursorPaginationTask;
+  get loadNextPageCursorTask => cursorPaginationTask;
 
   /// Handles next-page loading.
   Future<void> loadNextPage(
@@ -101,11 +101,7 @@ mixin BlocxCollectionInfiniteMixin<Entity extends BlocxBaseEntity, Payload>
 
       final page = result.data!;
 
-      await insertToList(
-        page.items,
-        !page.hasNext,
-        DataInsertSource.nextPage,
-      );
+      await insertToList(page.items, !page.hasNext, DataInsertSource.nextPage);
 
       offset += page.items.length;
       nextCursor = page.nextCursor;
@@ -144,11 +140,7 @@ mixin BlocxCollectionInfiniteMixin<Entity extends BlocxBaseEntity, Payload>
 
       final page = result.data!;
 
-      await insertToList(
-        page.items,
-        !page.hasNext,
-        DataInsertSource.nextPage,
-      );
+      await insertToList(page.items, !page.hasNext, DataInsertSource.nextPage);
 
       offset += page.items.length;
       nextCursor = page.nextCursor;

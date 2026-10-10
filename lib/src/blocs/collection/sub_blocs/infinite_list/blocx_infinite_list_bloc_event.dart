@@ -13,7 +13,9 @@ class BlocxInfiniteListEventChangeLoadBottomDataStatus
   final bool isLoading;
   final bool hasReachedEnd;
   BlocxInfiniteListEventChangeLoadBottomDataStatus(
-      this.isLoading, this.hasReachedEnd);
+    this.isLoading,
+    this.hasReachedEnd,
+  );
 }
 
 class BlocxInfiniteListEventOnScroll extends BlocxInfiniteListEvent {

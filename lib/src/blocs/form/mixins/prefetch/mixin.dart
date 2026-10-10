@@ -21,8 +21,12 @@ import 'package:blocx_core/src/core/models/blocx_base_form_entity.dart';
 /// - [F]: The form entity type.
 /// - [P]: The form payload type.
 /// - [E]: The enum key representing each required dataset.
-mixin BlocxFormPrefetchMixin<F extends BlocxBaseFormEntity<F, E>, P,
-    E extends Enum> on BlocxFormBloc<F, P, E> {
+mixin BlocxFormPrefetchMixin<
+  F extends BlocxBaseFormEntity<F, E>,
+  P,
+  E extends Enum
+>
+    on BlocxFormBloc<F, P, E> {
   /// Required initial data tasks indexed by enum key.
   ///
   /// Each task is executed during [BlocxFormEventFetchRequiredInfo].
@@ -116,7 +120,10 @@ mixin BlocxFormPrefetchMixin<F extends BlocxBaseFormEntity<F, E>, P,
 
   /// Called after one dataset is successfully fetched.
   FutureOr<void> onInfoFetched(
-      E key, dynamic data, Emitter<BlocxFormState<F, E>> emit) {}
+    E key,
+    dynamic data,
+    Emitter<BlocxFormState<F, E>> emit,
+  ) {}
 
   /// Current fields waiting for required info.
   @override

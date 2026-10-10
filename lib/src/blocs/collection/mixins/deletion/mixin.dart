@@ -41,8 +41,8 @@ mixin BlocxCollectionDeletableMixin<Entity extends BlocxBaseEntity, Payload>
   /// Return `null` to fall back to deleting each item individually through
   /// [deleteItemTask] or [performDeleteItem].
   BlocxUseCaseTask<Object?, bool>? deleteMultipleItemsTask(
-          List<Entity> items) =>
-      null;
+    List<Entity> items,
+  ) => null;
 
   /// Registers delete event handlers.
   @override
@@ -70,8 +70,11 @@ mixin BlocxCollectionDeletableMixin<Entity extends BlocxBaseEntity, Payload>
         removeItemFromList(item);
 
         if (isSelectable) {
-          add(BlocxCollectionEventDeselectMultipleItems<Entity>(
-              items: <Entity>[item]));
+          add(
+            BlocxCollectionEventDeselectMultipleItems<Entity>(
+              items: <Entity>[item],
+            ),
+          );
         }
       }
 
@@ -206,10 +209,7 @@ mixin BlocxCollectionDeletableMixin<Entity extends BlocxBaseEntity, Payload>
   }
 
   /// Called after a bulk delete operation finishes.
-  void onMultipleItemsDeleted(
-    List<Entity> items,
-    Map<Entity, bool> results,
-  ) {
+  void onMultipleItemsDeleted(List<Entity> items, Map<Entity, bool> results) {
     if (!displayDeletedSnackbar) return;
 
     final successCount = results.values.where((deleted) => deleted).length;

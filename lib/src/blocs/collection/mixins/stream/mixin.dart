@@ -48,11 +48,11 @@ mixin BlocxCollectionSyncStreamMixin<T extends BlocxBaseEntity, P>
   ///
   /// Defaults to all CRUD commands: `create`, `read`, `update`, and `delete`.
   List<BlocxCommandType> get listenedCommands => const <BlocxCommandType>[
-        BlocxCommandType.create,
-        BlocxCommandType.read,
-        BlocxCommandType.update,
-        BlocxCommandType.delete,
-      ];
+    BlocxCommandType.create,
+    BlocxCommandType.read,
+    BlocxCommandType.update,
+    BlocxCommandType.delete,
+  ];
 
   /// Filter hook to decide whether an incoming [entity] for [command] belongs
   /// to this collection instance (e.g., matching a parent ID in `payload` or

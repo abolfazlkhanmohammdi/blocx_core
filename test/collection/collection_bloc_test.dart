@@ -16,15 +16,19 @@ class TestPaginatedUseCase
     extends BlocxPaginatedUseCase<BlocxPaginatedInput, TestEntity> {
   @override
   Future<BlocxUseCaseResult<BlocxPage<TestEntity>>> perform(
-      BlocxPaginatedInput input) async {
+    BlocxPaginatedInput input,
+  ) async {
     final count = input.limit;
     final items = List.generate(
       count,
       (i) => TestEntity(
-          id: '${input.offset + i}', title: 'Item ${input.offset + i}'),
+        id: '${input.offset + i}',
+        title: 'Item ${input.offset + i}',
+      ),
     );
     return success(
-        BlocxPage(items: items, offset: input.offset, limit: input.limit));
+      BlocxPage(items: items, offset: input.offset, limit: input.limit),
+    );
   }
 }
 
@@ -39,11 +43,11 @@ class TestCollectionBloc extends BlocxCollectionBloc<TestEntity, void>
 
   @override
   BlocxPaginatedUseCaseTask<BlocxPaginatedInput, TestEntity>
-      get paginationTask => BlocxPaginatedUseCaseTask(
-            useCase: _useCase,
-            inputBuilder: (offset, limit) =>
-                BlocxPaginatedInput(limit: limit, offset: offset),
-          );
+  get paginationTask => BlocxPaginatedUseCaseTask(
+    useCase: _useCase,
+    inputBuilder: (offset, limit) =>
+        BlocxPaginatedInput(limit: limit, offset: offset),
+  );
 }
 
 void main() {
@@ -76,16 +80,18 @@ void main() {
       await initFuture;
 
       const newItem = TestEntity(id: '999', title: 'New Item');
-      final addFuture =
-          bloc.stream.firstWhere((s) => s.list.any((e) => e.id == '999'));
+      final addFuture = bloc.stream.firstWhere(
+        (s) => s.list.any((e) => e.id == '999'),
+      );
       bloc.add(BlocxCollectionEventAddItem(item: newItem, index: 0));
       await addFuture;
 
       expect(bloc.list.first.id, equals('999'));
 
       const updatedItem = TestEntity(id: '999', title: 'Updated Title');
-      final updateFuture = bloc.stream.firstWhere((s) =>
-          s.list.any((e) => e.id == '999' && e.title == 'Updated Title'));
+      final updateFuture = bloc.stream.firstWhere(
+        (s) => s.list.any((e) => e.id == '999' && e.title == 'Updated Title'),
+      );
       bloc.add(BlocxCollectionEventUpdateItem(item: updatedItem));
       await updateFuture;
 
@@ -97,15 +103,17 @@ void main() {
       bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
       await initFuture;
 
-      final selectFuture =
-          bloc.stream.firstWhere((s) => s.selectedItemIds.contains('0'));
+      final selectFuture = bloc.stream.firstWhere(
+        (s) => s.selectedItemIds.contains('0'),
+      );
       bloc.add(BlocxCollectionEventSelectItem(item: bloc.list.first));
       await selectFuture;
 
       expect(bloc.selectedItemIds, contains('0'));
 
-      final deselectFuture =
-          bloc.stream.firstWhere((s) => !s.selectedItemIds.contains('0'));
+      final deselectFuture = bloc.stream.firstWhere(
+        (s) => !s.selectedItemIds.contains('0'),
+      );
       bloc.add(BlocxCollectionEventDeselectItem(item: bloc.list.first));
       await deselectFuture;
 

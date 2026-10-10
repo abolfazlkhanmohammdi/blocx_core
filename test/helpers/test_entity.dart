@@ -5,11 +5,7 @@ class TestItem extends BlocxBaseEntity {
   final String title;
   final int order;
 
-  const TestItem({
-    required this.id,
-    required this.title,
-    this.order = 0,
-  });
+  const TestItem({required this.id, required this.title, this.order = 0});
 
   @override
   String get identifier => id;

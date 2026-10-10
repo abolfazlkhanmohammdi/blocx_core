@@ -3,8 +3,11 @@ import 'package:blocx_core/src/core/models/blocx_base_form_entity.dart'
     show BlocxBaseFormEntity;
 import 'package:blocx_core/src/core/localizations/loc_provider.dart' show loc;
 
-class BlocxDoublePositiveValidator<F extends BlocxBaseFormEntity<F, E>,
-    E extends Enum> extends BlocxFieldValidator<F, E, double> {
+class BlocxDoublePositiveValidator<
+  F extends BlocxBaseFormEntity<F, E>,
+  E extends Enum
+>
+    extends BlocxFieldValidator<F, E, double> {
   const BlocxDoublePositiveValidator();
 
   @override

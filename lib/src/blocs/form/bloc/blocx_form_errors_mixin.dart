@@ -16,13 +16,7 @@ enum ErrorMutationSource {
   formValidationMixinApplyFieldValidationErrors,
 }
 
-enum _ErrorMutationType {
-  add,
-  addBulk,
-  remove,
-  clearField,
-  clearAll,
-}
+enum _ErrorMutationType { add, addBulk, remove, clearField, clearAll }
 
 /// Adds field-level error handling to a [BlocxFormBloc].
 ///
@@ -32,8 +26,12 @@ enum _ErrorMutationType {
 /// Timed errors are cleared by dispatching [BlocxFormEventClearFieldError]
 /// after their duration expires. This avoids using an old [Emitter] after an
 /// event handler has already completed.
-mixin BlocxFormErrorsMixin<F extends BlocxBaseFormEntity<F, E>, P,
-    E extends Enum> on BlocxBaseBloc<BlocxFormEvent, BlocxFormState<F, E>> {
+mixin BlocxFormErrorsMixin<
+  F extends BlocxBaseFormEntity<F, E>,
+  P,
+  E extends Enum
+>
+    on BlocxBaseBloc<BlocxFormEvent, BlocxFormState<F, E>> {
   final Map<E, Set<String>> _errors = <E, Set<String>>{};
   final Map<E, List<_TimedFieldErrorTimer>> _timers =
       <E, List<_TimedFieldErrorTimer>>{};
@@ -62,9 +60,7 @@ mixin BlocxFormErrorsMixin<F extends BlocxBaseFormEntity<F, E>, P,
   /// An immutable snapshot of the current field errors.
   Map<E, Set<String>> get errors {
     return UnmodifiableMapView(
-      _errors.map(
-        (key, value) => MapEntry(key, UnmodifiableSetView(value)),
-      ),
+      _errors.map((key, value) => MapEntry(key, UnmodifiableSetView(value))),
     );
   }
 
@@ -106,9 +102,9 @@ mixin BlocxFormErrorsMixin<F extends BlocxBaseFormEntity<F, E>, P,
       timer: timer,
     );
 
-    _timers.putIfAbsent(event.key, () => <_TimedFieldErrorTimer>[]).add(
-          timedErrorTimer,
-        );
+    _timers
+        .putIfAbsent(event.key, () => <_TimedFieldErrorTimer>[])
+        .add(timedErrorTimer);
   }
 
   /// Emits the current form state.
@@ -157,10 +153,7 @@ mixin BlocxFormErrorsMixin<F extends BlocxBaseFormEntity<F, E>, P,
         error: event.message!,
       );
 
-      _cancelFieldTimers(
-        event.key,
-        errorMessage: event.message,
-      );
+      _cancelFieldTimers(event.key, errorMessage: event.message);
     }
 
     emitState(emit);
@@ -319,8 +312,5 @@ class _TimedFieldErrorTimer {
   final String message;
   final Timer timer;
 
-  const _TimedFieldErrorTimer({
-    required this.message,
-    required this.timer,
-  });
+  const _TimedFieldErrorTimer({required this.message, required this.timer});
 }

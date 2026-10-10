@@ -7,6 +7,8 @@ import 'package:stream_transform/stream_transform.dart';
 EventTransformer<E> debounceRestartable<E>(Duration duration) {
   return (events, mapper) {
     return restartable<E>().call(
-        events.debounce(duration, leading: false, trailing: true), mapper);
+      events.debounce(duration, leading: false, trailing: true),
+      mapper,
+    );
   };
 }

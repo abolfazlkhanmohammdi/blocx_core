@@ -36,7 +36,7 @@ mixin BlocxCollectionRefreshableMixin<Entity extends BlocxBaseEntity, Payload>
   /// Defaults to [paginationTask]. Override this only when refresh requires a
   /// different use case or input shape.
   BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Entity>?
-      get refreshPageUseCaseTask => paginationTask;
+  get refreshPageUseCaseTask => paginationTask;
 
   /// Drag distance required to trigger pull-to-refresh.
   double get refreshThreshold => 64.0;
@@ -97,11 +97,7 @@ mixin BlocxCollectionRefreshableMixin<Entity extends BlocxBaseEntity, Payload>
       clearList();
       offset = page.items.length;
 
-      await insertToList(
-        page.items,
-        !page.hasNext,
-        DataInsertSource.refresh,
-      );
+      await insertToList(page.items, !page.hasNext, DataInsertSource.refresh);
 
       emitState(emit);
     } finally {

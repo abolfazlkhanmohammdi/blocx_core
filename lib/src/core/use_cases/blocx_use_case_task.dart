@@ -8,18 +8,12 @@ import 'package:blocx_core/src/blocs/collection/use_cases/blocx_paginated_use_ca
 typedef InputBuilder<Input> = Input Function();
 
 /// Signature for a function that builds a cursor-based paginated use case input.
-typedef CursorPaginatedInputBuilder<Input extends BlocxCursorPaginatedInput>
-    = Input Function(
-  String? cursor,
-  int limit,
-);
+typedef CursorPaginatedInputBuilder<Input extends BlocxCursorPaginatedInput> =
+    Input Function(String? cursor, int limit);
 
 /// Signature for a function that builds a paginated use case input.
-typedef PaginatedInputBuilder<Input extends BlocxPaginatedInput> = Input
-    Function(
-  int offset,
-  int limit,
-);
+typedef PaginatedInputBuilder<Input extends BlocxPaginatedInput> =
+    Input Function(int offset, int limit);
 
 /// Pairs a [BlocxBaseUseCase] with a lazily evaluated input builder.
 ///
@@ -36,10 +30,7 @@ class BlocxUseCaseTask<Input, Output> {
   final InputBuilder<Input> inputBuilder;
 
   /// Creates a use case task.
-  const BlocxUseCaseTask({
-    required this.useCase,
-    required this.inputBuilder,
-  });
+  const BlocxUseCaseTask({required this.useCase, required this.inputBuilder});
 
   /// Executes [useCase] using the latest value from [inputBuilder].
   Future<BlocxUseCaseResult<Output>> execute() {
@@ -54,8 +45,10 @@ class BlocxUseCaseTask<Input, Output> {
 ///
 /// This task is used by collection mixins for initial load, next-page loading,
 /// refresh, and search.
-class BlocxPaginatedUseCaseTask<Input extends BlocxPaginatedInput,
-    Output extends BlocxBaseEntity> {
+class BlocxPaginatedUseCaseTask<
+  Input extends BlocxPaginatedInput,
+  Output extends BlocxBaseEntity
+> {
   /// The paginated use case to execute.
   final BlocxPaginatedUseCase<Input, Output> useCase;
 
@@ -78,8 +71,10 @@ class BlocxPaginatedUseCaseTask<Input extends BlocxPaginatedInput,
 }
 
 /// Pairs a [BlocxCursorPaginatedUseCase] with a lazily evaluated cursor input.
-class BlocxCursorPaginatedUseCaseTask<Input extends BlocxCursorPaginatedInput,
-    Output extends BlocxBaseEntity> {
+class BlocxCursorPaginatedUseCaseTask<
+  Input extends BlocxCursorPaginatedInput,
+  Output extends BlocxBaseEntity
+> {
   /// The cursor-paginated use case to execute.
   final BlocxCursorPaginatedUseCase<Input, Output> useCase;
 

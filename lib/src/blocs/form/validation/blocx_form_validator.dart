@@ -1,8 +1,10 @@
 import 'package:blocx_core/form_bloc.dart';
 import 'package:meta/meta.dart';
 
-abstract class BlocxFormValidator<F extends BlocxBaseFormEntity<F, E>,
-    E extends Enum> {
+abstract class BlocxFormValidator<
+  F extends BlocxBaseFormEntity<F, E>,
+  E extends Enum
+> {
   List<TimedErrorMessage> validateField(F formData, E key) {
     var fieldValidators = getValidatorsByKey(formData, key);
     var value =
@@ -28,7 +30,9 @@ abstract class BlocxFormValidator<F extends BlocxBaseFormEntity<F, E>,
 
   @visibleForOverriding
   List<BlocxFieldValidator<F, E, dynamic>> getValidatorsByKey(
-      F formData, E key);
+    F formData,
+    E key,
+  );
   @visibleForOverriding
   List<E> formKeys();
 }

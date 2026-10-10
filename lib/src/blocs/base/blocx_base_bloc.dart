@@ -65,8 +65,8 @@ abstract class BlocxBaseBloc<E extends BlocxBaseEvent, S extends BlocxBaseState>
     super.initialState, {
     BlocxErrorTranslator? errorTranslator,
     BlocXLocalizations? localizations,
-  })  : _injectedErrorTranslator = errorTranslator,
-        _injectedLocalizations = localizations;
+  }) : _injectedErrorTranslator = errorTranslator,
+       _injectedLocalizations = localizations;
 
   /// The error translator used by this bloc to translate errors to [ReadableError]s.
   ///
@@ -100,12 +100,11 @@ abstract class BlocxBaseBloc<E extends BlocxBaseEvent, S extends BlocxBaseState>
     BlocXErrorCode errorCode, {
     Object? error,
     StackTrace? stackTrace,
-  }) =>
-      _screenManagerCubit.displayErrorWidgetByErrorCode(
-        errorCode,
-        error: error,
-        st: stackTrace,
-      );
+  }) => _screenManagerCubit.displayErrorWidgetByErrorCode(
+    errorCode,
+    error: error,
+    st: stackTrace,
+  );
 
   /// Displays a warning snackbar with [message] and optional [title].
   void displayWarningSnackbar(String message, {String? title}) =>

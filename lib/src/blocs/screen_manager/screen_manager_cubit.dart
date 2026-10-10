@@ -12,24 +12,45 @@ class ScreenManagerCubit extends Cubit<ScreenManagerCubitState> {
   void displayErrorWidget(ReadableError error) =>
       emit(ScreenManagerCubitStateDisplayErrorPage(error: error));
 
-  void displayErrorWidgetByErrorCode(BlocXErrorCode errorCode,
-          {Object? error, StackTrace? st}) =>
-      emit(ScreenManagerCubitStateDisplayErrorPageByErrorCode(errorCode,
-          error: error, stackTrace: st));
+  void displayErrorWidgetByErrorCode(
+    BlocXErrorCode errorCode, {
+    Object? error,
+    StackTrace? st,
+  }) => emit(
+    ScreenManagerCubitStateDisplayErrorPageByErrorCode(
+      errorCode,
+      error: error,
+      stackTrace: st,
+    ),
+  );
 
-  void displaySnackbar(String message, BlocXSnackbarType snackbarType,
-      {String? title}) {
+  void displaySnackbar(
+    String message,
+    BlocXSnackbarType snackbarType, {
+    String? title,
+  }) {
     var previous = state;
-    emit(ScreenManagerCubitStateDisplaySnackbar(
-        message: message, title: title, snackbarType: snackbarType));
+    emit(
+      ScreenManagerCubitStateDisplaySnackbar(
+        message: message,
+        title: title,
+        snackbarType: snackbarType,
+      ),
+    );
     emit(previous);
   }
 
   void displaySnackbarByErrorCode(
-      BlocXErrorCode errorCode, BlocXSnackbarType snackbarType) {
+    BlocXErrorCode errorCode,
+    BlocXSnackbarType snackbarType,
+  ) {
     var previous = state;
-    emit(ScreenManagerCubitStateDisplaySnackbarByErrorCode(
-        errorCode: errorCode, snackbarType: snackbarType));
+    emit(
+      ScreenManagerCubitStateDisplaySnackbarByErrorCode(
+        errorCode: errorCode,
+        snackbarType: snackbarType,
+      ),
+    );
     emit(previous);
   }
 

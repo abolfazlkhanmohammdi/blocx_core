@@ -6,8 +6,12 @@ import 'package:blocx_core/src/core/models/blocx_base_form_entity.dart';
 
 import 'events.dart';
 
-mixin BlocxFormSteppedMixin<F extends BlocxBaseFormEntity<F, E>, P,
-    E extends Enum> on BlocxFormBloc<F, P, E> {
+mixin BlocxFormSteppedMixin<
+  F extends BlocxBaseFormEntity<F, E>,
+  P,
+  E extends Enum
+>
+    on BlocxFormBloc<F, P, E> {
   int _stepIndex = 0;
   int _previousStepIndex = 0;
   int get maxStep;
@@ -21,7 +25,9 @@ mixin BlocxFormSteppedMixin<F extends BlocxBaseFormEntity<F, E>, P,
   }
 
   FutureOr<void> nextStep(
-      BlocxFormEventNextStep event, Emitter<BlocxFormState<F, E>> emit) {
+    BlocxFormEventNextStep event,
+    Emitter<BlocxFormState<F, E>> emit,
+  ) {
     if (_stepIndex == maxStep) {
       throw StateError("Max step is $maxStep you cannot go further");
     }
@@ -32,7 +38,9 @@ mixin BlocxFormSteppedMixin<F extends BlocxBaseFormEntity<F, E>, P,
   }
 
   FutureOr<void> previousStep(
-      BlocxFormEventPreviousStep event, Emitter<BlocxFormState<F, E>> emit) {
+    BlocxFormEventPreviousStep event,
+    Emitter<BlocxFormState<F, E>> emit,
+  ) {
     if (_stepIndex == 0) throw ("this is the first step you cannot go back");
     _previousStepIndex = _stepIndex;
     _stepIndex--;
@@ -48,7 +56,9 @@ mixin BlocxFormSteppedMixin<F extends BlocxBaseFormEntity<F, E>, P,
   }
 
   FutureOr<void> goToStep(
-      BlocxFormEventGoToStep event, Emitter<BlocxFormState<F, E>> emit) {
+    BlocxFormEventGoToStep event,
+    Emitter<BlocxFormState<F, E>> emit,
+  ) {
     if (event.stepIndex < 0 || event.stepIndex > maxStep) {
       throw StateError("Invalid step index $event.stepIndex");
     }

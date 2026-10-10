@@ -80,9 +80,9 @@ abstract class BlocxBaseUseCase<Input, Output> {
     BlocxEventHub? eventHub,
     BlocxCommandType? commandType,
     List<BlocxCommandType>? commandTypes,
-  })  : _eventHub = eventHub,
-        _commandType = commandType,
-        _commandTypes = commandTypes;
+  }) : _eventHub = eventHub,
+       _commandType = commandType,
+       _commandTypes = commandTypes;
 
   /// The [BlocxEventHub] used to broadcast entity command events when
   /// [commandType] or [commandTypes] is configured.
@@ -142,11 +142,7 @@ abstract class BlocxBaseUseCase<Input, Output> {
     if (entities.isEmpty) return;
 
     for (final command in commands) {
-      hub.emitEntities(
-        entities,
-        command,
-        origin: eventOrigin,
-      );
+      hub.emitEntities(entities, command, origin: eventOrigin);
     }
   }
 
@@ -240,6 +236,5 @@ abstract class BlocxBaseUseCase<Input, Output> {
   FutureOr<BlocxUseCaseResult<Output>> failureResult(
     Object error,
     StackTrace stackTrace,
-  ) =>
-      BlocxUseCaseFailure<Output>(error, stackTrace);
+  ) => BlocxUseCaseFailure<Output>(error, stackTrace);
 }

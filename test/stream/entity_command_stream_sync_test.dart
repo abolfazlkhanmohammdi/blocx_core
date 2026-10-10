@@ -10,11 +10,7 @@ class NoteEntity extends BlocxBaseEntity {
   final String title;
   final int userId;
 
-  const NoteEntity({
-    required this.id,
-    required this.title,
-    this.userId = 1,
-  });
+  const NoteEntity({required this.id, required this.title, this.userId = 1});
 
   @override
   String get identifier => id;
@@ -30,7 +26,7 @@ class OtherEntity extends BlocxBaseEntity {
 
 class CreateNoteUseCase extends BlocxBaseUseCase<NoteEntity, NoteEntity> {
   CreateNoteUseCase(BlocxEventHub eventHub)
-      : super(eventHub: eventHub, commandType: BlocxCommandType.create);
+    : super(eventHub: eventHub, commandType: BlocxCommandType.create);
 
   @override
   Future<BlocxUseCaseResult<NoteEntity>> perform(NoteEntity input) async {
@@ -40,7 +36,7 @@ class CreateNoteUseCase extends BlocxBaseUseCase<NoteEntity, NoteEntity> {
 
 class UpdateNoteUseCase extends BlocxBaseUseCase<NoteEntity, NoteEntity> {
   UpdateNoteUseCase(BlocxEventHub eventHub)
-      : super(eventHub: eventHub, commandType: BlocxCommandType.update);
+    : super(eventHub: eventHub, commandType: BlocxCommandType.update);
 
   @override
   Future<BlocxUseCaseResult<NoteEntity>> perform(NoteEntity input) async {
@@ -50,7 +46,7 @@ class UpdateNoteUseCase extends BlocxBaseUseCase<NoteEntity, NoteEntity> {
 
 class ReadNoteUseCase extends BlocxBaseUseCase<NoteEntity, NoteEntity> {
   ReadNoteUseCase(BlocxEventHub eventHub)
-      : super(eventHub: eventHub, commandType: BlocxCommandType.read);
+    : super(eventHub: eventHub, commandType: BlocxCommandType.read);
 
   @override
   Future<BlocxUseCaseResult<NoteEntity>> perform(NoteEntity input) async {
@@ -77,7 +73,7 @@ class DeleteNoteUseCase extends BlocxBaseUseCase<NoteEntity, bool> {
 
 class BulkDeleteNotesUseCase extends BlocxBaseUseCase<List<NoteEntity>, bool> {
   BulkDeleteNotesUseCase(BlocxEventHub eventHub)
-      : super(eventHub: eventHub, commandType: BlocxCommandType.delete);
+    : super(eventHub: eventHub, commandType: BlocxCommandType.delete);
 
   @override
   Future<BlocxUseCaseResult<bool>> perform(List<NoteEntity> input) async {
@@ -87,13 +83,10 @@ class BulkDeleteNotesUseCase extends BlocxBaseUseCase<List<NoteEntity>, bool> {
 
 class MultiCommandUseCase extends BlocxBaseUseCase<NoteEntity, NoteEntity> {
   MultiCommandUseCase(BlocxEventHub eventHub)
-      : super(
-          eventHub: eventHub,
-          commandTypes: const [
-            BlocxCommandType.read,
-            BlocxCommandType.update,
-          ],
-        );
+    : super(
+        eventHub: eventHub,
+        commandTypes: const [BlocxCommandType.read, BlocxCommandType.update],
+      );
 
   @override
   Future<BlocxUseCaseResult<NoteEntity>> perform(NoteEntity input) async {
@@ -154,11 +147,11 @@ class SyncedNotesCollectionBloc extends BlocxCollectionBloc<NoteEntity, int?>
 
   @override
   BlocxPaginatedUseCaseTask<BlocxPaginatedInput, NoteEntity>?
-      get paginationTask => BlocxPaginatedUseCaseTask(
-            useCase: const FetchNotesPageUseCase(),
-            inputBuilder: (offset, limit) =>
-                BlocxPaginatedInput(offset: offset, limit: limit),
-          );
+  get paginationTask => BlocxPaginatedUseCaseTask(
+    useCase: const FetchNotesPageUseCase(),
+    inputBuilder: (offset, limit) =>
+        BlocxPaginatedInput(offset: offset, limit: limit),
+  );
 }
 
 class SortedNotesCollectionBloc extends BlocxCollectionBloc<NoteEntity, int?>
@@ -216,17 +209,17 @@ class SlowSubmitUseCase extends BlocxBaseUseCase<NoteFormData, NoteEntity> {
 class SyncedNoteFormBloc
     extends BlocxFormBloc<NoteFormData, NoteEntity, NoteFormField>
     with
-        BlocxFormSyncStreamMixin<NoteFormData, NoteEntity, NoteFormField,
-            NoteEntity> {
+        BlocxFormSyncStreamMixin<
+          NoteFormData,
+          NoteEntity,
+          NoteFormField,
+          NoteEntity
+        > {
   @override
   final BlocxEventHub eventHub;
   final Completer<void>? submitCompleter;
 
-  SyncedNoteFormBloc(
-    super.initialData,
-    this.eventHub, {
-    this.submitCompleter,
-  });
+  SyncedNoteFormBloc(super.initialData, this.eventHub, {this.submitCompleter});
 
   @override
   NoteFormData? mapSyncedEntityToFormData(
@@ -238,9 +231,9 @@ class SyncedNoteFormBloc
 
   @override
   BlocxUseCaseTask<Object?, Object?> get submitUseCaseTask => BlocxUseCaseTask(
-        useCase: SlowSubmitUseCase(completer: submitCompleter),
-        inputBuilder: () => formData,
-      );
+    useCase: SlowSubmitUseCase(completer: submitCompleter),
+    inputBuilder: () => formData,
+  );
 }
 
 void main() {
@@ -285,78 +278,85 @@ void main() {
       await sub.cancel();
     });
 
-    test('UseCase with multiple commandTypes emits an event for each command',
-        () async {
-      final receivedEvents = <BlocxEntityEvent<NoteEntity>>[];
-      final sub = eventHub.onEntity<NoteEntity>().listen(receivedEvents.add);
+    test(
+      'UseCase with multiple commandTypes emits an event for each command',
+      () async {
+        final receivedEvents = <BlocxEntityEvent<NoteEntity>>[];
+        final sub = eventHub.onEntity<NoteEntity>().listen(receivedEvents.add);
 
-      final multiUseCase = MultiCommandUseCase(eventHub);
-      await multiUseCase.execute(const NoteEntity(id: '7', title: 'Multi'));
+        final multiUseCase = MultiCommandUseCase(eventHub);
+        await multiUseCase.execute(const NoteEntity(id: '7', title: 'Multi'));
 
-      await Future<void>.delayed(const Duration(milliseconds: 20));
+        await Future<void>.delayed(const Duration(milliseconds: 20));
 
-      expect(receivedEvents.length, equals(2));
-      expect(
-        receivedEvents.map((e) => e.command).toList(),
-        equals([BlocxCommandType.read, BlocxCommandType.update]),
-      );
+        expect(receivedEvents.length, equals(2));
+        expect(
+          receivedEvents.map((e) => e.command).toList(),
+          equals([BlocxCommandType.read, BlocxCommandType.update]),
+        );
 
-      await sub.cancel();
-    });
-
-    test('Paginated and bulk UseCases resolve entity lists automatically',
-        () async {
-      final receivedEvents = <BlocxEntityEvent<NoteEntity>>[];
-      final sub = eventHub.onEntity<NoteEntity>().listen(receivedEvents.add);
-
-      final paginatedReadUseCase = FetchNotesPageUseCase(
-        eventHub: eventHub,
-        commandType: BlocxCommandType.read,
-      );
-      await paginatedReadUseCase.execute(
-        const BlocxPaginatedInput(limit: 3, offset: 0),
-      );
-
-      final bulkDeleteUseCase = BulkDeleteNotesUseCase(eventHub);
-      await bulkDeleteUseCase.execute(const [
-        NoteEntity(id: '1', title: 'Note 1'),
-        NoteEntity(id: '2', title: 'Note 2'),
-      ]);
-
-      await Future<void>.delayed(const Duration(milliseconds: 20));
-
-      expect(receivedEvents.length, equals(2));
-      expect(receivedEvents[0].command, equals(BlocxCommandType.read));
-      expect(receivedEvents[0].entities.length, equals(3));
-      expect(receivedEvents[1].command, equals(BlocxCommandType.delete));
-      expect(receivedEvents[1].entities.length, equals(2));
-
-      await sub.cancel();
-    });
+        await sub.cancel();
+      },
+    );
 
     test(
-        'DeleteUseCase returning false or throwing exception does not broadcast',
-        () async {
-      final receivedEvents = <BlocxEntityEvent<NoteEntity>>[];
-      final sub = eventHub.onEntity<NoteEntity>().listen(receivedEvents.add);
+      'Paginated and bulk UseCases resolve entity lists automatically',
+      () async {
+        final receivedEvents = <BlocxEntityEvent<NoteEntity>>[];
+        final sub = eventHub.onEntity<NoteEntity>().listen(receivedEvents.add);
 
-      final falseDelete = DeleteNoteUseCase(eventHub, shouldSucceed: false);
-      final throwingDelete = DeleteNoteUseCase(eventHub, shouldThrow: true);
+        final paginatedReadUseCase = FetchNotesPageUseCase(
+          eventHub: eventHub,
+          commandType: BlocxCommandType.read,
+        );
+        await paginatedReadUseCase.execute(
+          const BlocxPaginatedInput(limit: 3, offset: 0),
+        );
 
-      await falseDelete.execute(const NoteEntity(id: '1', title: 'Note 1'));
-      await throwingDelete.execute(const NoteEntity(id: '1', title: 'Note 1'));
+        final bulkDeleteUseCase = BulkDeleteNotesUseCase(eventHub);
+        await bulkDeleteUseCase.execute(const [
+          NoteEntity(id: '1', title: 'Note 1'),
+          NoteEntity(id: '2', title: 'Note 2'),
+        ]);
 
-      await Future<void>.delayed(const Duration(milliseconds: 20));
-      expect(receivedEvents, isEmpty);
+        await Future<void>.delayed(const Duration(milliseconds: 20));
 
-      await sub.cancel();
-    });
+        expect(receivedEvents.length, equals(2));
+        expect(receivedEvents[0].command, equals(BlocxCommandType.read));
+        expect(receivedEvents[0].entities.length, equals(3));
+        expect(receivedEvents[1].command, equals(BlocxCommandType.delete));
+        expect(receivedEvents[1].entities.length, equals(2));
+
+        await sub.cancel();
+      },
+    );
+
+    test(
+      'DeleteUseCase returning false or throwing exception does not broadcast',
+      () async {
+        final receivedEvents = <BlocxEntityEvent<NoteEntity>>[];
+        final sub = eventHub.onEntity<NoteEntity>().listen(receivedEvents.add);
+
+        final falseDelete = DeleteNoteUseCase(eventHub, shouldSucceed: false);
+        final throwingDelete = DeleteNoteUseCase(eventHub, shouldThrow: true);
+
+        await falseDelete.execute(const NoteEntity(id: '1', title: 'Note 1'));
+        await throwingDelete.execute(
+          const NoteEntity(id: '1', title: 'Note 1'),
+        );
+
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        expect(receivedEvents, isEmpty);
+
+        await sub.cancel();
+      },
+    );
 
     test('onEntity filters by entity type and command list', () async {
       final received = <BlocxEntityEvent<NoteEntity>>[];
-      final sub = eventHub.onEntity<NoteEntity>(
-        commands: [BlocxCommandType.update],
-      ).listen(received.add);
+      final sub = eventHub
+          .onEntity<NoteEntity>(commands: [BlocxCommandType.update])
+          .listen(received.add);
 
       eventHub.emitEntity(const OtherEntity('99'), BlocxCommandType.update);
       eventHub.emitEntity(
@@ -394,56 +394,58 @@ void main() {
       eventHub.dispose();
     });
 
-    test('syncs create, update, read, and delete commands from UseCases',
-        () async {
-      expect(bloc.list.length, equals(3));
+    test(
+      'syncs create, update, read, and delete commands from UseCases',
+      () async {
+        expect(bloc.list.length, equals(3));
 
-      // 1. Create command inserts new item at index 0 and avoids duplicates
-      final createUseCase = CreateNoteUseCase(eventHub);
-      await createUseCase.execute(
-        const NoteEntity(id: '100', title: 'Created via UseCase', userId: 1),
-      );
-      await createUseCase.execute(
-        const NoteEntity(id: '100', title: 'Duplicate Create', userId: 1),
-      );
-      await Future<void>.delayed(const Duration(milliseconds: 40));
+        // 1. Create command inserts new item at index 0 and avoids duplicates
+        final createUseCase = CreateNoteUseCase(eventHub);
+        await createUseCase.execute(
+          const NoteEntity(id: '100', title: 'Created via UseCase', userId: 1),
+        );
+        await createUseCase.execute(
+          const NoteEntity(id: '100', title: 'Duplicate Create', userId: 1),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 40));
 
-      expect(bloc.list.length, equals(4));
-      expect(bloc.list.first.id, equals('100'));
-      expect(bloc.list.first.title, equals('Created via UseCase'));
+        expect(bloc.list.length, equals(4));
+        expect(bloc.list.first.id, equals('100'));
+        expect(bloc.list.first.title, equals('Created via UseCase'));
 
-      // 2. Update command updates item in list
-      final updateUseCase = UpdateNoteUseCase(eventHub);
-      await updateUseCase.execute(
-        const NoteEntity(id: '2', title: 'Note 2 Updated', userId: 1),
-      );
-      await Future<void>.delayed(const Duration(milliseconds: 40));
+        // 2. Update command updates item in list
+        final updateUseCase = UpdateNoteUseCase(eventHub);
+        await updateUseCase.execute(
+          const NoteEntity(id: '2', title: 'Note 2 Updated', userId: 1),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 40));
 
-      final note2 = bloc.list.firstWhere((e) => e.id == '2');
-      expect(note2.title, equals('Note 2 Updated'));
+        final note2 = bloc.list.firstWhere((e) => e.id == '2');
+        expect(note2.title, equals('Note 2 Updated'));
 
-      // 3. Read command refreshes existing item in list
-      final readUseCase = ReadNoteUseCase(eventHub);
-      await readUseCase.execute(
-        const NoteEntity(id: '3', title: 'Note 3 Hydrated', userId: 1),
-      );
-      await Future<void>.delayed(const Duration(milliseconds: 40));
+        // 3. Read command refreshes existing item in list
+        final readUseCase = ReadNoteUseCase(eventHub);
+        await readUseCase.execute(
+          const NoteEntity(id: '3', title: 'Note 3 Hydrated', userId: 1),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 40));
 
-      final note3 = bloc.list.firstWhere((e) => e.id == '3');
-      expect(note3.title, equals('Note 3 Hydrated'));
+        final note3 = bloc.list.firstWhere((e) => e.id == '3');
+        expect(note3.title, equals('Note 3 Hydrated'));
 
-      // 4. Select item 2, then Delete command removes and deselects it
-      bloc.add(BlocxCollectionEventSelectItem(item: note2));
-      await Future<void>.delayed(const Duration(milliseconds: 30));
-      expect(bloc.selectedItemIds, contains('2'));
+        // 4. Select item 2, then Delete command removes and deselects it
+        bloc.add(BlocxCollectionEventSelectItem(item: note2));
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        expect(bloc.selectedItemIds, contains('2'));
 
-      final deleteUseCase = DeleteNoteUseCase(eventHub);
-      await deleteUseCase.execute(note2);
-      await Future<void>.delayed(const Duration(milliseconds: 40));
+        final deleteUseCase = DeleteNoteUseCase(eventHub);
+        await deleteUseCase.execute(note2);
+        await Future<void>.delayed(const Duration(milliseconds: 40));
 
-      expect(bloc.list.any((e) => e.id == '2'), isFalse);
-      expect(bloc.selectedItemIds, isNot(contains('2')));
-    });
+        expect(bloc.list.any((e) => e.id == '2'), isFalse);
+        expect(bloc.selectedItemIds, isNot(contains('2')));
+      },
+    );
 
     test('respects shouldSyncEntity filter and listenedCommands', () async {
       // Entity for different user (userId: 99 != payload: 1) should be ignored
@@ -480,64 +482,74 @@ void main() {
       await deleteOnlyBloc.close();
     });
 
-    test('supports updateExistingOnCreate and insertMissingOnRead flags',
-        () async {
-      final customBloc = SyncedNotesCollectionBloc(
-        eventHub,
-        customUpdateExistingOnCreate: true,
-        customInsertMissingOnRead: true,
-      );
-      customBloc.add(BlocxCollectionEventLoadInitialPage(payload: 1));
-      await Future<void>.delayed(const Duration(milliseconds: 40));
+    test(
+      'supports updateExistingOnCreate and insertMissingOnRead flags',
+      () async {
+        final customBloc = SyncedNotesCollectionBloc(
+          eventHub,
+          customUpdateExistingOnCreate: true,
+          customInsertMissingOnRead: true,
+        );
+        customBloc.add(BlocxCollectionEventLoadInitialPage(payload: 1));
+        await Future<void>.delayed(const Duration(milliseconds: 40));
 
-      final createUseCase = CreateNoteUseCase(eventHub);
-      await createUseCase.execute(
-        const NoteEntity(id: '1', title: 'Updated via Create', userId: 1),
-      );
+        final createUseCase = CreateNoteUseCase(eventHub);
+        await createUseCase.execute(
+          const NoteEntity(id: '1', title: 'Updated via Create', userId: 1),
+        );
 
-      final readUseCase = ReadNoteUseCase(eventHub);
-      await readUseCase.execute(
-        const NoteEntity(id: '777', title: 'Inserted via Read', userId: 1),
-      );
-      await Future<void>.delayed(const Duration(milliseconds: 40));
+        final readUseCase = ReadNoteUseCase(eventHub);
+        await readUseCase.execute(
+          const NoteEntity(id: '777', title: 'Inserted via Read', userId: 1),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 40));
 
-      expect(
-        customBloc.list.firstWhere((e) => e.id == '1').title,
-        equals('Updated via Create'),
-      );
-      expect(customBloc.list.any((e) => e.id == '777'), isTrue);
+        expect(
+          customBloc.list.firstWhere((e) => e.id == '1').title,
+          equals('Updated via Create'),
+        );
+        expect(customBloc.list.any((e) => e.id == '777'), isTrue);
 
-      await customBloc.close();
-    });
+        await customBloc.close();
+      },
+    );
 
-    test('sortComparator inserts items at sorted position rather than index 0',
-        () async {
-      final sortedBloc = SortedNotesCollectionBloc(eventHub);
-      await sortedBloc.insertToList([
-        const NoteEntity(id: '10', title: 'B Note'),
-        const NoteEntity(id: '30', title: 'D Note'),
-      ], false, DataInsertSource.init);
+    test(
+      'sortComparator inserts items at sorted position rather than index 0',
+      () async {
+        final sortedBloc = SortedNotesCollectionBloc(eventHub);
+        await sortedBloc.insertToList(
+          [
+            const NoteEntity(id: '10', title: 'B Note'),
+            const NoteEntity(id: '30', title: 'D Note'),
+          ],
+          false,
+          DataInsertSource.init,
+        );
 
-      // Create Note with title 'A Note' -> should be inserted at index 0
-      final createA = CreateNoteUseCase(eventHub);
-      await createA.execute(const NoteEntity(id: '5', title: 'A Note'));
-      await Future<void>.delayed(const Duration(milliseconds: 30));
+        // Create Note with title 'A Note' -> should be inserted at index 0
+        final createA = CreateNoteUseCase(eventHub);
+        await createA.execute(const NoteEntity(id: '5', title: 'A Note'));
+        await Future<void>.delayed(const Duration(milliseconds: 30));
 
-      // Create Note with title 'C Note' -> should be inserted between B and D
-      final createC = CreateNoteUseCase(eventHub);
-      await createC.execute(const NoteEntity(id: '20', title: 'C Note'));
-      await Future<void>.delayed(const Duration(milliseconds: 30));
+        // Create Note with title 'C Note' -> should be inserted between B and D
+        final createC = CreateNoteUseCase(eventHub);
+        await createC.execute(const NoteEntity(id: '20', title: 'C Note'));
+        await Future<void>.delayed(const Duration(milliseconds: 30));
 
-      // Create Note with title 'E Note' -> should be inserted at end
-      final createE = CreateNoteUseCase(eventHub);
-      await createE.execute(const NoteEntity(id: '40', title: 'E Note'));
-      await Future<void>.delayed(const Duration(milliseconds: 30));
+        // Create Note with title 'E Note' -> should be inserted at end
+        final createE = CreateNoteUseCase(eventHub);
+        await createE.execute(const NoteEntity(id: '40', title: 'E Note'));
+        await Future<void>.delayed(const Duration(milliseconds: 30));
 
-      final titles = sortedBloc.state.list.map((n) => n.title).toList();
-      expect(
-          titles, equals(['A Note', 'B Note', 'C Note', 'D Note', 'E Note']));
-      await sortedBloc.close();
-    });
+        final titles = sortedBloc.state.list.map((n) => n.title).toList();
+        expect(
+          titles,
+          equals(['A Note', 'B Note', 'C Note', 'D Note', 'E Note']),
+        );
+        await sortedBloc.close();
+      },
+    );
   });
 
   group('BlocxFormSyncStreamMixin', () {
@@ -557,28 +569,34 @@ void main() {
       eventHub.dispose();
     });
 
-    test('updates formData and emits controller sync state on update command',
-        () async {
-      final states = <BlocxFormState<NoteFormData, NoteFormField>>[];
-      final sub = formBloc.stream.listen(states.add);
+    test(
+      'updates formData and emits controller sync state on update command',
+      () async {
+        final states = <BlocxFormState<NoteFormData, NoteFormField>>[];
+        final sub = formBloc.stream.listen(states.add);
 
-      final updateUseCase = UpdateNoteUseCase(eventHub);
-      await updateUseCase.execute(
-        const NoteEntity(id: '1', title: 'Externally Updated Title'),
-      );
-      await Future<void>.delayed(const Duration(milliseconds: 40));
+        final updateUseCase = UpdateNoteUseCase(eventHub);
+        await updateUseCase.execute(
+          const NoteEntity(id: '1', title: 'Externally Updated Title'),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 40));
 
-      expect(formBloc.formData.title, equals('Externally Updated Title'));
-      expect(
-        states.any(
-          (s) => s is BlocxFormStateApplyInitialDataToForm<NoteFormData,
-              NoteFormField>,
-        ),
-        isTrue,
-      );
+        expect(formBloc.formData.title, equals('Externally Updated Title'));
+        expect(
+          states.any(
+            (s) =>
+                s
+                    is BlocxFormStateApplyInitialDataToForm<
+                      NoteFormData,
+                      NoteFormField
+                    >,
+          ),
+          isTrue,
+        );
 
-      await sub.cancel();
-    });
+        await sub.cancel();
+      },
+    );
 
     test('ignores entity events for unrelated entity identifiers', () async {
       final updateUseCase = UpdateNoteUseCase(eventHub);
@@ -618,20 +636,25 @@ void main() {
       await submittingFormBloc.close();
     });
 
-    test('triggers pop on ScreenManagerCubit when watched entity is deleted',
-        () async {
-      final screenStates = <ScreenManagerCubitState>[];
-      final sub = formBloc.screenManagerCubit.stream.listen(screenStates.add);
+    test(
+      'triggers pop on ScreenManagerCubit when watched entity is deleted',
+      () async {
+        final screenStates = <ScreenManagerCubitState>[];
+        final sub = formBloc.screenManagerCubit.stream.listen(screenStates.add);
 
-      final deleteUseCase = DeleteNoteUseCase(eventHub);
-      await deleteUseCase.execute(
-        const NoteEntity(id: '1', title: 'Deleted Note'),
-      );
-      await Future<void>.delayed(const Duration(milliseconds: 40));
+        final deleteUseCase = DeleteNoteUseCase(eventHub);
+        await deleteUseCase.execute(
+          const NoteEntity(id: '1', title: 'Deleted Note'),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 40));
 
-      expect(screenStates.any((s) => s is ScreenManagerCubitStatePop), isTrue);
+        expect(
+          screenStates.any((s) => s is ScreenManagerCubitStatePop),
+          isTrue,
+        );
 
-      await sub.cancel();
-    });
+        await sub.cancel();
+      },
+    );
   });
 }

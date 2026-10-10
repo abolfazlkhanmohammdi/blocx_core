@@ -22,7 +22,9 @@ class BlocxCursorPaginatedInput<Filter> {
 
 /// Base use case for cursor-paginated list operations.
 abstract class BlocxCursorPaginatedUseCase<
-        Input extends BlocxCursorPaginatedInput, Output extends BlocxBaseEntity>
+  Input extends BlocxCursorPaginatedInput,
+  Output extends BlocxBaseEntity
+>
     extends BlocxBaseUseCase<Input, BlocxPage<Output>> {
   const BlocxCursorPaginatedUseCase({
     super.eventHub,
@@ -37,13 +39,12 @@ abstract class BlocxCursorPaginatedUseCase<
     required BlocxCursorPaginatedInput input,
     String? nextCursor,
     bool? hasNext,
-  }) =>
-      success(
-        BlocxPage(
-          items: items,
-          limit: input.limit,
-          nextCursor: nextCursor,
-          hasNext: hasNext,
-        ),
-      );
+  }) => success(
+    BlocxPage(
+      items: items,
+      limit: input.limit,
+      nextCursor: nextCursor,
+      hasNext: hasNext,
+    ),
+  );
 }

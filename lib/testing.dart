@@ -17,16 +17,20 @@ class BlocxTestEventHub extends BlocxSimpleEventHub {
 
   /// All recorded entity command events targeting entity type [T].
   List<BlocxEntityEvent<T>> recordedEntityEvents<T extends BlocxBaseEntity>() =>
-      List.unmodifiable(_recordedEvents
-          .whereType<BlocxEntityEvent>()
-          .where((e) => e.entities.any((item) => item is T))
-          .map((e) => BlocxEntityEvent<T>(
+      List.unmodifiable(
+        _recordedEvents
+            .whereType<BlocxEntityEvent>()
+            .where((e) => e.entities.any((item) => item is T))
+            .map(
+              (e) => BlocxEntityEvent<T>(
                 id: e.id,
                 command: e.command,
                 origin: e.origin,
                 entities: e.entities.whereType<T>().toList(),
                 createdAt: e.createdAt,
-              )));
+              ),
+            ),
+      );
 
   /// Clears the recorded event history.
   void clearRecordedEvents() => _recordedEvents.clear();
@@ -74,17 +78,10 @@ class BlocxTestEntity extends BlocxBaseEntity {
 }
 
 /// Helper that creates a list of [count] [BlocxTestEntity] objects.
-List<BlocxTestEntity> createTestEntities(
-  int count, {
-  String prefix = 'Item',
-}) {
+List<BlocxTestEntity> createTestEntities(int count, {String prefix = 'Item'}) {
   return List.generate(
     count,
-    (i) => BlocxTestEntity(
-      id: '$i',
-      name: '$prefix $i',
-      order: i,
-    ),
+    (i) => BlocxTestEntity(id: '$i', name: '$prefix $i', order: i),
   );
 }
 
@@ -116,15 +113,11 @@ class BlocxTestFormEntity
 
   @override
   dynamic getValueByKey(BlocxTestFormField key) => switch (key) {
-        BlocxTestFormField.field1 => field1,
-        BlocxTestFormField.field2 => field2,
-      };
+    BlocxTestFormField.field1 => field1,
+    BlocxTestFormField.field2 => field2,
+  };
 
-  BlocxTestFormEntity copyWith({
-    String? id,
-    String? field1,
-    String? field2,
-  }) {
+  BlocxTestFormEntity copyWith({String? id, String? field1, String? field2}) {
     return BlocxTestFormEntity(
       id: id ?? this.id,
       field1: field1 ?? this.field1,
@@ -138,12 +131,9 @@ class FakePaginatedSource<T extends BlocxBaseEntity> {
   final List<T> items;
 
   FakePaginatedSource([List<T>? initialItems])
-      : items = initialItems != null ? List.of(initialItems) : <T>[];
+    : items = initialItems != null ? List.of(initialItems) : <T>[];
 
-  BlocxPage<T> getPage({
-    required int offset,
-    required int limit,
-  }) {
+  BlocxPage<T> getPage({required int offset, required int limit}) {
     final clampedOffset = offset.clamp(0, items.length);
     final endIndex = (clampedOffset + limit).clamp(0, items.length);
     final pageItems = items.sublist(clampedOffset, endIndex);
@@ -156,10 +146,7 @@ class FakePaginatedSource<T extends BlocxBaseEntity> {
     );
   }
 
-  BlocxPage<T> getCursorPage({
-    String? cursor,
-    required int limit,
-  }) {
+  BlocxPage<T> getCursorPage({String? cursor, required int limit}) {
     final startIndex = cursor != null ? int.tryParse(cursor) ?? 0 : 0;
     final clampedStart = startIndex.clamp(0, items.length);
     final endIndex = (clampedStart + limit).clamp(0, items.length);
@@ -198,7 +185,8 @@ class FakePaginatedUseCase<T extends BlocxBaseEntity>
 
   @override
   Future<BlocxUseCaseResult<BlocxPage<T>>> perform(
-      BlocxPaginatedInput input) async {
+    BlocxPaginatedInput input,
+  ) async {
     recordedInputs.add(input);
     if (delay > Duration.zero) await Future<void>.delayed(delay);
     if (completer != null) await completer!.future;
@@ -231,7 +219,8 @@ class FakeCursorPaginatedUseCase<T extends BlocxBaseEntity>
 
   @override
   Future<BlocxUseCaseResult<BlocxPage<T>>> perform(
-      BlocxCursorPaginatedInput input) async {
+    BlocxCursorPaginatedInput input,
+  ) async {
     recordedInputs.add(input);
     if (delay > Duration.zero) await Future<void>.delayed(delay);
     if (completer != null) await completer!.future;
@@ -264,7 +253,8 @@ class FakeSearchUseCase<T extends BlocxBaseEntity>
 
   @override
   Future<BlocxUseCaseResult<BlocxPage<T>>> perform(
-      BlocxSearchInput input) async {
+    BlocxSearchInput input,
+  ) async {
     recordedInputs.add(input);
     if (completer != null) await completer!.future;
     if (shouldFail) throw failureError ?? Exception('Search task failed');
@@ -279,12 +269,14 @@ class FakeSearchUseCase<T extends BlocxBaseEntity>
     final endIndex = (clampedOffset + input.limit).clamp(0, matching.length);
     final pageItems = matching.sublist(clampedOffset, endIndex);
 
-    return success(BlocxPage<T>(
-      items: pageItems,
-      offset: clampedOffset,
-      limit: input.limit,
-      hasNext: endIndex < matching.length,
-    ));
+    return success(
+      BlocxPage<T>(
+        items: pageItems,
+        offset: clampedOffset,
+        limit: input.limit,
+        hasNext: endIndex < matching.length,
+      ),
+    );
   }
 }
 
@@ -322,10 +314,9 @@ class FakeUseCase<Input, Output> extends BlocxBaseUseCase<Input, Output> {
 }
 
 /// Helper that builds a [BlocxPaginatedUseCaseTask] wrapping [useCase].
-BlocxPaginatedUseCaseTask<BlocxPaginatedInput, T>
-    createFakePaginatedTask<T extends BlocxBaseEntity>({
-  required FakePaginatedUseCase<T> useCase,
-}) {
+BlocxPaginatedUseCaseTask<BlocxPaginatedInput, T> createFakePaginatedTask<
+  T extends BlocxBaseEntity
+>({required FakePaginatedUseCase<T> useCase}) {
   return BlocxPaginatedUseCaseTask<BlocxPaginatedInput, T>(
     useCase: useCase,
     inputBuilder: (offset, limit) =>
@@ -335,7 +326,7 @@ BlocxPaginatedUseCaseTask<BlocxPaginatedInput, T>
 
 /// Helper that builds a [BlocxCursorPaginatedUseCaseTask] wrapping [useCase].
 BlocxCursorPaginatedUseCaseTask<BlocxCursorPaginatedInput, T>
-    createFakeCursorPaginatedTask<T extends BlocxBaseEntity>({
+createFakeCursorPaginatedTask<T extends BlocxBaseEntity>({
   required FakeCursorPaginatedUseCase<T> useCase,
 }) {
   return BlocxCursorPaginatedUseCaseTask<BlocxCursorPaginatedInput, T>(

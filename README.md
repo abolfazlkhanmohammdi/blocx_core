@@ -11,7 +11,7 @@
 <p align="center">
   <a href="https://pub.dev/packages/blocx_core"><img src="https://img.shields.io/pub/v/blocx_core.svg" alt="pub version" /></a>
   <a href="https://pub.dev/packages/blocx_core/score"><img src="https://img.shields.io/pub/points/blocx_core" alt="pub points" /></a>
-  <a href="https://dart.dev"><img src="https://img.shields.io/badge/sdk-%3E%3D3.5.0%20%3C4.0.0-blue" alt="Dart SDK" /></a>
+  <a href="https://dart.dev"><img src="https://img.shields.io/badge/sdk-%3E%3D3.8.0%20%3C4.0.0-blue" alt="Dart SDK" /></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-green" alt="License: MIT" /></a>
 </p>
 

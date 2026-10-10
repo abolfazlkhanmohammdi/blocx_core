@@ -14,8 +14,12 @@ import 'events.dart';
 /// `true` when the value is available and `false` when it is already taken.
 ///
 /// It uses per-field request tokens to ignore stale async responses.
-mixin BlocxUniqueFieldValidatorMixin<F extends BlocxBaseFormEntity<F, E>, P,
-    E extends Enum> on BlocxFormBloc<F, P, E> {
+mixin BlocxUniqueFieldValidatorMixin<
+  F extends BlocxBaseFormEntity<F, E>,
+  P,
+  E extends Enum
+>
+    on BlocxFormBloc<F, P, E> {
   /// Fields that require uniqueness validation.
   List<E> get uniqueFieldKeys;
 
@@ -59,8 +63,11 @@ mixin BlocxUniqueFieldValidatorMixin<F extends BlocxBaseFormEntity<F, E>, P,
     emitState(emit);
 
     try {
-      final task =
-          useCaseIsUniqueValueAvailable(formData, event.key, event.data);
+      final task = useCaseIsUniqueValueAvailable(
+        formData,
+        event.key,
+        event.data,
+      );
       if (task == null) return;
 
       final result = await task.execute();
@@ -79,7 +86,11 @@ mixin BlocxUniqueFieldValidatorMixin<F extends BlocxBaseFormEntity<F, E>, P,
       final isAvailable = result.data ?? false;
       final unavailableMessage = unavailableFormDataMessage(event.key);
       emitChangesOnUpdate(
-          event.key, formData.getValueByKey(event.key), event.data, emit);
+        event.key,
+        formData.getValueByKey(event.key),
+        event.data,
+        emit,
+      );
       if (isAvailable) {
         formData = await updateFormData(event.key, event.data);
         clearFieldError(
@@ -88,14 +99,15 @@ mixin BlocxUniqueFieldValidatorMixin<F extends BlocxBaseFormEntity<F, E>, P,
           errorMessage: unavailableMessage,
         );
       } else {
-        clearFieldError(event.key,
-            source:
-                ErrorMutationSource.uniqueFieldValidatorMixinCheckUniqueValue);
+        clearFieldError(
+          event.key,
+          source: ErrorMutationSource.uniqueFieldValidatorMixinCheckUniqueValue,
+        );
         setFieldError(
-            event.key,
-            source:
-                ErrorMutationSource.uniqueFieldValidatorMixinCheckUniqueValue,
-            unavailableMessage);
+          event.key,
+          source: ErrorMutationSource.uniqueFieldValidatorMixinCheckUniqueValue,
+          unavailableMessage,
+        );
       }
       emitState(emit);
     } catch (e, s) {

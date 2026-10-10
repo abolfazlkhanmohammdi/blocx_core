@@ -10,6 +10,9 @@
 * Added `searchingText` and `searchHint` keys to `BlocXLocalizations` with default implementations.
 * Added `package:blocx_core/testing.dart` exporting test utilities: in-memory `BlocxTestEventHub`, `BlocxTestEntity`, `BlocxTestFormEntity`, `FakePaginatedSource`, `FakePaginatedUseCase`, `FakeCursorPaginatedUseCase`, `FakeSearchUseCase`, `FakeUseCase`, and task construction helpers.
 
+### Changed
+* Raised the minimum Dart SDK to 3.8.0, which is what the dependency constraints (bloc 9 etc.) already required.
+
 ## [1.0.1]
 
 ### Documentation

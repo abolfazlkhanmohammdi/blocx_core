@@ -20,8 +20,11 @@ class BlocxFormEventSetTimedErrorToField<E extends Enum>
   final String message;
   final E key;
   final Duration? duration;
-  BlocxFormEventSetTimedErrorToField(
-      {required this.message, required this.key, this.duration});
+  BlocxFormEventSetTimedErrorToField({
+    required this.message,
+    required this.key,
+    this.duration,
+  });
 }
 
 class BlocxFormEventSetErrorToField<E extends Enum> extends BlocxFormEvent {

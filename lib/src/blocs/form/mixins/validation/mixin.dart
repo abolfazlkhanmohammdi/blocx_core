@@ -13,8 +13,12 @@ import 'package:blocx_core/form_bloc.dart';
 ///   typing, and the full form validates on submit.
 /// - [FormValidationMode.always]: the full form validates on every field update
 ///   and on submit.
-mixin BlocxFormValidationMixin<F extends BlocxBaseFormEntity<F, E>, P,
-    E extends Enum> on BlocxFormBloc<F, P, E> {
+mixin BlocxFormValidationMixin<
+  F extends BlocxBaseFormEntity<F, E>,
+  P,
+  E extends Enum
+>
+    on BlocxFormBloc<F, P, E> {
   /// The validator responsible for field-level and full-form validation.
   BlocxFormValidator<F, E> get validator;
 
@@ -83,33 +87,31 @@ mixin BlocxFormValidationMixin<F extends BlocxBaseFormEntity<F, E>, P,
   }
 
   /// Replaces all current validation errors with [errors].
-  void _applyFullFormValidationErrors(
-    Map<E, List<TimedErrorMessage>> errors,
-  ) {
+  void _applyFullFormValidationErrors(Map<E, List<TimedErrorMessage>> errors) {
     clearAllErrors(
-        source:
-            ErrorMutationSource.formValidationMixinApplyFieldValidationErrors);
+      source: ErrorMutationSource.formValidationMixinApplyFieldValidationErrors,
+    );
 
     for (final entry in errors.entries) {
       setFieldErrors(
-          entry.key,
-          ErrorMutationSource.formValidationMixinApplyFieldValidationErrors,
-          entry.value);
+        entry.key,
+        ErrorMutationSource.formValidationMixinApplyFieldValidationErrors,
+        entry.value,
+      );
     }
   }
 
   /// Replaces validation errors for only one [key].
-  void _applyFieldValidationErrors(
-    E key,
-    List<TimedErrorMessage> errors,
-  ) {
-    clearFieldError(key,
-        source:
-            ErrorMutationSource.formValidationMixinApplyFieldValidationErrors);
+  void _applyFieldValidationErrors(E key, List<TimedErrorMessage> errors) {
+    clearFieldError(
+      key,
+      source: ErrorMutationSource.formValidationMixinApplyFieldValidationErrors,
+    );
     setFieldErrors(
-        key,
-        ErrorMutationSource.formValidationMixinApplyFieldValidationErrors,
-        errors);
+      key,
+      ErrorMutationSource.formValidationMixinApplyFieldValidationErrors,
+      errors,
+    );
   }
 
   /// Sets validation [errors] for the field identified by [key].
@@ -117,7 +119,10 @@ mixin BlocxFormValidationMixin<F extends BlocxBaseFormEntity<F, E>, P,
   /// Timed errors are dispatched as timed-error events. Persistent errors are
   /// applied directly to the form error map.
   void setFieldErrors(
-      E key, ErrorMutationSource source, List<TimedErrorMessage> errors) {
+    E key,
+    ErrorMutationSource source,
+    List<TimedErrorMessage> errors,
+  ) {
     for (final errorMessage in errors) {
       if (errorMessage.duration == null) {
         setFieldError(key, errorMessage.error, source: source);

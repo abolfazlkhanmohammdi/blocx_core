@@ -61,8 +61,11 @@ part 'blocx_form_state.dart';
 ///   for create-only forms.
 /// - [E]: The enum identifying each field. Used as the key for updates,
 ///   validation errors, and info-fetching.
-abstract class BlocxFormBloc<F extends BlocxBaseFormEntity<F, E>, P,
-        E extends Enum>
+abstract class BlocxFormBloc<
+  F extends BlocxBaseFormEntity<F, E>,
+  P,
+  E extends Enum
+>
     extends BlocxBaseBloc<BlocxFormEvent, BlocxFormState<F, E>>
     with BlocxFormCoreMixin<F, P, E>, BlocxFormErrorsMixin<F, P, E> {
   late final bool isStepped;
@@ -82,10 +85,10 @@ abstract class BlocxFormBloc<F extends BlocxBaseFormEntity<F, E>, P,
     BlocxErrorTranslator? errorTranslator,
     BlocXLocalizations? localizations,
   }) : super(
-          BlocxFormStateInitial(formData: formData),
-          errorTranslator: errorTranslator,
-          localizations: localizations,
-        ) {
+         BlocxFormStateInitial(formData: formData),
+         errorTranslator: errorTranslator,
+         localizations: localizations,
+       ) {
     initData(formData);
     initErrors();
 

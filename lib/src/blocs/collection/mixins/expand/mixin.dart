@@ -64,8 +64,10 @@ mixin BlocxCollectionExpandableMixin<Entity extends BlocxBaseEntity, Payload>
   ///
   /// - Adds the item’s [BlocxBaseEntity.identifier] to [_expandedItemIds].
   /// - Emits the updated state so the UI can rebuild accordingly.
-  FutureOr<void> expandItem(BlocxCollectionEventExpandItem<Entity> event,
-      Emitter<BlocxCollectionState<Entity>> emit) {
+  FutureOr<void> expandItem(
+    BlocxCollectionEventExpandItem<Entity> event,
+    Emitter<BlocxCollectionState<Entity>> emit,
+  ) {
     _expandedItemIds.add(event.item.identifier);
     emitState(emit);
   }

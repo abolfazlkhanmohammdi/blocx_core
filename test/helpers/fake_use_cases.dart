@@ -11,11 +11,12 @@ class FakePaginatedSource {
   final List<TestItem> items;
 
   FakePaginatedSource([List<TestItem>? initialItems])
-      : items = initialItems ??
-            List.generate(
-              50,
-              (i) => TestItem(id: '$i', title: 'Item $i', order: i),
-            );
+    : items =
+          initialItems ??
+          List.generate(
+            50,
+            (i) => TestItem(id: '$i', title: 'Item $i', order: i),
+          );
 
   BlocxPage<TestItem> getPage({required int offset, required int limit}) {
     final clampedOffset = offset.clamp(0, items.length);
@@ -52,7 +53,8 @@ class FakePaginatedUseCase
 
   @override
   Future<BlocxUseCaseResult<BlocxPage<TestItem>>> perform(
-      BlocxPaginatedInput input) async {
+    BlocxPaginatedInput input,
+  ) async {
     recordedInputs.add(input);
 
     if (delay > Duration.zero) {
@@ -91,7 +93,8 @@ class FakeSearchUseCase extends BlocxSearchUseCase<BlocxSearchInput, TestItem> {
 
   @override
   Future<BlocxUseCaseResult<BlocxPage<TestItem>>> perform(
-      BlocxSearchInput input) async {
+    BlocxSearchInput input,
+  ) async {
     recordedInputs.add(input);
     if (completer != null) {
       await completer!.future;
@@ -110,11 +113,13 @@ class FakeSearchUseCase extends BlocxSearchUseCase<BlocxSearchInput, TestItem> {
     final endIndex = (clampedOffset + input.limit).clamp(0, matching.length);
     final pageItems = matching.sublist(clampedOffset, endIndex);
 
-    return success(BlocxPage<TestItem>(
-      items: pageItems,
-      offset: clampedOffset,
-      limit: input.limit,
-    ));
+    return success(
+      BlocxPage<TestItem>(
+        items: pageItems,
+        offset: clampedOffset,
+        limit: input.limit,
+      ),
+    );
   }
 }
 

@@ -3,8 +3,11 @@ import 'package:blocx_core/src/core/localizations/loc_provider.dart' show loc;
 import 'package:blocx_core/src/core/models/blocx_base_form_entity.dart'
     show BlocxBaseFormEntity;
 
-class BlocxIntegerMinValueValidator<F extends BlocxBaseFormEntity<F, E>,
-    E extends Enum> extends BlocxFieldValidator<F, E, int> {
+class BlocxIntegerMinValueValidator<
+  F extends BlocxBaseFormEntity<F, E>,
+  E extends Enum
+>
+    extends BlocxFieldValidator<F, E, int> {
   final int min;
 
   const BlocxIntegerMinValueValidator(this.min);

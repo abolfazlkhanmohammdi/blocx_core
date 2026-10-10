@@ -84,11 +84,7 @@ class BlocxSimpleEventHub implements BlocxEventHub {
   }) {
     if (entities.isEmpty) return;
     emit(
-      BlocxEntityEvent<T>(
-        entities: entities,
-        command: command,
-        origin: origin,
-      ),
+      BlocxEntityEvent<T>(entities: entities, command: command, origin: origin),
     );
   }
 
@@ -102,21 +98,22 @@ class BlocxSimpleEventHub implements BlocxEventHub {
         .where((e) => e is BlocxEntityEvent)
         .cast<BlocxEntityEvent>()
         .where((e) {
-      if (commandSet != null && !commandSet.contains(e.command)) {
-        return false;
-      }
-      if (e is BlocxEntityEvent<T>) return true;
-      return e.entities.any((item) => item is T);
-    }).map((e) {
-      if (e is BlocxEntityEvent<T>) return e;
-      return BlocxEntityEvent<T>(
-        entities: e.entities.whereType<T>().toList(),
-        command: e.command,
-        origin: e.origin,
-        debugTrace: e.debugTrace,
-        id: e.id,
-        createdAt: e.createdAt,
-      );
-    });
+          if (commandSet != null && !commandSet.contains(e.command)) {
+            return false;
+          }
+          if (e is BlocxEntityEvent<T>) return true;
+          return e.entities.any((item) => item is T);
+        })
+        .map((e) {
+          if (e is BlocxEntityEvent<T>) return e;
+          return BlocxEntityEvent<T>(
+            entities: e.entities.whereType<T>().toList(),
+            command: e.command,
+            origin: e.origin,
+            debugTrace: e.debugTrace,
+            id: e.id,
+            createdAt: e.createdAt,
+          );
+        });
   }
 }

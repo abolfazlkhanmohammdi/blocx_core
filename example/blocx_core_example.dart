@@ -51,10 +51,11 @@ class LoadTasksUseCase
 
 class SaveTaskUseCase extends BlocxBaseUseCase<TaskEntity, TaskEntity> {
   SaveTaskUseCase({bool isCreate = true, super.eventHub})
-      : super(
-          commandType:
-              isCreate ? BlocxCommandType.create : BlocxCommandType.update,
-        );
+    : super(
+        commandType: isCreate
+            ? BlocxCommandType.create
+            : BlocxCommandType.update,
+      );
 
   @override
   Future<BlocxUseCaseResult<TaskEntity>> perform(TaskEntity input) async {
@@ -76,14 +77,12 @@ class TasksCollectionBloc extends BlocxCollectionBloc<TaskEntity, void>
   @override
   final BlocxEventHub eventHub;
 
-  TasksCollectionBloc({
-    required this.loadTasksUseCase,
-    required this.eventHub,
-  }) : super();
+  TasksCollectionBloc({required this.loadTasksUseCase, required this.eventHub})
+    : super();
 
   @override
   BlocxPaginatedUseCaseTask<BlocxPaginatedInput, TaskEntity>?
-      get paginationTask {
+  get paginationTask {
     return BlocxPaginatedUseCaseTask<BlocxPaginatedInput, TaskEntity>(
       useCase: loadTasksUseCase,
       inputBuilder: (offset, limit) =>
@@ -116,13 +115,13 @@ class TaskFormEntity
 
   @override
   TaskFormEntity updateByKey(TaskFormField key, dynamic value) => switch (key) {
-        TaskFormField.title => copyWith(title: value as String? ?? ''),
-      };
+    TaskFormField.title => copyWith(title: value as String? ?? ''),
+  };
 
   @override
   dynamic getValueByKey(TaskFormField key) => switch (key) {
-        TaskFormField.title => title,
-      };
+    TaskFormField.title => title,
+  };
 }
 
 class TaskFormValidator
@@ -132,16 +131,13 @@ class TaskFormValidator
 
   @override
   List<BlocxFieldValidator<TaskFormEntity, TaskFormField, dynamic>>
-      getValidatorsByKey(
-    TaskFormEntity formData,
-    TaskFormField key,
-  ) =>
-          switch (key) {
-            TaskFormField.title => [
-                BlocxStringRequiredValidator(),
-                const BlocxStringMinLengthValidator(3),
-              ],
-          };
+  getValidatorsByKey(TaskFormEntity formData, TaskFormField key) =>
+      switch (key) {
+        TaskFormField.title => [
+          BlocxStringRequiredValidator(),
+          const BlocxStringMinLengthValidator(3),
+        ],
+      };
 }
 
 class TaskFormBloc

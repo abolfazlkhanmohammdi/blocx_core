@@ -8,10 +8,7 @@ class TestFormEntity extends BlocxBaseFormEntity<TestFormEntity, TestField> {
   final String email;
   final String password;
 
-  const TestFormEntity({
-    this.email = '',
-    this.password = '',
-  });
+  const TestFormEntity({this.email = '', this.password = ''});
 
   @override
   String get identifier => 'test_form';
@@ -19,10 +16,14 @@ class TestFormEntity extends BlocxBaseFormEntity<TestFormEntity, TestField> {
   @override
   TestFormEntity updateByKey(TestField key, dynamic value) {
     return switch (key) {
-      TestField.email =>
-        TestFormEntity(email: value as String? ?? '', password: password),
-      TestField.password =>
-        TestFormEntity(email: email, password: value as String? ?? ''),
+      TestField.email => TestFormEntity(
+        email: value as String? ?? '',
+        password: password,
+      ),
+      TestField.password => TestFormEntity(
+        email: email,
+        password: value as String? ?? '',
+      ),
     };
   }
 
@@ -63,10 +64,7 @@ class TestFormValidator extends BlocxFormValidator<TestFormEntity, TestField> {
 
   @override
   List<BlocxFieldValidator<TestFormEntity, TestField, dynamic>>
-      getValidatorsByKey(
-    TestFormEntity formData,
-    TestField key,
-  ) {
+  getValidatorsByKey(TestFormEntity formData, TestField key) {
     return switch (key) {
       TestField.email => [const EmailValidator()],
       TestField.password => [const PasswordValidator()],
@@ -110,12 +108,16 @@ void main() {
   group('BlocxBaseFormEntity', () {
     test('updateByKeySafe updates entity correctly and passes assertion', () {
       const entity = TestFormEntity();
-      final updated =
-          entity.updateByKeySafe(TestField.email, 'test@example.com');
+      final updated = entity.updateByKeySafe(
+        TestField.email,
+        'test@example.com',
+      );
 
       expect(updated.email, equals('test@example.com'));
       expect(
-          updated.getValueByKey(TestField.email), equals('test@example.com'));
+        updated.getValueByKey(TestField.email),
+        equals('test@example.com'),
+      );
     });
   });
 
@@ -133,10 +135,12 @@ void main() {
     test('updates field and triggers field validation', () async {
       expect(bloc.formData.email, isEmpty);
 
-      final updateFuture =
-          bloc.stream.firstWhere((s) => s.formData.email == 'user@domain.com');
-      bloc.add(BlocxFormEventUpdateData(
-          key: TestField.email, data: 'user@domain.com'));
+      final updateFuture = bloc.stream.firstWhere(
+        (s) => s.formData.email == 'user@domain.com',
+      );
+      bloc.add(
+        BlocxFormEventUpdateData(key: TestField.email, data: 'user@domain.com'),
+      );
       await updateFuture;
 
       expect(bloc.formData.email, equals('user@domain.com'));
@@ -144,8 +148,9 @@ void main() {
     });
 
     test('validates invalid field and records error', () async {
-      final errorFuture = bloc.stream
-          .firstWhere((s) => s.errors.containsKey(TestField.password));
+      final errorFuture = bloc.stream.firstWhere(
+        (s) => s.errors.containsKey(TestField.password),
+      );
       bloc.add(BlocxFormEventUpdateData(key: TestField.password, data: '123'));
       await errorFuture;
 
@@ -160,27 +165,37 @@ void main() {
       await invalidFuture;
 
       // Update valid values
-      final emailFuture =
-          bloc.stream.firstWhere((s) => s.formData.email == 'test@example.com');
-      bloc.add(BlocxFormEventUpdateData(
-          key: TestField.email, data: 'test@example.com'));
+      final emailFuture = bloc.stream.firstWhere(
+        (s) => s.formData.email == 'test@example.com',
+      );
+      bloc.add(
+        BlocxFormEventUpdateData(
+          key: TestField.email,
+          data: 'test@example.com',
+        ),
+      );
       await emailFuture;
 
-      final passFuture =
-          bloc.stream.firstWhere((s) => s.formData.password == '123456');
+      final passFuture = bloc.stream.firstWhere(
+        (s) => s.formData.password == '123456',
+      );
       bloc.add(
-          BlocxFormEventUpdateData(key: TestField.password, data: '123456'));
+        BlocxFormEventUpdateData(key: TestField.password, data: '123456'),
+      );
       await passFuture;
 
       expect(bloc.isFormSubmittable, isTrue);
 
       final submitFuture = bloc.stream.firstWhere(
-          (s) => s is BlocxFormStateLoaded<TestFormEntity, TestField>);
+        (s) => s is BlocxFormStateLoaded<TestFormEntity, TestField>,
+      );
       bloc.add(BlocxFormEventSubmit());
       await submitFuture;
 
       expect(
-          bloc.state, isA<BlocxFormStateLoaded<TestFormEntity, TestField>>());
+        bloc.state,
+        isA<BlocxFormStateLoaded<TestFormEntity, TestField>>(),
+      );
     });
   });
 }

@@ -137,10 +137,8 @@ class CustomTranslator extends BlocxErrorTranslator {
 }
 
 class TestBaseBloc extends BlocxBaseBloc<BlocxBaseEvent, BlocxBaseState> {
-  TestBaseBloc({
-    super.errorTranslator,
-    super.localizations,
-  }) : super(const _TestInitialState());
+  TestBaseBloc({super.errorTranslator, super.localizations})
+    : super(const _TestInitialState());
 }
 
 class _TestInitialState extends BlocxBaseState {
@@ -156,14 +154,11 @@ class TestEntity extends BlocxBaseEntity {
 }
 
 class TestCollectionBloc extends BlocxCollectionBloc<TestEntity, void> {
-  TestCollectionBloc({
-    super.errorTranslator,
-    super.localizations,
-  });
+  TestCollectionBloc({super.errorTranslator, super.localizations});
 
   @override
   BlocxPaginatedUseCaseTask<BlocxPaginatedInput<dynamic>, TestEntity>?
-      get paginationTask => null;
+  get paginationTask => null;
 }
 
 enum TestFormField { name }
@@ -188,10 +183,8 @@ class TestFormEntity
 }
 
 class TestFormBloc extends BlocxFormBloc<TestFormEntity, void, TestFormField> {
-  TestFormBloc({
-    super.errorTranslator,
-    super.localizations,
-  }) : super(const TestFormEntity());
+  TestFormBloc({super.errorTranslator, super.localizations})
+    : super(const TestFormEntity());
 
   @override
   BlocxUseCaseTask get submitUseCaseTask => throw UnimplementedError();
@@ -208,45 +201,63 @@ void main() {
     });
 
     test('BlocxErrorTranslator exposes static instance alias', () {
-      expect(BlocxErrorTranslator.instance,
-          equals(BlocxErrorTranslator.errorTranslator));
+      expect(
+        BlocxErrorTranslator.instance,
+        equals(BlocxErrorTranslator.errorTranslator),
+      );
     });
 
-    test('BlocxBaseBloc accepts injected errorTranslator and localizations',
-        () {
-      final translator = CustomTranslator('CUSTOM');
-      final loc = CustomLocalizations();
-      final bloc =
-          TestBaseBloc(errorTranslator: translator, localizations: loc);
+    test(
+      'BlocxBaseBloc accepts injected errorTranslator and localizations',
+      () {
+        final translator = CustomTranslator('CUSTOM');
+        final loc = CustomLocalizations();
+        final bloc = TestBaseBloc(
+          errorTranslator: translator,
+          localizations: loc,
+        );
 
-      expect(bloc.errorTranslator, equals(translator));
-      expect(bloc.localizations, equals(loc));
-      expect(bloc.loc, equals(loc));
-      expect(bloc.defaultError.message, equals('Custom something went wrong'));
+        expect(bloc.errorTranslator, equals(translator));
+        expect(bloc.localizations, equals(loc));
+        expect(bloc.loc, equals(loc));
+        expect(
+          bloc.defaultError.message,
+          equals('Custom something went wrong'),
+        );
 
-      final readable = bloc.readableErrorOf(Exception('boom'));
-      expect(readable.message, equals('CUSTOM: Exception: boom'));
-      bloc.close();
-    });
+        final readable = bloc.readableErrorOf(Exception('boom'));
+        expect(readable.message, equals('CUSTOM: Exception: boom'));
+        bloc.close();
+      },
+    );
 
-    test('BlocxCollectionBloc accepts injected config and forwards to base',
-        () {
-      final translator = CustomTranslator('COLL');
-      final loc = CustomLocalizations();
-      final bloc =
-          TestCollectionBloc(errorTranslator: translator, localizations: loc);
+    test(
+      'BlocxCollectionBloc accepts injected config and forwards to base',
+      () {
+        final translator = CustomTranslator('COLL');
+        final loc = CustomLocalizations();
+        final bloc = TestCollectionBloc(
+          errorTranslator: translator,
+          localizations: loc,
+        );
 
-      expect(bloc.errorTranslator, equals(translator));
-      expect(bloc.localizations, equals(loc));
-      expect(bloc.defaultError.message, equals('Custom something went wrong'));
-      bloc.close();
-    });
+        expect(bloc.errorTranslator, equals(translator));
+        expect(bloc.localizations, equals(loc));
+        expect(
+          bloc.defaultError.message,
+          equals('Custom something went wrong'),
+        );
+        bloc.close();
+      },
+    );
 
     test('BlocxFormBloc accepts injected config and forwards to base', () {
       final translator = CustomTranslator('FORM');
       final loc = CustomLocalizations();
-      final bloc =
-          TestFormBloc(errorTranslator: translator, localizations: loc);
+      final bloc = TestFormBloc(
+        errorTranslator: translator,
+        localizations: loc,
+      );
 
       expect(bloc.errorTranslator, equals(translator));
       expect(bloc.localizations, equals(loc));

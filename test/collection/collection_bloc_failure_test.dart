@@ -20,22 +20,19 @@ class FailingCollectionBloc extends BlocxCollectionBloc<TestItem, void>
 
   @override
   BlocxPaginatedUseCaseTask<BlocxPaginatedInput, TestItem>?
-      get paginationTask => BlocxPaginatedUseCaseTask(
-            useCase: paginatedUseCase,
-            inputBuilder: (offset, limit) =>
-                BlocxPaginatedInput(offset: offset, limit: limit),
-          );
+  get paginationTask => BlocxPaginatedUseCaseTask(
+    useCase: paginatedUseCase,
+    inputBuilder: (offset, limit) =>
+        BlocxPaginatedInput(offset: offset, limit: limit),
+  );
 
   @override
   BlocxPaginatedUseCaseTask<BlocxSearchInput, TestItem>?
-      get searchUseCaseTask => BlocxPaginatedUseCaseTask(
-            useCase: searchUseCase,
-            inputBuilder: (offset, limit) => BlocxSearchInput(
-              searchText: searchText,
-              offset: offset,
-              limit: limit,
-            ),
-          );
+  get searchUseCaseTask => BlocxPaginatedUseCaseTask(
+    useCase: searchUseCase,
+    inputBuilder: (offset, limit) =>
+        BlocxSearchInput(searchText: searchText, offset: offset, limit: limit),
+  );
 }
 
 void main() {

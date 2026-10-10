@@ -35,8 +35,13 @@ import 'package:meta/meta.dart';
 ///   }
 /// }
 /// ```
-mixin BlocxFormSyncStreamMixin<F extends BlocxBaseFormEntity<F, E>, P,
-    E extends Enum, Entity extends BlocxBaseEntity> on BlocxFormBloc<F, P, E> {
+mixin BlocxFormSyncStreamMixin<
+  F extends BlocxBaseFormEntity<F, E>,
+  P,
+  E extends Enum,
+  Entity extends BlocxBaseEntity
+>
+    on BlocxFormBloc<F, P, E> {
   StreamSubscription<BlocxEntityEvent<Entity>>? _entityEventSub;
 
   /// The [BlocxEventHub] this form bloc listens to for entity commands.
@@ -46,11 +51,11 @@ mixin BlocxFormSyncStreamMixin<F extends BlocxBaseFormEntity<F, E>, P,
   ///
   /// Defaults to `create`, `read`, `update`, and `delete`.
   List<BlocxCommandType> get listenedCommands => const <BlocxCommandType>[
-        BlocxCommandType.create,
-        BlocxCommandType.read,
-        BlocxCommandType.update,
-        BlocxCommandType.delete,
-      ];
+    BlocxCommandType.create,
+    BlocxCommandType.read,
+    BlocxCommandType.update,
+    BlocxCommandType.delete,
+  ];
 
   /// Filter hook to decide whether an incoming [entity] for [command] applies
   /// to this form instance.
@@ -86,9 +91,7 @@ mixin BlocxFormSyncStreamMixin<F extends BlocxBaseFormEntity<F, E>, P,
     return true;
   }
 
-  Future<void> _handleEntityCommandEvent(
-    BlocxEntityEvent<Entity> event,
-  ) async {
+  Future<void> _handleEntityCommandEvent(BlocxEntityEvent<Entity> event) async {
     if (isClosed) return;
     if (ignoreEventsWhileSubmitting &&
         state is BlocxFormStateSubmittingForm<F, E>) {
@@ -136,10 +139,7 @@ mixin BlocxFormSyncStreamMixin<F extends BlocxBaseFormEntity<F, E>, P,
     onWatchedEntityDeleted(items.last);
   }
 
-  Future<void> _syncFromEntity(
-    Entity entity,
-    BlocxCommandType command,
-  ) async {
+  Future<void> _syncFromEntity(Entity entity, BlocxCommandType command) async {
     final updatedFormData = await mapSyncedEntityToFormData(entity, command);
     if (updatedFormData == null || isClosed) return;
 
