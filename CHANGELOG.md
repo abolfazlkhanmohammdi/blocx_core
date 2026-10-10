@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.1.0]
+## [1.1.0] - 2026-10-10
 
 ### Added
 * Added `clearError()` to `ScreenManagerCubit` and `BlocxBaseBloc`, which emits `ScreenManagerCubitStateInitial(shouldRebuild: true)` to dismiss full-page errors and restore normal screen display without resurrecting error states on subsequent snackbars.
@@ -10,10 +10,14 @@
 * Added `searchingText` and `searchHint` keys to `BlocXLocalizations` with default implementations.
 * Added `package:blocx_core/testing.dart` exporting test utilities: in-memory `BlocxTestEventHub`, `BlocxTestEntity`, `BlocxTestFormEntity`, `FakePaginatedSource`, `FakePaginatedUseCase`, `FakeCursorPaginatedUseCase`, `FakeSearchUseCase`, `FakeUseCase`, and task construction helpers.
 
+### Fixed
+* Fixed cursor pagination end-of-list detection: a missing or empty `nextCursor` is now treated as the end of list (`hasReachedEnd == true`), preventing infinite refetches of page 1 when `items.length == limit`. Added guard in `_fetchNextPageWithCursor` when cursor is missing.
+* Fixed pull-to-refresh throwing `UnimplementedError` on cursor-only collection blocs: added `refreshPageCursorTask` and `_fetchRefreshPageWithCursor` to `BlocxCollectionRefreshableMixin`.
+
 ### Changed
 * Raised the minimum Dart SDK to 3.8.0, which is what the dependency constraints (bloc 9 etc.) already required.
 
-## [1.0.1]
+## [1.0.1] - 2026-10-09
 
 ### Documentation
 * Recorded baseline test and analysis results in `docs/fix-notes.md`.

@@ -263,6 +263,13 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   ///
   /// When non-null, [getInsertIndexForItem] locates the sorted insertion position.
   /// When null, defaults to inserting at index 0.
+  ///
+  /// ### Limitations
+  /// - It only positions *newly inserted* items.
+  /// - Updating an item's sort key does not reposition it.
+  /// - The comparator must match the server's ordering.
+  /// - Ties are inserted after equal items.
+  /// - Insertion is an O(n) scan.
   Comparator<Entity>? get sortComparator => null;
 
   /// Returns the target insertion index for [item] using [sortComparator] if present.

@@ -37,14 +37,14 @@ Real-world applications rarely become hard to maintain because domain rules are 
 - Keeping open list and form screens synchronized when an entity is created, updated, or deleted elsewhere
 - Routing errors and side effects (snackbars, full-page errors, back navigation) without coupling BLoCs to Flutter `BuildContext`
 
-**`blocx_core` turns all of that recurring plumbing into composable, pure-Dart BLoC mixins and typed UseCase tasks.**
+**`blocx_core` removes the pagination/search/selection/stream plumbing a hand-written bloc needs, replacing repetitive boilerplate with composable, pure-Dart BLoC mixins and typed UseCase tasks.**
 
 ### Before vs. After
 
 <table>
 <tr>
-<th>Traditional BLoC (~350+ lines per screen)</th>
-<th>With <code>blocx_core</code> (~25 lines)</th>
+<th>Traditional Hand-Written BLoC</th>
+<th>With <code>blocx_core</code></th>
 </tr>
 <tr>
 <td>
@@ -80,6 +80,14 @@ class ProductsBloc extends BlocxCollectionBloc<Product, void>
 </td>
 </tr>
 </table>
+
+### Limitations
+
+- **Pagination modes**: Offset-based pagination is supported across all operations. Cursor-based pagination is supported for initial load, infinite scroll, and pull-to-refresh only.
+- **Search**: Search is offset-only (`BlocxSearchUseCase` / `BlocxPaginatedInput`).
+- **Entity requirement**: Entities must extend `BlocxBaseEntity` and implement `identifier`.
+- **Fixed mixin set**: Mixins are a fixed set designed around standard contracts (see `BlocxCollectionBloc`).
+- **Error translation and localizations**: Overridable per bloc instance or configured via static defaults (`BlocxErrorTranslator.instance` and `BlocXLocalizations.localizations`).
 
 ---
 
@@ -349,6 +357,76 @@ class ProductsCollectionBloc extends BlocxCollectionBloc<ProductEntity, void>
   }
 }
 ```
+
+### Cursor Pagination
+
+For datasets backed by opaque pagination tokens rather than numeric offsets, use `BlocxCursorPaginatedUseCase` and `BlocxCursorPaginatedUseCaseTask`.
+
+Cursor pagination is supported for **initial load**, **infinite scroll**, and **pull-to-refresh**. Note that **search is offset-only**, and a `null` or empty cursor signals the end of the list (`hasReachedEnd == true`).
+
+```dart
+// 1. Define your cursor-paginated use case
+class LoadProductsByCursorUseCase extends BlocxCursorPaginatedUseCase<
+    BlocxCursorPaginatedInput, ProductEntity> {
+  final ProductRepository repository;
+
+  LoadProductsByCursorUseCase({required this.repository});
+
+  @override
+  Future<BlocxUseCaseResult<BlocxPage<ProductEntity>>> perform(
+    BlocxCursorPaginatedInput input,
+  ) async {
+    final response = await repository.fetchProducts(
+      cursor: input.cursor,
+      limit: input.limit,
+    );
+    return successResult(
+      items: response.items,
+      input: input,
+      nextCursor: response.nextCursor,
+    );
+  }
+}
+
+// 2. Override cursorPaginationTask in your collection BLoC
+class ProductsCollectionBloc extends BlocxCollectionBloc<ProductEntity, void>
+    with
+        BlocxCollectionInfiniteMixin<ProductEntity, void>,
+        BlocxCollectionRefreshableMixin<ProductEntity, void> {
+  final LoadProductsByCursorUseCase loadProductsUseCase;
+
+  ProductsCollectionBloc({required this.loadProductsUseCase});
+
+  @override
+  BlocxCursorPaginatedUseCaseTask<BlocxCursorPaginatedInput, ProductEntity>?
+      get cursorPaginationTask => BlocxCursorPaginatedUseCaseTask(
+            useCase: loadProductsUseCase,
+            inputBuilder: (cursor, limit) =>
+                BlocxCursorPaginatedInput(cursor: cursor, limit: limit),
+          );
+}
+```
+
+### Sorted Insertion (`sortComparator`)
+
+Override `sortComparator` on your collection BLoC to preserve ordered placement when newly created or synced entities are inserted via `insertItem`, `addItem`, or `BlocxCollectionSyncStreamMixin`:
+
+```dart
+@override
+Comparator<ProductEntity>? get sortComparator =>
+    (a, b) => a.title.compareTo(b.title);
+```
+
+#### Limitations
+- It only positions *newly inserted* items.
+- Updating an item's sort key does not reposition it within the active list.
+- The comparator must match the server's ordering.
+- Ties are inserted after equal items.
+- Insertion is an O(n) scan across the list.
+
+### Dismissing Full-Page Errors (`clearError()`)
+
+When an unrecoverable full-page error occurs, calling `clearError()` on `BlocxBaseBloc` or `ScreenManagerCubit` emits `ScreenManagerCubitStateInitial(shouldRebuild: true)`. This dismisses full-page error overlays and restores normal screen display without resurrecting error states on subsequent messages or snackbars.
 
 ---
 
