@@ -358,11 +358,20 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
     DataInsertSource insertSource,
   ) async {
     final modifiedData = await modifyListBeforeInsert(data);
+    final fresh = <Entity>[];
+    final seen = <String>{};
+    for (final item in modifiedData) {
+      if (!seen.add(item.identifier)) continue;
+      final i = _list.indexById(item);
+      if (i != -1) {
+        _list[i] = item;
+      } else {
+        fresh.add(item);
+      }
+    }
     final index = insertSource.insertIndex(list);
-
     _addBlocxInfiniteListEvent(insertSource);
-
-    _list.insertAll(index, modifiedData);
+    _list.insertAll(index, fresh);
 
     doAfterInsert();
 
