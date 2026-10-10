@@ -31,5 +31,22 @@ jobs:
       - name: Run tests with coverage
         run: dart test --coverage=coverage
 
-      - name: Dry-run publish
-        run: dart pub publish --dry-run
+  publish:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Publish to pub.dev
+        run: dart pub publish --force
+

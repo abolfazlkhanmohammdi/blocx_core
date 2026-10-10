@@ -14,8 +14,12 @@ class RefreshCursorItem extends BlocxBaseEntity {
   String get identifier => id;
 }
 
-class FakeCursorRefreshUseCase extends BlocxCursorPaginatedUseCase<
-    BlocxCursorPaginatedInput, RefreshCursorItem> {
+class FakeCursorRefreshUseCase
+    extends
+        BlocxCursorPaginatedUseCase<
+          BlocxCursorPaginatedInput,
+          RefreshCursorItem
+        > {
   final List<String?> requestedCursors = [];
   bool shouldFail = false;
   Object? failureError;
@@ -55,9 +59,7 @@ class FakeCursorRefreshUseCase extends BlocxCursorPaginatedUseCase<
       }
     } else if (input.cursor == 'cur_refreshed_2') {
       return successResult(
-        items: const [
-          RefreshCursorItem(id: '12', name: 'Refreshed 12'),
-        ],
+        items: const [RefreshCursorItem(id: '12', name: 'Refreshed 12')],
         input: input,
         nextCursor: null,
       );
@@ -67,8 +69,8 @@ class FakeCursorRefreshUseCase extends BlocxCursorPaginatedUseCase<
   }
 }
 
-class FakeSearchOffsetUseCase extends BlocxSearchUseCase<
-    BlocxSearchInput, RefreshCursorItem> {
+class FakeSearchOffsetUseCase
+    extends BlocxSearchUseCase<BlocxSearchInput, RefreshCursorItem> {
   int searchRefreshCount = 0;
 
   @override
@@ -97,11 +99,11 @@ class CursorRefreshableBloc extends BlocxCollectionBloc<RefreshCursorItem, void>
 
   @override
   BlocxCursorPaginatedUseCaseTask<BlocxCursorPaginatedInput, RefreshCursorItem>?
-      get cursorPaginationTask => BlocxCursorPaginatedUseCaseTask(
-            useCase: cursorUseCase,
-            inputBuilder: (cursor, limit) =>
-                BlocxCursorPaginatedInput(cursor: cursor, limit: limit),
-          );
+  get cursorPaginationTask => BlocxCursorPaginatedUseCaseTask(
+    useCase: cursorUseCase,
+    inputBuilder: (cursor, limit) =>
+        BlocxCursorPaginatedInput(cursor: cursor, limit: limit),
+  );
 
   @override
   Future<void> handleError(
@@ -127,125 +129,132 @@ class SearchableCursorRefreshBloc
 
   @override
   BlocxCursorPaginatedUseCaseTask<BlocxCursorPaginatedInput, RefreshCursorItem>?
-      get cursorPaginationTask => BlocxCursorPaginatedUseCaseTask(
-            useCase: cursorUseCase,
-            inputBuilder: (cursor, limit) =>
-                BlocxCursorPaginatedInput(cursor: cursor, limit: limit),
-          );
+  get cursorPaginationTask => BlocxCursorPaginatedUseCaseTask(
+    useCase: cursorUseCase,
+    inputBuilder: (cursor, limit) =>
+        BlocxCursorPaginatedInput(cursor: cursor, limit: limit),
+  );
 
   @override
   BlocxPaginatedUseCaseTask<BlocxSearchInput, RefreshCursorItem>?
-      get searchUseCaseTask => BlocxPaginatedUseCaseTask(
-            useCase: searchUseCase,
-            inputBuilder: (offset, limit) =>
-                BlocxSearchInput(searchText: searchText, offset: offset, limit: limit),
-          );
+  get searchUseCaseTask => BlocxPaginatedUseCaseTask(
+    useCase: searchUseCase,
+    inputBuilder: (offset, limit) =>
+        BlocxSearchInput(searchText: searchText, offset: offset, limit: limit),
+  );
 }
 
 void main() {
   group('T3: Cursor-based pull-to-refresh', () {
     test(
-        'initial load -> refresh -> list equals freshly returned page and isRefreshing is false',
-        () async {
-      final useCase = FakeCursorRefreshUseCase();
-      final bloc = CursorRefreshableBloc(useCase);
+      'initial load -> refresh -> list equals freshly returned page and isRefreshing is false',
+      () async {
+        final useCase = FakeCursorRefreshUseCase();
+        final bloc = CursorRefreshableBloc(useCase);
 
-      bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
-      await bloc.stream.firstWhere((s) => s.list.isNotEmpty);
-      expect(bloc.state.list.map((e) => e.id).toList(), equals(['1', '2']));
-      expect(bloc.nextCursor, equals('cur_page_2'));
+        bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
+        await bloc.stream.firstWhere((s) => s.list.isNotEmpty);
+        expect(bloc.state.list.map((e) => e.id).toList(), equals(['1', '2']));
+        expect(bloc.nextCursor, equals('cur_page_2'));
 
-      bloc.add(BlocxCollectionEventRefreshData<RefreshCursorItem>());
-      await bloc.stream.firstWhere(
-        (s) => s.list.any((e) => e.id == '10') && !s.isRefreshing,
-      );
+        bloc.add(BlocxCollectionEventRefreshData<RefreshCursorItem>());
+        await bloc.stream.firstWhere(
+          (s) => s.list.any((e) => e.id == '10') && !s.isRefreshing,
+        );
 
-      expect(bloc.state.list.map((e) => e.id).toList(), equals(['10', '11']));
-      expect(bloc.isRefreshing, isFalse);
-      expect(bloc.state.isRefreshing, isFalse);
-      expect(bloc.nextCursor, equals('cur_refreshed_2'));
+        expect(bloc.state.list.map((e) => e.id).toList(), equals(['10', '11']));
+        expect(bloc.isRefreshing, isFalse);
+        expect(bloc.state.isRefreshing, isFalse);
+        expect(bloc.nextCursor, equals('cur_refreshed_2'));
 
-      await bloc.close();
-    });
-
-    test(
-        'after refresh, nextCursor is updated and subsequent LoadNextPage sends it',
-        () async {
-      final useCase = FakeCursorRefreshUseCase();
-      final bloc = CursorRefreshableBloc(useCase);
-
-      bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
-      await bloc.stream.firstWhere((s) => s.list.isNotEmpty);
-
-      bloc.add(BlocxCollectionEventRefreshData<RefreshCursorItem>());
-      await bloc.stream.firstWhere(
-        (s) => s.list.any((e) => e.id == '10') && !s.isRefreshing,
-      );
-
-      expect(bloc.nextCursor, equals('cur_refreshed_2'));
-
-      bloc.add(BlocxCollectionEventLoadNextPage());
-      await bloc.stream.firstWhere((s) => s.list.length == 3);
-
-      expect(useCase.requestedCursors, equals([null, null, 'cur_refreshed_2']));
-      expect(bloc.nextCursor, isNull);
-      expect(bloc.hasReachedEnd, isTrue);
-      expect(
-        bloc.state.list.map((e) => e.id).toList(),
-        equals(['10', '11', '12']),
-      );
-
-      await bloc.close();
-    });
+        await bloc.close();
+      },
+    );
 
     test(
-        'refresh failure: isRefreshing is reset to false, previous list kept, error surfaced via handleError',
-        () async {
-      final useCase = FakeCursorRefreshUseCase();
-      final bloc = CursorRefreshableBloc(useCase);
+      'after refresh, nextCursor is updated and subsequent LoadNextPage sends it',
+      () async {
+        final useCase = FakeCursorRefreshUseCase();
+        final bloc = CursorRefreshableBloc(useCase);
 
-      bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
-      await bloc.stream.firstWhere((s) => s.list.isNotEmpty);
-      expect(bloc.state.list.map((e) => e.id).toList(), equals(['1', '2']));
+        bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
+        await bloc.stream.firstWhere((s) => s.list.isNotEmpty);
 
-      useCase.shouldFail = true;
-      bloc.add(BlocxCollectionEventRefreshData<RefreshCursorItem>());
-      await bloc.stream.firstWhere((s) => !s.isRefreshing);
+        bloc.add(BlocxCollectionEventRefreshData<RefreshCursorItem>());
+        await bloc.stream.firstWhere(
+          (s) => s.list.any((e) => e.id == '10') && !s.isRefreshing,
+        );
 
-      expect(bloc.isRefreshing, isFalse);
-      expect(bloc.state.isRefreshing, isFalse);
-      expect(bloc.state.list.map((e) => e.id).toList(), equals(['1', '2']));
-      expect(bloc.lastHandledError, isNotNull);
+        expect(bloc.nextCursor, equals('cur_refreshed_2'));
 
-      await bloc.close();
-    });
+        bloc.add(BlocxCollectionEventLoadNextPage());
+        await bloc.stream.firstWhere((s) => s.list.length == 3);
+
+        expect(
+          useCase.requestedCursors,
+          equals([null, null, 'cur_refreshed_2']),
+        );
+        expect(bloc.nextCursor, isNull);
+        expect(bloc.hasReachedEnd, isTrue);
+        expect(
+          bloc.state.list.map((e) => e.id).toList(),
+          equals(['10', '11', '12']),
+        );
+
+        await bloc.close();
+      },
+    );
 
     test(
-        'refresh with empty search text uses cursor task, with active search text delegates to search refresh',
-        () async {
-      final cursorUseCase = FakeCursorRefreshUseCase();
-      final searchUseCase = FakeSearchOffsetUseCase();
-      final bloc = SearchableCursorRefreshBloc(cursorUseCase, searchUseCase);
+      'refresh failure: isRefreshing is reset to false, previous list kept, error surfaced via handleError',
+      () async {
+        final useCase = FakeCursorRefreshUseCase();
+        final bloc = CursorRefreshableBloc(useCase);
 
-      bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
-      await bloc.stream.firstWhere((s) => s.list.isNotEmpty);
-      expect(cursorUseCase.refreshCallCount, equals(1));
+        bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
+        await bloc.stream.firstWhere((s) => s.list.isNotEmpty);
+        expect(bloc.state.list.map((e) => e.id).toList(), equals(['1', '2']));
 
-      // 1. Refresh with empty search text uses cursor task
-      bloc.add(BlocxCollectionEventRefreshData<RefreshCursorItem>());
-      await bloc.stream.firstWhere(
-        (s) => s.list.any((e) => e.id == '10') && !s.isRefreshing,
-      );
-      expect(cursorUseCase.refreshCallCount, equals(2));
-      expect(searchUseCase.searchRefreshCount, equals(0));
+        useCase.shouldFail = true;
+        bloc.add(BlocxCollectionEventRefreshData<RefreshCursorItem>());
+        await bloc.stream.firstWhere((s) => !s.isRefreshing);
 
-      // 2. Set search text and refresh -> dispatches SearchRefresh
-      bloc.searchText = 'apple';
-      bloc.add(BlocxCollectionEventRefreshData<RefreshCursorItem>());
-      await bloc.stream.firstWhere((s) => s.list.any((e) => e.id == 's1'));
-      expect(searchUseCase.searchRefreshCount, equals(1));
+        expect(bloc.isRefreshing, isFalse);
+        expect(bloc.state.isRefreshing, isFalse);
+        expect(bloc.state.list.map((e) => e.id).toList(), equals(['1', '2']));
+        expect(bloc.lastHandledError, isNotNull);
 
-      await bloc.close();
-    });
+        await bloc.close();
+      },
+    );
+
+    test(
+      'refresh with empty search text uses cursor task, with active search text delegates to search refresh',
+      () async {
+        final cursorUseCase = FakeCursorRefreshUseCase();
+        final searchUseCase = FakeSearchOffsetUseCase();
+        final bloc = SearchableCursorRefreshBloc(cursorUseCase, searchUseCase);
+
+        bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
+        await bloc.stream.firstWhere((s) => s.list.isNotEmpty);
+        expect(cursorUseCase.refreshCallCount, equals(1));
+
+        // 1. Refresh with empty search text uses cursor task
+        bloc.add(BlocxCollectionEventRefreshData<RefreshCursorItem>());
+        await bloc.stream.firstWhere(
+          (s) => s.list.any((e) => e.id == '10') && !s.isRefreshing,
+        );
+        expect(cursorUseCase.refreshCallCount, equals(2));
+        expect(searchUseCase.searchRefreshCount, equals(0));
+
+        // 2. Set search text and refresh -> dispatches SearchRefresh
+        bloc.searchText = 'apple';
+        bloc.add(BlocxCollectionEventRefreshData<RefreshCursorItem>());
+        await bloc.stream.firstWhere((s) => s.list.any((e) => e.id == 's1'));
+        expect(searchUseCase.searchRefreshCount, equals(1));
+
+        await bloc.close();
+      },
+    );
   });
 }
