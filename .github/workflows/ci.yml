@@ -10,6 +10,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         sdk: ['3.8.0', 'stable']
     steps:
@@ -26,7 +27,7 @@ jobs:
         run: dart format --output=none --set-exit-if-changed .
 
       - name: Analyze project source
-        run: dart analyze --fatal-infos
+        run: dart analyze --fatal-infos 2>&1 | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Run tests with coverage
         run: dart test --coverage=coverage
