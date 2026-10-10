@@ -147,12 +147,12 @@ void main() {
         expect(bloc.state.list.length, equals(21));
         expect(bloc.state.list.first.id, equals('item_new'));
 
-        // Next-page input should be offset 10, not 11 (preventing drift)
+        // Next-page input should be offset 11 (10 server loaded + 1 local create shift)
         expect(
           paginatedUseCase.recordedInputs.map((e) => e.offset),
-          equals([0, 10]),
+          equals([0, 11]),
         );
-        expect(bloc.offset, equals(20));
+        expect(bloc.offset, equals(21));
       },
     );
 

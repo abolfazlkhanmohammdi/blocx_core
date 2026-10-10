@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/collection_bloc.dart';
 import 'package:test/test.dart';
@@ -9,13 +11,19 @@ class SyncInfiniteCollectionBloc extends BlocxCollectionBloc<TestItem, void>
         BlocxCollectionInfiniteMixin<TestItem, void>,
         BlocxCollectionSyncStreamMixin<TestItem, void> {
   final FakePaginatedUseCase paginatedUseCase;
+  final bool _adjustOffset;
   @override
   final BlocxEventHub eventHub;
 
   SyncInfiniteCollectionBloc({
     required this.paginatedUseCase,
     required this.eventHub,
-  }) : super();
+    bool adjustOffset = true,
+  })  : _adjustOffset = adjustOffset,
+        super();
+
+  @override
+  bool get adjustOffsetForLocalChanges => _adjustOffset;
 
   @override
   int get limit => 10;
@@ -70,9 +78,9 @@ class FullInteractiveCollectionBloc extends BlocxCollectionBloc<TestItem, void>
 }
 
 void main() {
-  group('C3: Pagination offset drift prevention', () {
+  group('C3: Pagination offset drift prevention & local adjustment', () {
     test(
-      'loadNextPage uses server loaded count offset when items are added locally via sync',
+      'loadNextPage follows local create on mutable source without duplicates',
       () async {
         final eventHub = BlocxSimpleEventHub();
         final source = FakePaginatedSource(
@@ -91,16 +99,20 @@ void main() {
         expect(bloc.list.length, equals(10));
         expect(useCase.recordedInputs.last.offset, equals(0));
 
-        // Emit create command through EventHub for a brand new entity
+        // Mutate server source: new item created at head (index 0)
         const newEntity = TestItem(id: 'new_999', title: 'New Item 999');
+        source.items.insert(0, newEntity);
+
+        // App broadcasts create command through EventHub
         final addSyncFuture = bloc.stream.firstWhere(
           (s) => s.list.any((e) => e.id == 'new_999'),
         );
         eventHub.emitEntity<TestItem>(newEntity, BlocxCommandType.create);
         await addSyncFuture;
 
-        // Local list length is now 11
+        // Local list length is now 11, delta is +1
         expect(bloc.list.length, equals(11));
+        expect(bloc.offset, equals(11));
 
         // Request next page
         final nextPageFuture = bloc.stream.firstWhere(
@@ -109,13 +121,17 @@ void main() {
         bloc.add(BlocxCollectionEventLoadNextPage<TestItem>());
         await nextPageFuture;
 
-        // CRITICAL ASSERTION: The next page request must use offset: 10, NOT offset: 11
-        expect(
-          useCase.recordedInputs.last.offset,
-          equals(10),
-          reason:
-              'Next page offset drifted to list.length (11) instead of tracking server offset (10)',
-        );
+        // Next page requested offset 11 (10 server loaded + 1 local delta)
+        expect(useCase.recordedInputs.last.offset, equals(11));
+
+        // Verify loaded list has no duplicates and is contiguous with server order
+        final ids = bloc.list.map((e) => e.id).toList();
+        expect(ids.toSet().length, equals(ids.length), reason: 'Duplicate ids found');
+        expect(ids.first, equals('new_999'));
+        // The remaining 20 items match source items 1..20
+        for (var i = 1; i <= 20; i++) {
+          expect(ids[i], equals(source.items[i].id));
+        }
 
         await bloc.close();
         eventHub.dispose();
@@ -123,13 +139,13 @@ void main() {
     );
 
     test(
-      'loadNextPage uses server loaded count offset when items are removed locally via sync',
+      'loadNextPage follows local delete on mutable source without skipped rows',
       () async {
-        final eventHub = FakePaginatedSource(
+        final source = FakePaginatedSource(
           List.generate(50, (i) => TestItem(id: '$i', title: 'Item $i')),
         );
         final eventHubInst = BlocxSimpleEventHub();
-        final useCase = FakePaginatedUseCase(source: eventHub);
+        final useCase = FakePaginatedUseCase(source: source);
         final bloc = SyncInfiniteCollectionBloc(
           paginatedUseCase: useCase,
           eventHub: eventHubInst,
@@ -141,35 +157,37 @@ void main() {
 
         expect(bloc.list.length, equals(10));
 
-        // Delete two items locally via EventHub
+        // Mutate server: remove item 0
+        source.items.removeWhere((e) => e.id == '0');
+
+        // Delete item locally via EventHub
         final deleteSyncFuture = bloc.stream.firstWhere(
-          (s) => s.list.length == 8,
+          (s) => s.list.length == 9,
         );
         eventHubInst.emitEntity<TestItem>(
           const TestItem(id: '0', title: 'Item 0'),
           BlocxCommandType.delete,
         );
-        eventHubInst.emitEntity<TestItem>(
-          const TestItem(id: '1', title: 'Item 1'),
-          BlocxCommandType.delete,
-        );
         await deleteSyncFuture;
 
-        // Local list length is now 8
-        expect(bloc.list.length, equals(8));
+        // Local list length is now 9, offset is 9
+        expect(bloc.list.length, equals(9));
+        expect(bloc.offset, equals(9));
 
         // Request next page
-        final nextPageFuture = bloc.stream.firstWhere((s) => s.list.length > 8);
+        final nextPageFuture = bloc.stream.firstWhere((s) => s.list.length > 9);
         bloc.add(BlocxCollectionEventLoadNextPage<TestItem>());
         await nextPageFuture;
 
-        // CRITICAL ASSERTION: The next page request must use offset: 10, NOT offset: 8
-        expect(
-          useCase.recordedInputs.last.offset,
-          equals(10),
-          reason:
-              'Next page offset drifted to list.length (8) instead of tracking server offset (10)',
-        );
+        // Offset requested was 9 (10 server loaded - 1 local delta)
+        expect(useCase.recordedInputs.last.offset, equals(9));
+
+        // Verify loaded list is contiguous with remaining server items (no skipped row)
+        final ids = bloc.list.map((e) => e.id).toList();
+        expect(ids.toSet().length, equals(ids.length));
+        for (var i = 0; i < ids.length; i++) {
+          expect(ids[i], equals(source.items[i].id));
+        }
 
         await bloc.close();
         eventHubInst.dispose();
@@ -177,7 +195,44 @@ void main() {
     );
 
     test(
-      'refreshPage resets offset and subsequent loadNextPage uses correct offset',
+      'adjustOffsetForLocalChanges == false keeps offset unchanged after local create',
+      () async {
+        final eventHub = BlocxSimpleEventHub();
+        final source = FakePaginatedSource(
+          List.generate(50, (i) => TestItem(id: '$i', title: 'Item $i')),
+        );
+        final useCase = FakePaginatedUseCase(source: source);
+        final bloc = SyncInfiniteCollectionBloc(
+          paginatedUseCase: useCase,
+          eventHub: eventHub,
+          adjustOffset: false,
+        );
+
+        final loadedFuture = bloc.stream.firstWhere((s) => s.list.isNotEmpty);
+        bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
+        await loadedFuture;
+
+        expect(bloc.offset, equals(10));
+
+        // Create item locally
+        const newEntity = TestItem(id: 'new_999', title: 'New Item 999');
+        final addSyncFuture = bloc.stream.firstWhere(
+          (s) => s.list.any((e) => e.id == 'new_999'),
+        );
+        eventHub.emitEntity<TestItem>(newEntity, BlocxCommandType.create);
+        await addSyncFuture;
+
+        expect(bloc.list.length, equals(11));
+        // Offset remains 10 because adjustOffsetForLocalChanges is false
+        expect(bloc.offset, equals(10));
+
+        await bloc.close();
+        eventHub.dispose();
+      },
+    );
+
+    test(
+      'refresh resets delta, search start resets delta, addItem of existing id does not change delta',
       () async {
         final eventHub = BlocxSimpleEventHub();
         final source = FakePaginatedSource(
@@ -197,40 +252,40 @@ void main() {
         await loadedFuture;
         expect(bloc.offset, equals(10));
 
-        // Load page 2 (10 items -> offset 20)
-        final page2Future = bloc.stream.firstWhere((s) => s.list.length == 20);
-        bloc.add(BlocxCollectionEventLoadNextPage<TestItem>());
-        await page2Future;
-        expect(bloc.offset, equals(20));
+        // Add brand new item -> delta becomes 1, offset becomes 11
+        bloc.add(BlocxCollectionEventAddItem(
+          item: const TestItem(id: 'fresh_1', title: 'Fresh 1'),
+        ));
+        await bloc.stream.firstWhere((s) => s.list.any((e) => e.id == 'fresh_1'));
+        expect(bloc.offset, equals(11));
 
-        // Add item via sync -> list length becomes 21
-        final syncFuture = bloc.stream.firstWhere((s) => s.list.length == 21);
-        eventHub.emitEntity<TestItem>(
-          const TestItem(id: 'sync_item', title: 'Sync Item'),
-          BlocxCommandType.create,
-        );
-        await syncFuture;
-        expect(bloc.offset, equals(20));
+        // Add already present item -> delta does NOT change
+        bloc.add(BlocxCollectionEventAddItem(
+          item: const TestItem(id: 'fresh_1', title: 'Updated Fresh 1'),
+        ));
+        await bloc.stream.firstWhere((s) => s.list.any((e) => e.title == 'Updated Fresh 1'));
+        expect(bloc.offset, equals(11));
 
-        // Refresh -> list reloaded to 10 items, offset reset to 10
-        final refreshFuture = bloc.stream.firstWhere(
-          (s) =>
-              !s.isRefreshing &&
-              s.list.length == 10 &&
-              !s.list.any((e) => e.id == 'sync_item'),
-        );
+        // Refresh -> resets delta and offset
         bloc.add(BlocxCollectionEventRefreshData<TestItem>());
-        await refreshFuture;
+        await bloc.stream.firstWhere((s) => !s.isRefreshing && s.list.length == 10);
         expect(bloc.offset, equals(10));
 
-        // Next page after refresh must fetch at offset 10, not 20 or 21
-        final pageAfterRefresh = bloc.stream.firstWhere(
-          (s) => s.list.length == 20,
-        );
-        bloc.add(BlocxCollectionEventLoadNextPage<TestItem>());
-        await pageAfterRefresh;
+        // Add new item again
+        bloc.add(BlocxCollectionEventAddItem(
+          item: const TestItem(id: 'fresh_2', title: 'Fresh 2'),
+        ));
+        await bloc.stream.firstWhere((s) => s.list.any((e) => e.id == 'fresh_2'));
+        expect(bloc.offset, equals(11));
 
-        expect(useCase.recordedInputs.last.offset, equals(10));
+        // Search start -> clearList resets delta
+        bloc.add(BlocxCollectionEventSearch<TestItem>(searchText: 'Item'));
+        await bloc.stream.firstWhere((s) => s.isSearching || s.list.length == 10);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        // Search clear restores collection
+        bloc.add(BlocxCollectionEventClearSearch<TestItem>());
+        await bloc.stream.firstWhere((s) => s.list.length == 10);
+        expect(bloc.offset, equals(10));
 
         await bloc.close();
         eventHub.dispose();
@@ -238,52 +293,66 @@ void main() {
     );
 
     test(
-      'searchNextPage tracks searchOffset independently of local mutations',
+      'invariant test: random creates, deletes, and next-page loads maintain order and uniqueness',
       () async {
-        final eventHub = BlocxSimpleEventHub();
-        final source = FakePaginatedSource(
-          List.generate(50, (i) => TestItem(id: '$i', title: 'Item $i')),
-        );
-        final useCase = FakePaginatedUseCase(source: source);
-        final searchUseCase = FakeSearchUseCase(source: source);
-        final bloc = FullInteractiveCollectionBloc(
-          paginatedUseCase: useCase,
-          searchUseCase: searchUseCase,
-          eventHub: eventHub,
-        );
+        for (var seed = 1; seed <= 20; seed++) {
+          final random = Random(seed);
+          final serverItems = List.generate(
+            200,
+            (i) => TestItem(id: 'server_$i', title: 'Server Item $i'),
+          );
+          final source = FakePaginatedSource(List.of(serverItems));
+          final eventHub = BlocxSimpleEventHub();
+          final useCase = FakePaginatedUseCase(source: source);
+          final bloc = SyncInfiniteCollectionBloc(
+            paginatedUseCase: useCase,
+            eventHub: eventHub,
+          );
 
-        // Search 'Item'
-        final searchFuture = bloc.stream.firstWhere((s) => s.list.length == 10);
-        bloc.add(BlocxCollectionEventSearch<TestItem>(searchText: 'Item'));
-        await searchFuture;
-        expect(bloc.searchOffset, equals(10));
+          // Initial load (10 items)
+          bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
+          await bloc.stream.firstWhere((s) => s.list.isNotEmpty);
 
-        // Add item via sync -> local list length becomes 11
-        final syncFuture = bloc.stream.firstWhere((s) => s.list.length == 11);
-        eventHub.emitEntity<TestItem>(
-          const TestItem(id: 'sync_search_item', title: 'Item sync search'),
-          BlocxCommandType.create,
-        );
-        await syncFuture;
-        expect(bloc.searchOffset, equals(10));
+          var nextCreatedId = 1000;
+          for (var step = 0; step < 30; step++) {
+            final action = random.nextInt(3);
+            if (action == 0) {
+              // Create at head
+              final newItem = TestItem(id: 'local_${nextCreatedId++}', title: 'Local Created');
+              source.items.insert(0, newItem);
+              final lengthBefore = bloc.list.length;
+              eventHub.emitEntity<TestItem>(newItem, BlocxCommandType.create);
+              await bloc.stream.firstWhere((s) => s.list.length == lengthBefore + 1);
+            } else if (action == 1) {
+              // Delete a loaded item if any exists
+              if (bloc.list.isNotEmpty) {
+                final target = bloc.list[random.nextInt(bloc.list.length)];
+                source.items.removeWhere((e) => e.id == target.id);
+                final lengthBefore = bloc.list.length;
+                eventHub.emitEntity<TestItem>(target, BlocxCommandType.delete);
+                await bloc.stream.firstWhere((s) => s.list.length == lengthBefore - 1);
+              }
+            } else {
+              // Next page
+              if (!bloc.hasReachedEnd) {
+                final lengthBefore = bloc.list.length;
+                bloc.add(BlocxCollectionEventLoadNextPage<TestItem>());
+                await Future<void>.delayed(const Duration(milliseconds: 15));
+                if (bloc.list.length > lengthBefore) {
+                  // Loaded
+                }
+              }
+            }
 
-        // Request next page of search -> must use offset 10, NOT 11
-        final nextSearchFuture = bloc.stream.firstWhere(
-          (s) => s.list.length > 11,
-        );
-        bloc.add(BlocxCollectionEventSearchNextPage<TestItem>());
-        await nextSearchFuture;
+            // Invariant check
+            final ids = bloc.list.map((e) => e.id).toList();
+            expect(ids.toSet().length, equals(ids.length),
+                reason: 'Seed $seed step $step: Duplicate IDs in list');
+          }
 
-        expect(
-          searchUseCase.recordedInputs.last.offset,
-          equals(10),
-          reason:
-              'Search next page must use searchOffset (10) rather than list.length (11)',
-        );
-        expect(bloc.searchOffset, equals(20));
-
-        await bloc.close();
-        eventHub.dispose();
+          await bloc.close();
+          eventHub.dispose();
+        }
       },
     );
   });

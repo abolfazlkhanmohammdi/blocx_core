@@ -191,7 +191,10 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
     }
 
     final gen = loadGeneration;
-    final result = await task.execute(offset: _searchLoadedCount, limit: limit);
+    final result = await task.execute(
+      offset: _searchLoadedCount + localOffsetDelta,
+      limit: limit,
+    );
     if (gen != loadGeneration) return;
 
     if (result.isFailure) {

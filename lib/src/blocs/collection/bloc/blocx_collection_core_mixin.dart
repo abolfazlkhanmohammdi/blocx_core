@@ -223,7 +223,13 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   int get limit => 20;
 
   int _loadedCount = 0;
+  int _localOffsetDelta = 0;
   String? _nextCursor;
+
+  /// Whether local inserts/removals (mirrored from the server by this app) shift the
+  /// next request offset. Override to false if your server ordering means a local
+  /// create does not move existing rows (e.g. new rows sort to the end).
+  bool get adjustOffsetForLocalChanges => true;
 
   /// Current pagination cursor returned by the datasource.
   String? get nextCursor => _nextCursor;
@@ -232,16 +238,25 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   @protected
   set nextCursor(String? value) => _nextCursor = value;
 
-  /// Current pagination offset based on items fetched from the datasource.
-  ///
-  /// This tracks the server pagination cursor independently of local additions
-  /// or removals (e.g. from sync streams or local mutations), preventing
-  /// pagination offset drift when loading subsequent pages.
-  int get offset => _loadedCount;
+  /// Current pagination offset based on items fetched from the datasource and local mutations.
+  int get offset => _loadedCount + _localOffsetDelta;
 
   /// Updates the pagination offset cursor.
   @protected
-  set offset(int value) => _loadedCount = value;
+  set offset(int value) => _loadedCount = value - _localOffsetDelta;
+
+  @protected
+  int get localOffsetDelta => _localOffsetDelta;
+
+  @protected
+  void noteLocalInsert() {
+    if (adjustOffsetForLocalChanges) _localOffsetDelta++;
+  }
+
+  @protected
+  void noteLocalRemoval() {
+    if (adjustOffsetForLocalChanges) _localOffsetDelta--;
+  }
 
   int _loadGeneration = 0;
 
@@ -364,21 +379,31 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   void clearList() {
     _list.clear();
     _loadedCount = 0;
+    _localOffsetDelta = 0;
     _nextCursor = null;
   }
 
   /// Replaces the entire collection with [newList].
+  ///
+  /// Resets [_loadedCount] to the length of [newList] and [_localOffsetDelta] to 0.
   void replaceList(List<Entity> newList) {
     _list
       ..clear()
       ..addAll(newList);
+    _loadedCount = newList.length;
+    _localOffsetDelta = 0;
   }
 
   /// Replaces one existing item.
   void replaceItemInList(Entity item) => _list.replaceItem(item);
 
   /// Removes one item from the collection.
-  void removeItemFromList(Entity item) => _list.removeById(item);
+  void removeItemFromList(Entity item) {
+    final removed = _list.removeById(item);
+    if (removed) {
+      noteLocalRemoval();
+    }
+  }
 
   void _addBlocxInfiniteListEvent(DataInsertSource insertSource) {
     switch (insertSource) {
@@ -428,6 +453,7 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
 
     final safeIndex = event.index.clamp(0, _list.length);
     _list.insert(safeIndex, event.item);
+    noteLocalInsert();
     emitState(emit);
   }
 
@@ -462,6 +488,7 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
     }
     final safeIndex = index.clamp(0, _list.length);
     _list.insert(safeIndex, item);
+    noteLocalInsert();
   }
 
   /// Sorts the collection using [comparator].
@@ -487,9 +514,9 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
     BlocxCollectionEventRemoveFromList<Entity> event,
     Emitter<BlocxCollectionState<Entity>> emit,
   ) async {
-    var index = _list.indexById(event.item);
-    if (index < 0) return;
-    _list.removeAt(index);
+    final removed = _list.removeById(event.item);
+    if (!removed) return;
+    noteLocalRemoval();
     emitState(emit);
   }
 }
