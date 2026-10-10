@@ -254,7 +254,16 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
 
   /// Increments and returns the next load generation identifier.
   @protected
-  int nextLoadGeneration() => ++_loadGeneration;
+  int nextLoadGeneration() {
+    final hadNextPageInFlight = isLoadingNextPage;
+    isLoadingNextPage = false;
+    if (hadNextPageInFlight) {
+      infiniteListBloc.add(
+        BlocxInfiniteListEventChangeLoadBottomDataStatus(false, hasReachedEnd),
+      );
+    }
+    return ++_loadGeneration;
+  }
 
   /// Allows modification of incoming data before insertion.
   Future<List<Entity>> modifyListBeforeInsert(List<Entity> data) async => data;
