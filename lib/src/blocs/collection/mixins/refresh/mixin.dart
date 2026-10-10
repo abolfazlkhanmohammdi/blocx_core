@@ -11,11 +11,16 @@ import 'package:blocx_core/collection_bloc.dart'
         DataInsertSource;
 import 'package:blocx_core/src/blocs/collection/mixins/refresh/events.dart';
 import 'package:blocx_core/src/blocs/collection/mixins/selection/events.dart';
+import 'package:blocx_core/src/blocs/collection/use_cases/blocx_cursor_paginated_use_case.dart';
 import 'package:blocx_core/src/blocs/collection/use_cases/blocx_paginated_use_case.dart';
 
 import '../search/events.dart';
 
 /// Adds pull-to-refresh support to a [BlocxCollectionBloc].
+///
+/// Supports offset pagination via [refreshPageUseCaseTask] and cursor pagination via
+/// [refreshPageCursorTask]. Initial load, next-page loading, and refresh support cursors,
+/// while search stays offset-based.
 ///
 /// When search is active, refresh is delegated to
 /// [BlocxCollectionSearchableMixin].
@@ -37,6 +42,10 @@ mixin BlocxCollectionRefreshableMixin<Entity extends BlocxBaseEntity, Payload>
   /// different use case or input shape.
   BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Entity>?
   get refreshPageUseCaseTask => paginationTask;
+
+  /// Task used to refresh with cursor pagination. Defaults to [cursorPaginationTask].
+  BlocxCursorPaginatedUseCaseTask<BlocxCursorPaginatedInput, Entity>?
+  get refreshPageCursorTask => cursorPaginationTask;
 
   /// Drag distance required to trigger pull-to-refresh.
   double get refreshThreshold => 64.0;
@@ -61,6 +70,11 @@ mixin BlocxCollectionRefreshableMixin<Entity extends BlocxBaseEntity, Payload>
       return;
     }
 
+    final cursorTask = refreshPageCursorTask;
+    if (cursorTask != null) {
+      return _fetchRefreshPageWithCursor(cursorTask, emit);
+    }
+
     final task = refreshPageUseCaseTask;
     if (task != null) {
       return _fetchRefreshPage(task, emit);
@@ -69,8 +83,8 @@ mixin BlocxCollectionRefreshableMixin<Entity extends BlocxBaseEntity, Payload>
     infiniteListBloc.add(BlocxInfiniteListEventCloseRefresh());
 
     throw UnimplementedError(
-      'Provide `paginationTask` or `refreshPageUseCaseTask`, '
-      'or override `refreshPage()`.',
+      'Provide `paginationTask`, `cursorPaginationTask`, `refreshPageUseCaseTask`, '
+      'or `refreshPageCursorTask`, or override `refreshPage()`.',
     );
   }
 
@@ -98,6 +112,45 @@ mixin BlocxCollectionRefreshableMixin<Entity extends BlocxBaseEntity, Payload>
       offset = page.items.length;
 
       await insertToList(page.items, !page.hasNext, DataInsertSource.refresh);
+
+      emitState(emit);
+    } finally {
+      if (gen == loadGeneration) {
+        isRefreshing = false;
+        infiniteListBloc.add(BlocxInfiniteListEventCloseRefresh());
+        emitState(emit);
+      }
+    }
+  }
+
+  /// Executes refresh using [task] with cursor pagination.
+  Future<void> _fetchRefreshPageWithCursor(
+    BlocxCursorPaginatedUseCaseTask<BlocxCursorPaginatedInput, Entity> task,
+    Emitter<BlocxCollectionState<Entity>> emit,
+  ) async {
+    final gen = nextLoadGeneration();
+    isRefreshing = true;
+    emitState(emit);
+
+    try {
+      final result = await task.execute(cursor: null, limit: limit);
+      if (gen != loadGeneration) return;
+
+      if (result.isFailure) {
+        await handleError(result.error!, emit, stacktrace: result.stackTrace);
+        return;
+      }
+
+      final page = result.data!;
+
+      clearList();
+      offset = page.items.length;
+      nextCursor = page.nextCursor;
+
+      final isLast =
+          !page.hasNext || page.nextCursor == null || page.nextCursor!.isEmpty;
+
+      await insertToList(page.items, isLast, DataInsertSource.refresh);
 
       emitState(emit);
     } finally {
