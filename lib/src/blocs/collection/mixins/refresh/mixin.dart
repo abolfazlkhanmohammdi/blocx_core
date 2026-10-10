@@ -11,7 +11,6 @@ import 'package:blocx_core/collection_bloc.dart'
         DataInsertSource;
 import 'package:blocx_core/src/blocs/collection/mixins/refresh/events.dart';
 import 'package:blocx_core/src/blocs/collection/mixins/selection/events.dart';
-import 'package:blocx_core/src/blocs/collection/use_cases/blocx_cursor_paginated_use_case.dart';
 import 'package:blocx_core/src/blocs/collection/use_cases/blocx_paginated_use_case.dart';
 
 import '../search/events.dart';
