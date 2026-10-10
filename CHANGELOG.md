@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.2.0] - 2026-10-10
+
+### Fixed
+* Fixed stuck `isLoadingNextPage` when `loadGeneration` increments during an in-flight pagination request (F1 / K1): `nextLoadGeneration()` now always clears `isLoadingNextPage = false` and signals bottom loader completion.
+* Fixed local pagination offset drift when entities are inserted or removed locally (F2 / K2): introduced `_localOffsetDelta` tracking with `noteLocalInsert()`, `noteLocalRemoval()`, and `adjustOffsetForLocalChanges()` across initial load, next page, search, and refresh.
+* Fixed duplicate entity insertions in `insertToList()` (F3 / K3): bulk inserts now check `identifier` against existing items and replace existing matches in-place while inserting new items at the target position.
+* Guarded `searchNextPage` against redundant in-flight triggers (F5 / K5): now verifies `!hasReachedEnd && !isLoadingNextPage`, tracks `isLoadingNextPage` with a generation-safe `try/finally`, and verifies search guards when delegating from `loadNextPage`.
+* Concurrency and event transformers for `BlocxFormCoreMixin` (F4 / K4): registered `Init` with `restartable()`, `UpdateData` with `sequential()`, `Submit` with `droppable()`, `UpdateFormData` with `restartable()`, and `SyncFormData` with `sequential()`; guarded `initForm` against cancelled emissions (`if (emit.isDone) return`).
+* Localized delete confirmation and failure snackbars (F6 / K6): added default getters `itemDeleted` and `itemDeleteFailed` to `BlocXLocalizations`, and updated `deletion/mixin.dart` to use localized strings instead of hardcoded English.
+
+### Added
+* Added `reportError(Object error, StackTrace? stackTrace)` hook to `BlocxBaseBloc` (F7 / K7): called automatically from `handleError` before UI translation, allowing subclasses to forward unhandled errors to crash reporting services (such as Sentry or Firebase Crashlytics) without coupling to UI layers.
+* Documented error monitoring best practices across `BlocxBaseBloc` and `BlocxBaseUseCase`.
+
 ## [1.1.0] - 2026-10-10
 
 ### Added
