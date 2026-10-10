@@ -1,5 +1,49 @@
 # Changelog
 
+## [1.1.0] - 2026-10-10
+
+### Added
+* Added `clearError()` to `ScreenManagerCubit` and `BlocxBaseBloc`, which emits `ScreenManagerCubitStateInitial(shouldRebuild: true)` to dismiss full-page errors and restore normal screen display without resurrecting error states on subsequent snackbars.
+* Added cursor-based pagination support with `BlocxPage.nextCursor`, `BlocxCursorPaginatedInput`, `BlocxCursorPaginatedUseCase`, `BlocxCursorPaginatedUseCaseTask`, and datasource cursor tracking (`nextCursor`) in `BlocxCollectionCoreMixin` and `BlocxCollectionInfiniteMixin`.
+* Added `sortComparator` and sort-aware item insertion (`getInsertIndexForItem`) to `BlocxCollectionCoreMixin` and `BlocxCollectionSyncStreamMixin` to preserve ordered placement of newly created or synced items.
+* Added per-bloc injectable `errorTranslator` and `localizations` constructor parameters and getters to `BlocxBaseBloc`, `BlocxCollectionBloc`, and `BlocxFormBloc`, falling back to `BlocxErrorTranslator.instance` and `BlocXLocalizations.localizations`.
+* Added `searchingText` and `searchHint` keys to `BlocXLocalizations` with default implementations.
+* Added `package:blocx_core/testing.dart` exporting test utilities: in-memory `BlocxTestEventHub`, `BlocxTestEntity`, `BlocxTestFormEntity`, `FakePaginatedSource`, `FakePaginatedUseCase`, `FakeCursorPaginatedUseCase`, `FakeSearchUseCase`, `FakeUseCase`, and task construction helpers.
+
+### Fixed
+* Fixed cursor pagination end-of-list detection: a missing or empty `nextCursor` is now treated as the end of list (`hasReachedEnd == true`), preventing infinite refetches of page 1 when `items.length == limit`. Added guard in `_fetchNextPageWithCursor` when cursor is missing.
+* Fixed pull-to-refresh throwing `UnimplementedError` on cursor-only collection blocs: added `refreshPageCursorTask` and `_fetchRefreshPageWithCursor` to `BlocxCollectionRefreshableMixin`.
+
+### Changed
+* Raised the minimum Dart SDK to 3.8.0, which is what the dependency constraints (bloc 9 etc.) already required.
+
+## [1.0.1] - 2026-10-09
+
+### Documentation
+* Recorded baseline test and analysis results in `docs/fix-notes.md`.
+* Aligned `BlocxBaseEntity` documentation and examples to accurately reflect that entity matching, deduplication, and sync operate via the contractual `identifier` getter, while Dart `operator ==` and `hashCode` remain standard `Object` identity unless overridden by subclasses.
+* Corrected `resolveCommandEntities(input, output)` signature in `README.md` to reflect the 2-parameter signature in source.
+* Updated `BlocxCollectionSearchableMixin` doc descriptions in `blocx_collection_bloc.dart` to clarify that search filters the active collection list in-place rather than maintaining a disconnected secondary list.
+
+### Infrastructure & Testing
+* Added GitHub Actions CI workflow (`.github/workflows/ci.yml`) covering formatting, static analysis (`--fatal-infos`), tests with coverage, and dry-run publishing across SDK matrix (`3.5.0` and `stable`).
+* Added `bloc_test` and `fake_async` dev dependencies and test harness fixtures in `test/helpers/` (fake use cases, paginated source, entity models).
+* Added comprehensive multi-mixin combination test suite (`test/collection/collection_combination_test.dart`) exercising the flagship combination of Infinite, Refreshable, Searchable, Selectable, Deletable, and SyncStream mixins working together.
+* Replaced arbitrary `Future.delayed` sleeps in existing collection and form tests with reactive stream synchronization.
+
+### Fixed
+* Fixed initial load failure leaving collection state stuck in `Loading` forever; now emits `BlocxCollectionStateError` with translated error message while keeping existing list and status flags intact.
+* Added `readableErrorOf` helper on `BlocxBaseBloc` to centralize readable error translation.
+* Ensured `isLoadingNextPage`, `isRefreshing`, and `isSearching` flags and states are consistently reset and emitted on failure paths.
+* Fixed `BlocxCollectionInfiniteMixin` to emit `isLoadingNextPage: true` upon fetch initiation and reset to `false` upon page arrival/completion, keeping state snapshots synchronized with bloc status.
+* Prevented emitted states from aliasing live mutable lists and identifier sets by emitting true unmodifiable snapshots (`List<Entity>.unmodifiable` and `Set<String>.unmodifiable`), eliminating retroactive state mutations.
+* Decoupled pagination offset (`offset` and `searchOffset`) from local list length (`list.length`) by tracking datasource-loaded counts (`_loadedCount` and `_searchLoadedCount`), preventing pagination offset drift when entities are added or deleted locally via sync streams or user actions.
+* Prevented stale-response race conditions by introducing a monotonically incrementing `loadGeneration` counter and registering `BlocxCollectionEventLoadInitialPage` and `BlocxCollectionEventRefreshData` with `restartable()`, and `BlocxCollectionEventLoadNextPage` with `droppable()`, safely discarding out-of-order in-flight responses across initial load, pagination, refresh, and search.
+* Added in-place deduplication to `addItem` and `insertToListSingle`: if an item with matching `identifier` already exists in the collection, it is updated in-place rather than inserted as a duplicate entry.
+* Isolated entity resolution and EventHub event broadcasting within `BlocxBaseUseCase.execute(input)` in a dedicated `try/catch` with a `handleBroadcastError` hook, ensuring that exceptions thrown during post-execution broadcasting never cause a successful persistent business operation to return a `BlocxUseCaseFailure`.
+* Optimized `BlocxSimpleEventHub.emit` to capture `StackTrace.current` conditionally inside an assert block (`assert(() { event.debugTrace ??= StackTrace.current; return true; }())`), eliminating expensive stack trace capture overhead in release builds while preserving diagnostics in debug/test environments.
+* Enhanced `BlocxSimpleEventHub.onEntity<T>` to support heterogeneous entity batches using `entities.any((item) => item is T)` and `whereType<T>()`, and preserved original event `id` and `createdAt` timestamps when re-wrapping typed `BlocxEntityEvent`s.
+
 ## [1.0.0]
 
 ### Added

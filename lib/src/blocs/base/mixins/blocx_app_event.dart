@@ -2,12 +2,7 @@ import 'package:blocx_core/src/core/models/base_entity.dart';
 import 'package:uuid/uuid.dart';
 
 /// Defines the CRUD command type associated with a use case or entity event.
-enum BlocxCommandType {
-  create,
-  read,
-  update,
-  delete,
-}
+enum BlocxCommandType { create, read, update, delete }
 
 abstract class BlocxAppEvent {
   final String id;
@@ -15,9 +10,9 @@ abstract class BlocxAppEvent {
   final BlocxEventOrigin? origin;
   StackTrace? debugTrace;
 
-  BlocxAppEvent({this.origin, this.debugTrace})
-      : id = const Uuid().v4(),
-        createdAt = DateTime.now().toUtc();
+  BlocxAppEvent({this.origin, this.debugTrace, String? id, DateTime? createdAt})
+    : id = id ?? const Uuid().v4(),
+      createdAt = createdAt ?? DateTime.now().toUtc();
 }
 
 /// System-wide event representing a [BlocxCommandType] executed on one or more
@@ -34,6 +29,8 @@ class BlocxEntityEvent<T extends BlocxBaseEntity> extends BlocxAppEvent {
     required this.command,
     super.origin,
     super.debugTrace,
+    super.id,
+    super.createdAt,
   }) : entities = List<T>.unmodifiable(entities);
 
   /// Convenience constructor for a single-entity command event.
@@ -42,6 +39,8 @@ class BlocxEntityEvent<T extends BlocxBaseEntity> extends BlocxAppEvent {
     required this.command,
     super.origin,
     super.debugTrace,
+    super.id,
+    super.createdAt,
   }) : entities = List<T>.unmodifiable(<T>[entity]);
 
   /// Returns the first entity in [entities].

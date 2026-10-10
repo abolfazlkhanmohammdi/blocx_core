@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:meta/meta.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/collection_bloc.dart'
     show
@@ -19,6 +21,7 @@ import 'package:blocx_core/collection_bloc.dart'
 import 'package:blocx_core/src/blocs/collection/bloc/blocx_collection_bloc.dart';
 import 'package:blocx_core/src/blocs/collection/mixins/highlight/events.dart';
 import 'package:blocx_core/src/blocs/collection/mixins/scroll_to/events.dart';
+import 'package:blocx_core/src/blocs/collection/models/blocx_page.dart';
 import 'package:blocx_core/src/blocs/collection/use_cases/blocx_paginated_use_case.dart';
 import 'package:blocx_core/src/core/models/base_entity_extensions.dart';
 
@@ -28,8 +31,11 @@ import 'package:blocx_core/src/core/models/base_entity_extensions.dart';
 /// pagination state flags, and common state emission used by all collection
 /// blocs.
 mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
-    on BlocxBaseBloc<BlocxCollectionEvent<Entity>,
-        BlocxCollectionState<Entity>> {
+    on
+        BlocxBaseBloc<
+          BlocxCollectionEvent<Entity>,
+          BlocxCollectionState<Entity>
+        > {
   /// Optional external payload used for initial loading.
   Payload? payload;
 
@@ -90,12 +96,23 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Entity>? get paginationTask =>
       null;
 
+  /// Shared cursor-based paginated task used by initial load and next-page load.
+  BlocxCursorPaginatedUseCaseTask<BlocxCursorPaginatedInput, Entity>?
+  get cursorPaginationTask => null;
+
   /// Task responsible for loading the initial page.
   ///
   /// Defaults to [paginationTask]. Override this only when initial loading uses
   /// a different use case or input shape.
   BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Entity>?
-      get loadInitialPageTask => paginationTask;
+  get loadInitialPageTask => paginationTask;
+
+  /// Task responsible for loading the initial page using cursor pagination.
+  ///
+  /// Defaults to [cursorPaginationTask]. Override this only when initial loading
+  /// uses a different cursor task or input shape.
+  BlocxCursorPaginatedUseCaseTask<BlocxCursorPaginatedInput, Entity>?
+  get loadInitialPageCursorTask => cursorPaginationTask;
 
   /// Loads the first page of collection data.
   Future<void> loadInitialPage(
@@ -104,15 +121,42 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   ) async {
     payload = event.payload;
 
+    final cursorTask = loadInitialPageCursorTask;
+    if (cursorTask != null) {
+      return _fetchInitialPageWithCursor(cursorTask, emit);
+    }
+
     final task = loadInitialPageTask;
     if (task != null) {
       return _fetchInitialPage(task, emit);
     }
 
     throw UnimplementedError(
-      'Provide `paginationTask` or `loadInitialPageTask`, '
-      'or override `loadInitialPage()`.',
+      'Provide `paginationTask`, `cursorPaginationTask`, `loadInitialPageTask`, '
+      'or `loadInitialPageCursorTask`, or override `loadInitialPage()`.',
     );
+  }
+
+  /// Executes the initial load task using cursor pagination.
+  Future<void> _fetchInitialPageWithCursor(
+    BlocxCursorPaginatedUseCaseTask<BlocxCursorPaginatedInput, Entity> task,
+    Emitter<BlocxCollectionState<Entity>> emit,
+  ) async {
+    final gen = nextLoadGeneration();
+    emit(BlocxCollectionStateLoading<Entity>());
+
+    final result = await task.execute(cursor: null, limit: limit);
+    if (gen != _loadGeneration) return;
+
+    if (result.isFailure) {
+      await _emitInitialLoadError(result.error!, result.stackTrace, emit);
+      return;
+    }
+
+    final page = result.data!;
+    final isLast =
+        !page.hasNext || page.nextCursor == null || page.nextCursor!.isEmpty;
+    await _applyInitialPage(page, isLast, emit);
   }
 
   /// Executes the initial load task.
@@ -120,24 +164,56 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
     BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Entity> task,
     Emitter<BlocxCollectionState<Entity>> emit,
   ) async {
+    final gen = nextLoadGeneration();
     emit(BlocxCollectionStateLoading<Entity>());
 
     final result = await task.execute(offset: 0, limit: limit);
+    if (gen != _loadGeneration) return;
 
     if (result.isFailure) {
-      await handleError(result.error!, emit, stacktrace: result.stackTrace);
+      await _emitInitialLoadError(result.error!, result.stackTrace, emit);
       return;
     }
 
     final page = result.data!;
+    await _applyInitialPage(page, !page.hasNext, emit);
+  }
 
-    clearList();
-
-    await insertToList(
-      page.items,
-      !page.hasNext,
-      DataInsertSource.init,
+  Future<void> _emitInitialLoadError(
+    Object error,
+    StackTrace? st,
+    Emitter<BlocxCollectionState<Entity>> emit,
+  ) async {
+    await handleError(error, emit, stacktrace: st);
+    final readableError = readableErrorOf(error, stacktrace: st);
+    emit(
+      BlocxCollectionStateError<Entity>(
+        message: readableError.message,
+        list: List<Entity>.unmodifiable(_list),
+        hasReachedEnd: hasReachedEnd,
+        isLoadingNextPage: isLoadingNextPage,
+        isRefreshing: isRefreshing,
+        isSearching: isSearching,
+        selectedItemIds: Set<String>.unmodifiable(selectedItemIds),
+        beingSelectedItemIds: Set<String>.unmodifiable(beingSelectedItemIds),
+        highlightedItemIds: Set<String>.unmodifiable(highlightedItemIds),
+        beingRemovedItemIds: Set<String>.unmodifiable(beingRemovedItemIds),
+        expandedItemIds: Set<String>.unmodifiable(expandedItemIds),
+        additionalInfo: additionalInfo,
+      ),
     );
+  }
+
+  Future<void> _applyInitialPage(
+    BlocxPage<Entity> page,
+    bool isLast,
+    Emitter<BlocxCollectionState<Entity>> emit,
+  ) async {
+    clearList();
+    offset = page.items.length;
+    nextCursor = page.nextCursor;
+
+    await insertToList(page.items, isLast, DataInsertSource.init);
     if (isSelectable) await applyInitialSelection();
 
     emitState(emit);
@@ -146,15 +222,79 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   /// Default number of items to load per page.
   int get limit => 20;
 
-  /// Current offset based on loaded items.
-  int get offset => list.length;
+  int _loadedCount = 0;
+  String? _nextCursor;
+
+  /// Current pagination cursor returned by the datasource.
+  String? get nextCursor => _nextCursor;
+
+  /// Updates the pagination cursor.
+  @protected
+  set nextCursor(String? value) => _nextCursor = value;
+
+  /// Current pagination offset based on items fetched from the datasource.
+  ///
+  /// This tracks the server pagination cursor independently of local additions
+  /// or removals (e.g. from sync streams or local mutations), preventing
+  /// pagination offset drift when loading subsequent pages.
+  int get offset => _loadedCount;
+
+  /// Updates the pagination offset cursor.
+  @protected
+  set offset(int value) => _loadedCount = value;
+
+  int _loadGeneration = 0;
+
+  /// Current generation counter of collection loads.
+  ///
+  /// Incremented on each new major collection load (initial load, refresh,
+  /// search, or clear) to ensure stale in-flight asynchronous operations are
+  /// safely discarded and cannot overwrite newer state.
+  int get loadGeneration => _loadGeneration;
+
+  /// Increments and returns the next load generation identifier.
+  @protected
+  int nextLoadGeneration() => ++_loadGeneration;
 
   /// Allows modification of incoming data before insertion.
   Future<List<Entity>> modifyListBeforeInsert(List<Entity> data) async => data;
 
+  /// Optional comparator used to maintain sorted order in the collection list.
+  ///
+  /// When non-null, [getInsertIndexForItem] locates the sorted insertion position.
+  /// When null, defaults to inserting at index 0.
+  ///
+  /// ### Limitations
+  /// - It only positions *newly inserted* items.
+  /// - Updating an item's sort key does not reposition it.
+  /// - The comparator must match the server's ordering.
+  /// - Ties are inserted after equal items.
+  /// - Insertion is an O(n) scan.
+  Comparator<Entity>? get sortComparator => null;
+
+  /// Returns the target insertion index for [item] using [sortComparator] if present.
+  ///
+  /// If [sortComparator] is non-null, iterates through [list] to find the index where
+  /// [item] should be placed to preserve order. Otherwise, returns 0.
+  int getInsertIndexForItem(Entity item) {
+    final comparator = sortComparator;
+    if (comparator == null) return 0;
+
+    final currentList = list;
+    for (var i = 0; i < currentList.length; i++) {
+      if (comparator(item, currentList[i]) < 0) {
+        return i;
+      }
+    }
+    return currentList.length;
+  }
+
   /// Registers core collection event handlers.
   void initCoreMixin() {
-    on<BlocxCollectionEventLoadInitialPage<Entity, Payload>>(loadInitialPage);
+    on<BlocxCollectionEventLoadInitialPage<Entity, Payload>>(
+      loadInitialPage,
+      transformer: restartable(),
+    );
     on<BlocxCollectionEventAddItem<Entity>>(addItem);
     on<BlocxCollectionEventUpdateItem<Entity>>(updateItem);
     on<BlocxCollectionEventReplaceList<Entity>>(handleReplaceList);
@@ -162,20 +302,24 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   }
 
   /// Emits the current loaded collection state.
+  ///
+  /// Emitted states receive unmodifiable snapshot copies of the collection
+  /// items and ID sets to guarantee true state immutability. Creating these
+  /// snapshots incurs an O(n) cost per emission.
   void emitState(Emitter<BlocxCollectionState<Entity>> emit) {
     emit(
       BlocxCollectionStateLoaded(
         additionalInfo: additionalInfo,
-        list: list,
+        list: List<Entity>.unmodifiable(_list),
         hasReachedEnd: hasReachedEnd,
         isLoadingNextPage: isLoadingNextPage,
         isRefreshing: isRefreshing,
         isSearching: isSearching,
-        selectedItemIds: selectedItemIds,
-        beingSelectedItemIds: beingSelectedItemIds,
-        highlightedItemIds: highlightedItemIds,
-        beingRemovedItemIds: beingRemovedItemIds,
-        expandedItemIds: expandedItemIds,
+        selectedItemIds: Set<String>.unmodifiable(selectedItemIds),
+        beingSelectedItemIds: Set<String>.unmodifiable(beingSelectedItemIds),
+        highlightedItemIds: Set<String>.unmodifiable(highlightedItemIds),
+        beingRemovedItemIds: Set<String>.unmodifiable(beingRemovedItemIds),
+        expandedItemIds: Set<String>.unmodifiable(expandedItemIds),
       ),
     );
   }
@@ -207,8 +351,12 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
     }
   }
 
-  /// Clears all collection items.
-  void clearList() => _list.clear();
+  /// Clears all collection items and resets pagination offset.
+  void clearList() {
+    _list.clear();
+    _loadedCount = 0;
+    _nextCursor = null;
+  }
 
   /// Replaces the entire collection with [newList].
   void replaceList(List<Entity> newList) {
@@ -252,10 +400,23 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   bool get isSelectable;
 
   /// Adds [event.item] to the collection.
+  ///
+  /// If an item with matching [identifier] already exists in the collection,
+  /// it is updated in-place instead of creating a duplicate row.
   Future<void> addItem(
     BlocxCollectionEventAddItem<Entity> event,
     Emitter<BlocxCollectionState<Entity>> emit,
   ) async {
+    final existingIndex = _list.indexById(event.item);
+    if (existingIndex != -1) {
+      _list[existingIndex] = event.item;
+      if (isHighlightable) {
+        add(BlocxCollectionEventHighlightItem(item: event.item));
+      }
+      emitState(emit);
+      return;
+    }
+
     final safeIndex = event.index.clamp(0, _list.length);
     _list.insert(safeIndex, event.item);
     emitState(emit);
@@ -282,8 +443,16 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   }
 
   /// Inserts a single [item] at [index].
+  ///
+  /// If an item with matching [identifier] already exists, it is updated in place.
   void insertToListSingle(Entity item, {int index = 0}) {
-    _list.insert(index, item);
+    final existingIndex = _list.indexById(item);
+    if (existingIndex != -1) {
+      _list[existingIndex] = item;
+      return;
+    }
+    final safeIndex = index.clamp(0, _list.length);
+    _list.insert(safeIndex, item);
   }
 
   /// Sorts the collection using [comparator].
@@ -306,8 +475,9 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   FutureOr<void> applyInitialSelection() {}
 
   FutureOr<void> removeFromList(
-      BlocxCollectionEventRemoveFromList<Entity> event,
-      Emitter<BlocxCollectionState<Entity>> emit) async {
+    BlocxCollectionEventRemoveFromList<Entity> event,
+    Emitter<BlocxCollectionState<Entity>> emit,
+  ) async {
     var index = _list.indexById(event.item);
     if (index < 0) return;
     _list.removeAt(index);

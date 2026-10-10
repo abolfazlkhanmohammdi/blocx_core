@@ -37,7 +37,7 @@ part 'blocx_collection_state.dart';
 ///   @override
 ///   BlocxPaginatedUseCaseTask get paginationTask => BlocxPaginatedUseCaseTask(
 ///     useCase: _getOrdersUseCase,
-///     inputBuilder: ({required limit, required offset}) =>
+///     inputBuilder: (offset, limit) =>
 ///         BlocxPaginatedInput(limit: limit, offset: offset),
 ///   );
 /// }
@@ -49,7 +49,7 @@ part 'blocx_collection_state.dart';
 /// |---|---|
 /// | [BlocxCollectionRefreshableMixin] | Pull-to-refresh |
 /// | [BlocxCollectionInfiniteMixin] | Infinite scroll / next-page loading |
-/// | [BlocxCollectionSearchableMixin] | Debounced search with separate result list |
+/// | [BlocxCollectionSearchableMixin] | Debounced search over collection list |
 /// | [BlocxCollectionSelectableMixin] | Multi-item selection |
 /// | [BlocxCollectionDeletableMixin] | Animated item removal |
 /// | [BlocxCollectionHighlightableMixin] | Temporary item highlighting |
@@ -63,11 +63,15 @@ part 'blocx_collection_state.dart';
 /// - [Payload]: The payload type passed with [BlocxCollectionEventLoadInitialPage].
 ///   Use `void` when no payload is needed.
 abstract class BlocxCollectionBloc<Entity extends BlocxBaseEntity, Payload>
-    extends BlocxBaseBloc<BlocxCollectionEvent<Entity>,
-        BlocxCollectionState<Entity>>
+    extends
+        BlocxBaseBloc<
+          BlocxCollectionEvent<Entity>,
+          BlocxCollectionState<Entity>
+        >
     with BlocxCollectionCoreMixin<Entity, Payload> {
-  late final BlocxInfiniteListBloc _infiniteListBloc =
-      BlocxInfiniteListBloc(refreshThreshold: infiniteListRefreshThreshold);
+  late final BlocxInfiniteListBloc _infiniteListBloc = BlocxInfiniteListBloc(
+    refreshThreshold: infiniteListRefreshThreshold,
+  );
 
   late final bool hasFilters;
   @override
@@ -94,7 +98,15 @@ abstract class BlocxCollectionBloc<Entity extends BlocxBaseEntity, Payload>
   ///
   /// No [ScreenManagerCubit] needed — it is managed by [BlocxBaseBloc].
   /// Enabled mixins are detected and initialised automatically.
-  BlocxCollectionBloc() : super(BlocxCollectionStateLoading()) {
+  /// Optionally accepts an [errorTranslator] and [localizations] for dependency injection.
+  BlocxCollectionBloc({
+    BlocxErrorTranslator? errorTranslator,
+    BlocXLocalizations? localizations,
+  }) : super(
+         BlocxCollectionStateLoading(),
+         errorTranslator: errorTranslator,
+         localizations: localizations,
+       ) {
     initCoreMixin();
     isSelectable = initSelection();
     isHighlightable = initHighlight();
@@ -123,31 +135,31 @@ abstract class BlocxCollectionBloc<Entity extends BlocxBaseEntity, Payload>
   @override
   Set<String> get beingRemovedItemIds => isDeletable
       ? (this as BlocxCollectionDeletableMixin<Entity, Payload>)
-          .beingRemovedItemIds
+            .beingRemovedItemIds
       : {};
 
   @override
   Set<String> get selectedItemIds => isSelectable
       ? (this as BlocxCollectionSelectableMixin<Entity, Payload>)
-          .selectedItemIdsOriginal
+            .selectedItemIdsOriginal
       : const {};
 
   @override
   Set<String> get beingSelectedItemIds => isSelectable
       ? (this as BlocxCollectionSelectableMixin<Entity, Payload>)
-          .beingSelectedItemIdsOriginal
+            .beingSelectedItemIdsOriginal
       : const {};
 
   @override
   Set<String> get highlightedItemIds => isHighlightable
       ? (this as BlocxCollectionHighlightableMixin<Entity, Payload>)
-          .highlightedItemIdsOriginal
+            .highlightedItemIdsOriginal
       : const {};
 
   @override
   Set<String> get expandedItemIds => isExpandable
       ? (this as BlocxCollectionExpandableMixin<Entity, Payload>)
-          .expandedItemIdsOriginal
+            .expandedItemIdsOriginal
       : const {};
 
   bool initFilters() {

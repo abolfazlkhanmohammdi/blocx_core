@@ -11,7 +11,7 @@
 <p align="center">
   <a href="https://pub.dev/packages/blocx_core"><img src="https://img.shields.io/pub/v/blocx_core.svg" alt="pub version" /></a>
   <a href="https://pub.dev/packages/blocx_core/score"><img src="https://img.shields.io/pub/points/blocx_core" alt="pub points" /></a>
-  <a href="https://dart.dev"><img src="https://img.shields.io/badge/sdk-%3E%3D3.5.0%20%3C4.0.0-blue" alt="Dart SDK" /></a>
+  <a href="https://dart.dev"><img src="https://img.shields.io/badge/sdk-%3E%3D3.8.0%20%3C4.0.0-blue" alt="Dart SDK" /></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-green" alt="License: MIT" /></a>
 </p>
 
@@ -37,14 +37,14 @@ Real-world applications rarely become hard to maintain because domain rules are 
 - Keeping open list and form screens synchronized when an entity is created, updated, or deleted elsewhere
 - Routing errors and side effects (snackbars, full-page errors, back navigation) without coupling BLoCs to Flutter `BuildContext`
 
-**`blocx_core` turns all of that recurring plumbing into composable, pure-Dart BLoC mixins and typed UseCase tasks.**
+**`blocx_core` removes the pagination/search/selection/stream plumbing a hand-written bloc needs, replacing repetitive boilerplate with composable, pure-Dart BLoC mixins and typed UseCase tasks.**
 
 ### Before vs. After
 
 <table>
 <tr>
-<th>Traditional BLoC (~350+ lines per screen)</th>
-<th>With <code>blocx_core</code> (~25 lines)</th>
+<th>Traditional Hand-Written BLoC</th>
+<th>With <code>blocx_core</code></th>
 </tr>
 <tr>
 <td>
@@ -80,6 +80,14 @@ class ProductsBloc extends BlocxCollectionBloc<Product, void>
 </td>
 </tr>
 </table>
+
+### Limitations
+
+- **Pagination modes**: Offset-based pagination is supported across all operations. Cursor-based pagination is supported for initial load, infinite scroll, and pull-to-refresh only.
+- **Search**: Search is offset-only (`BlocxSearchUseCase` / `BlocxPaginatedInput`).
+- **Entity requirement**: Entities must extend `BlocxBaseEntity` and implement `identifier`.
+- **Fixed mixin set**: Mixins are a fixed set designed around standard contracts (see `BlocxCollectionBloc`).
+- **Error translation and localizations**: Overridable per bloc instance or configured via static defaults (`BlocxErrorTranslator.instance` and `BlocXLocalizations.localizations`).
 
 ---
 
@@ -124,7 +132,7 @@ Add `blocx_core` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  blocx_core: ^1.0.0
+  blocx_core: ^1.1.0
 ```
 
 Or via the CLI:
@@ -206,6 +214,8 @@ class ProductEntity extends BlocxBaseEntity {
 }
 ```
 
+> **Note on Equality:** `BlocxBaseEntity` defines `identifier` for collection matching, deduplication, and sync. `BlocxBaseEntity` does not override `operator ==` or `hashCode` by default to avoid interfering with custom value equality solutions (such as `equatable` or `freezed`) or reference equality semantics. Subclasses may implement `operator ==` and `hashCode` if value-based equality is needed.
+
 ### 2. UseCases & Automatic `BlocxEventHub` Command Broadcasting
 
 In `blocx_core`, **only UseCases emit app-wide domain events—BLoCs never emit them**.
@@ -261,7 +271,7 @@ class DeleteProductUseCase extends BlocxBaseUseCase<ProductEntity, bool> {
 }
 ```
 
-> **Tip:** A single UseCase can also emit multiple commands by passing `commandTypes: const [BlocxCommandType.update, BlocxCommandType.read]` to `super(...)`, or customize entity extraction by overriding `resolveCommandEntities(input, output, command)`.
+> **Tip:** A single UseCase can also emit multiple commands by passing `commandTypes: const [BlocxCommandType.update, BlocxCommandType.read]` to `super(...)`, or customize entity extraction by overriding `resolveCommandEntities(input, output)`.
 
 ---
 
@@ -347,6 +357,76 @@ class ProductsCollectionBloc extends BlocxCollectionBloc<ProductEntity, void>
   }
 }
 ```
+
+### Cursor Pagination
+
+For datasets backed by opaque pagination tokens rather than numeric offsets, use `BlocxCursorPaginatedUseCase` and `BlocxCursorPaginatedUseCaseTask`.
+
+Cursor pagination is supported for **initial load**, **infinite scroll**, and **pull-to-refresh**. Note that **search is offset-only**, and a `null` or empty cursor signals the end of the list (`hasReachedEnd == true`).
+
+```dart
+// 1. Define your cursor-paginated use case
+class LoadProductsByCursorUseCase extends BlocxCursorPaginatedUseCase<
+    BlocxCursorPaginatedInput, ProductEntity> {
+  final ProductRepository repository;
+
+  LoadProductsByCursorUseCase({required this.repository});
+
+  @override
+  Future<BlocxUseCaseResult<BlocxPage<ProductEntity>>> perform(
+    BlocxCursorPaginatedInput input,
+  ) async {
+    final response = await repository.fetchProducts(
+      cursor: input.cursor,
+      limit: input.limit,
+    );
+    return successResult(
+      items: response.items,
+      input: input,
+      nextCursor: response.nextCursor,
+    );
+  }
+}
+
+// 2. Override cursorPaginationTask in your collection BLoC
+class ProductsCollectionBloc extends BlocxCollectionBloc<ProductEntity, void>
+    with
+        BlocxCollectionInfiniteMixin<ProductEntity, void>,
+        BlocxCollectionRefreshableMixin<ProductEntity, void> {
+  final LoadProductsByCursorUseCase loadProductsUseCase;
+
+  ProductsCollectionBloc({required this.loadProductsUseCase});
+
+  @override
+  BlocxCursorPaginatedUseCaseTask<BlocxCursorPaginatedInput, ProductEntity>?
+      get cursorPaginationTask => BlocxCursorPaginatedUseCaseTask(
+            useCase: loadProductsUseCase,
+            inputBuilder: (cursor, limit) =>
+                BlocxCursorPaginatedInput(cursor: cursor, limit: limit),
+          );
+}
+```
+
+### Sorted Insertion (`sortComparator`)
+
+Override `sortComparator` on your collection BLoC to preserve ordered placement when newly created or synced entities are inserted via `insertItem`, `addItem`, or `BlocxCollectionSyncStreamMixin`:
+
+```dart
+@override
+Comparator<ProductEntity>? get sortComparator =>
+    (a, b) => a.title.compareTo(b.title);
+```
+
+#### Limitations
+- It only positions *newly inserted* items.
+- Updating an item's sort key does not reposition it within the active list.
+- The comparator must match the server's ordering.
+- Ties are inserted after equal items.
+- Insertion is an O(n) scan across the list.
+
+### Dismissing Full-Page Errors (`clearError()`)
+
+When an unrecoverable full-page error occurs, calling `clearError()` on `BlocxBaseBloc` or `ScreenManagerCubit` emits `ScreenManagerCubitStateInitial(shouldRebuild: true)`. This dismisses full-page error overlays and restores normal screen display without resurrecting error states on subsequent messages or snackbars.
 
 ---
 
@@ -515,9 +595,50 @@ pop(); // Instructs the UI screen to pop the current route
 Customize global error translation and localization at app startup:
 
 ```dart
+// Global singletons (default):
 BlocxErrorTranslator.instance = MyCustomErrorTranslator();
 BlocXLocalizations.localizations = MyCustomLocalizations();
+
+// Or inject per BLoC instance:
+final bloc = ProductsBloc(
+  errorTranslator: MyCustomErrorTranslator(),
+  localizations: MyCustomLocalizations(),
+);
 ```
+
+---
+
+## Unit Testing with `package:blocx_core/testing.dart`
+
+`blocx_core` includes a dedicated testing library with pre-built test doubles and fakes so you can write fast, deterministic unit tests for your domain logic and BLoCs without boilerplate:
+
+```dart
+import 'package:blocx_core/testing.dart';
+import 'package:test/test.dart';
+
+void main() {
+  test('collection loads and syncs with FakePaginatedSource and BlocxTestEventHub', () async {
+    final eventHub = BlocxTestEventHub();
+    final source = FakePaginatedSource<BlocxTestEntity>(
+      items: [
+        const BlocxTestEntity(id: '1', name: 'Item 1'),
+        const BlocxTestEntity(id: '2', name: 'Item 2'),
+      ],
+    );
+
+    final useCase = FakePaginatedUseCase<BlocxTestEntity>(source: source);
+    // Test collection blocs, sync streams, and entity mutations effortlessly!
+  });
+}
+```
+
+Available test utilities:
+- `BlocxTestEventHub`: In-memory synchronous event hub with recorded events.
+- `BlocxTestEntity` & `BlocxTestFormEntity`: Lightweight test entities.
+- `FakePaginatedSource` & `FakePaginatedUseCase`: Offset/limit paginated source.
+- `FakeCursorPaginatedSource` & `FakeCursorPaginatedUseCase`: Cursor-based paginated source.
+- `FakeSearchUseCase`: In-memory searchable use case test double.
+- `FakeUseCase` & `MockUseCase`: Generic use-case stubs.
 
 ---
 

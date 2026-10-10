@@ -1,10 +1,10 @@
 import 'package:blocx_core/blocx_core.dart';
 
 abstract class BlocXLocalizations {
+  static final BlocXLocalizations _default = _DefaultLocalizations();
   static BlocXLocalizations? _loc;
   static set localizations(BlocXLocalizations? value) => _loc = value;
-  static BlocXLocalizations get localizations =>
-      _loc ?? _DefaultLocalizations();
+  static BlocXLocalizations get localizations => _loc ?? _default;
 
   String get tryAgain;
   String get copyDetails;
@@ -14,6 +14,8 @@ abstract class BlocXLocalizations {
   String get errorDetailsCopied;
   String get somethingWentWrong;
   String get loadingText;
+  String get searchingText => 'Searching data, please wait';
+  String get searchHint => 'Search...';
   String get emptyListText;
   String get thisFieldIsRequired;
   String get invalidEmail;
@@ -220,4 +222,10 @@ class _DefaultLocalizations extends BlocXLocalizations {
 
   @override
   String get deleteItem => "Delete Item";
+
+  @override
+  String get searchingText => "Searching data, please wait";
+
+  @override
+  String get searchHint => "Search...";
 }

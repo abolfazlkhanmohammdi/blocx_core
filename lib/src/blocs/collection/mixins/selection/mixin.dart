@@ -47,7 +47,8 @@ mixin BlocxCollectionSelectableMixin<Entity extends BlocxBaseEntity, Payload>
     on<BlocxCollectionEventSelectItem<Entity>>(selectItem);
     on<BlocxCollectionEventDeselectItem<Entity>>(deselectItem);
     on<BlocxCollectionEventDeselectMultipleItems<Entity>>(
-        deselectMultipleItems);
+      deselectMultipleItems,
+    );
     on<BlocxCollectionEventSelectMultipleItems<Entity>>(selectMultipleItems);
     on<BlocxCollectionEventClearSelection<Entity>>(clearSelection);
     return true;
@@ -211,16 +212,16 @@ mixin BlocxCollectionSelectableMixin<Entity extends BlocxBaseEntity, Payload>
   }) {
     emit(
       BlocxCollectionStateSelectionChanged<Entity>(
-        list: list,
+        list: List<Entity>.unmodifiable(list),
         hasReachedEnd: hasReachedEnd,
         isLoadingNextPage: isLoadingNextPage,
         isRefreshing: isRefreshing,
         isSearching: isSearching,
-        selectedItemIds: selectedItemIds,
-        beingSelectedItemIds: beingSelectedItemIds,
-        highlightedItemIds: highlightedItemIds,
-        beingRemovedItemIds: beingRemovedItemIds,
-        expandedItemIds: expandedItemIds,
+        selectedItemIds: Set<String>.unmodifiable(selectedItemIds),
+        beingSelectedItemIds: Set<String>.unmodifiable(beingSelectedItemIds),
+        highlightedItemIds: Set<String>.unmodifiable(highlightedItemIds),
+        beingRemovedItemIds: Set<String>.unmodifiable(beingRemovedItemIds),
+        expandedItemIds: Set<String>.unmodifiable(expandedItemIds),
         selectionData: SelectionChangedData<Entity>(
           selection: selectedItems,
           wasSelected: wasSelected,
@@ -231,10 +232,7 @@ mixin BlocxCollectionSelectableMixin<Entity extends BlocxBaseEntity, Payload>
   }
 
   /// Called when remote selection or deselection sync fails.
-  void onSelectionSyncFailed(
-    Entity item, {
-    required bool isSelectOperation,
-  }) {
+  void onSelectionSyncFailed(Entity item, {required bool isSelectOperation}) {
     displayWarningSnackbar(
       isSelectOperation
           ? 'Could not select the item. Please try again.'
@@ -266,11 +264,7 @@ mixin BlocxCollectionSelectableMixin<Entity extends BlocxBaseEntity, Payload>
       _selectedItemIds.remove(item.identifier);
     }
 
-    emitSelectionChanged(
-      emit,
-      event.items.first,
-      wasSelected: false,
-    );
+    emitSelectionChanged(emit, event.items.first, wasSelected: false);
 
     emitState(emit);
   }
@@ -287,25 +281,15 @@ mixin BlocxCollectionSelectableMixin<Entity extends BlocxBaseEntity, Payload>
         ..clear()
         ..add(event.items.first.identifier);
 
-      emitSelectionChanged(
-        emit,
-        event.items.first,
-        wasSelected: true,
-      );
+      emitSelectionChanged(emit, event.items.first, wasSelected: true);
 
       emitState(emit);
       return Future.value();
     }
 
-    _selectedItemIds.addAll(
-      event.items.map((item) => item.identifier),
-    );
+    _selectedItemIds.addAll(event.items.map((item) => item.identifier));
 
-    emitSelectionChanged(
-      emit,
-      event.items.first,
-      wasSelected: true,
-    );
+    emitSelectionChanged(emit, event.items.first, wasSelected: true);
 
     emitState(emit);
   }

@@ -11,6 +11,7 @@ export 'src/core/enum_error_codes.dart';
 export 'src/blocs/base/readable_error.dart';
 export 'src/blocs/base/error_translator.dart';
 //use cases
+export 'src/blocs/collection/use_cases/blocx_cursor_paginated_use_case.dart';
 export 'src/blocs/collection/use_cases/blocx_search_use_case.dart';
 export 'src/core/use_cases/blocx_use_case_result.dart';
 export 'src/core/use_cases/blocx_use_case_task.dart';

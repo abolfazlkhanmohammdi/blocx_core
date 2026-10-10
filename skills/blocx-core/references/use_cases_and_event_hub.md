@@ -50,7 +50,7 @@ class ProductEntity extends BlocxBaseEntity {
   }
 }
 ```
-- **Equality**: `BlocxBaseEntity` overrides `operator ==` and `hashCode` using `identifier` (and `runtimeType`). Two instances with the same `identifier` are considered the same item when replacing, removing, selecting, or syncing items in collections.
+- **Identity & Equality**: `BlocxBaseEntity` defines the contractual `identifier` getter used by BlocX collection extensions, selection, deduplication, and live stream sync. `BlocxBaseEntity` does not override `operator ==` or `hashCode` by default to avoid interfering with value equality packages (such as `equatable` or `freezed`) or reference equality semantics; subclasses may implement them if value equality is required.
 
 ---
 
@@ -82,12 +82,16 @@ abstract class BlocxBaseUseCase<Input, Output> {
       BlocxUseCaseFailure<Output>(error, stackTrace);
 
   void handleError(Object error, StackTrace stackTrace) {}
+
+  @protected
+  void handleBroadcastError(Object error, StackTrace stackTrace) {}
 }
 ```
 
 ### Implementing a UseCase
 - **Always override `perform(Input input)`** (never `call` or `execute`).
 - Inside `perform`, return `success(myOutput)`. You may throw exceptions freely inside `perform`—`execute(input)` catches all unhandled exceptions, calls `handleError(error, stackTrace)`, and returns `failureResult(error, stackTrace)`.
+- **Broadcasting isolation**: If `perform` succeeds, entity resolution and EventHub broadcasting are executed inside an isolated `try/catch`. Any error during broadcasting calls `handleBroadcastError` (which defaults to `handleError`) without failing the use case result.
 - **Callers always invoke `await useCase.execute(input)`**.
 
 ```dart
@@ -361,6 +365,7 @@ Emitted on `BlocxEventHub` whenever a UseCase with `eventHub` and `commandType`/
 final BlocxEventHub eventHub = BlocxSimpleEventHub();
 
 // Subscribe to entity events for a specific entity type and optional command filter:
+// Note: onEntity<T> supports heterogeneous entity batches and filters matching entities via whereType<T>():
 Stream<BlocxEntityEvent<ProductEntity>> stream = eventHub.onEntity<ProductEntity>(
   commands: const [BlocxCommandType.create, BlocxCommandType.update],
 );
@@ -368,6 +373,11 @@ Stream<BlocxEntityEvent<ProductEntity>> stream = eventHub.onEntity<ProductEntity
 // Synchronous cleanup:
 eventHub.dispose(); // returns void
 ```
+
+#### EventHub Performance & Metadata Guarantees:
+- **Zero Release Overhead**: `debugTrace` stack capture in `BlocxSimpleEventHub.emit` is assert-guarded (`assert(() { event.debugTrace ??= StackTrace.current; return true; }())`), ensuring no expensive `StackTrace.current` allocations in production/release mode.
+- **Heterogeneous Batch Support**: `onEntity<T>` triggers if any entity matches `T` (`entities.any((e) => e is T)`), extracting all matching entities with `whereType<T>()`.
+- **Event Metadata Preservation**: Typed re-wrapping in `onEntity<T>` preserves the original event `id` and `createdAt` timestamp for full auditability.
 
 ---
 

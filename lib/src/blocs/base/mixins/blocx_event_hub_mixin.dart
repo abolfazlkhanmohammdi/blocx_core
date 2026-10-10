@@ -10,6 +10,5 @@ mixin BlocxEventHubMixin on BlocxBaseBloc {
 
   Stream<BlocxEntityEvent<T>> entityEventsOfType<T extends BlocxBaseEntity>({
     Iterable<BlocxCommandType>? commands,
-  }) =>
-      eventHub.onEntity<T>(commands: commands);
+  }) => eventHub.onEntity<T>(commands: commands);
 }

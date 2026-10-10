@@ -80,9 +80,9 @@ abstract class BlocxBaseUseCase<Input, Output> {
     BlocxEventHub? eventHub,
     BlocxCommandType? commandType,
     List<BlocxCommandType>? commandTypes,
-  })  : _eventHub = eventHub,
-        _commandType = commandType,
-        _commandTypes = commandTypes;
+  }) : _eventHub = eventHub,
+       _commandType = commandType,
+       _commandTypes = commandTypes;
 
   /// The [BlocxEventHub] used to broadcast entity command events when
   /// [commandType] or [commandTypes] is configured.
@@ -113,16 +113,23 @@ abstract class BlocxBaseUseCase<Input, Output> {
   /// 2. [failureResult] wraps the error and is returned.
   @nonVirtual
   Future<BlocxUseCaseResult<Output>> execute(Input input) async {
+    BlocxUseCaseResult<Output> result;
     try {
-      final result = await perform(input);
-      if (result.isSuccess) {
-        _broadcastCommandEventsIfNeeded(input, result.data as Output);
-      }
-      return result;
+      result = await perform(input);
     } catch (error, stackTrace) {
       handleError(error, stackTrace);
       return failureResult(error, stackTrace);
     }
+
+    if (result.isSuccess) {
+      try {
+        _broadcastCommandEventsIfNeeded(input, result.data as Output);
+      } catch (broadcastError, broadcastStackTrace) {
+        handleBroadcastError(broadcastError, broadcastStackTrace);
+      }
+    }
+
+    return result;
   }
 
   void _broadcastCommandEventsIfNeeded(Input input, Output output) {
@@ -135,11 +142,7 @@ abstract class BlocxBaseUseCase<Input, Output> {
     if (entities.isEmpty) return;
 
     for (final command in commands) {
-      hub.emitEntities(
-        entities,
-        command,
-        origin: eventOrigin,
-      );
+      hub.emitEntities(entities, command, origin: eventOrigin);
     }
   }
 
@@ -205,6 +208,16 @@ abstract class BlocxBaseUseCase<Input, Output> {
   /// Must not throw or affect control flow.
   void handleError(Object error, StackTrace stackTrace) {}
 
+  /// Optional side-effect hook for logging or reporting errors that occur during
+  /// entity resolution or event broadcasting after a successful [perform].
+  ///
+  /// By default, calls [handleError]. This hook ensures broadcasting failures do
+  /// not cause a successful operation to return a [BlocxUseCaseFailure].
+  @protected
+  void handleBroadcastError(Object error, StackTrace stackTrace) {
+    handleError(error, stackTrace);
+  }
+
   /// Shorthand for `BlocxUseCaseSuccess(data)`.
   ///
   /// Use inside [perform] to keep return statements readable:
@@ -223,6 +236,5 @@ abstract class BlocxBaseUseCase<Input, Output> {
   FutureOr<BlocxUseCaseResult<Output>> failureResult(
     Object error,
     StackTrace stackTrace,
-  ) =>
-      BlocxUseCaseFailure<Output>(error, stackTrace);
+  ) => BlocxUseCaseFailure<Output>(error, stackTrace);
 }

@@ -25,18 +25,18 @@ class BlocxInfiniteListState extends BlocxBaseState {
 
 class BlocxInfiniteListStateInitial extends BlocxInfiniteListState {
   BlocxInfiniteListStateInitial()
-      : super(
-          shouldRebuild: false,
-          shouldListen: false,
-          isIdle: true,
-          isLoadingMore: false,
-          isRefreshing: false,
-          isScrollingUp: false,
-          isAtTop: true,
-          isAtBottom: false,
-          swipeRefreshHeight: 0,
-          hasReachedEnd: false,
-        );
+    : super(
+        shouldRebuild: false,
+        shouldListen: false,
+        isIdle: true,
+        isLoadingMore: false,
+        isRefreshing: false,
+        isScrollingUp: false,
+        isAtTop: true,
+        isAtBottom: false,
+        swipeRefreshHeight: 0,
+        hasReachedEnd: false,
+      );
 }
 
 class BlocxInfiniteListStateLoaded extends BlocxInfiniteListState {

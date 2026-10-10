@@ -12,8 +12,10 @@ class BlocxCollectionEventScrollToItem<T extends BlocxBaseEntity>
   /// Whether the item should be highlighted after scrolling.
   final bool highlightItem;
 
-  BlocxCollectionEventScrollToItem(
-      {required this.item, this.highlightItem = false});
+  BlocxCollectionEventScrollToItem({
+    required this.item,
+    this.highlightItem = false,
+  });
 }
 
 /// Scrolls the list to an item identified by a string [BlocxBaseEntity.identifier].
@@ -28,8 +30,10 @@ class BlocxCollectionEventScrollToIdentifier<T extends BlocxBaseEntity>
   /// Whether the item should be highlighted after scrolling.
   final bool highlightItem;
 
-  BlocxCollectionEventScrollToIdentifier(
-      {required this.identifier, this.highlightItem = false});
+  BlocxCollectionEventScrollToIdentifier({
+    required this.identifier,
+    this.highlightItem = false,
+  });
 }
 
 class BlocxCollectionEventHighlightScrolledToItems<T extends BlocxBaseEntity>

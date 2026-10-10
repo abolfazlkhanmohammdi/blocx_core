@@ -3,8 +3,11 @@ import 'package:blocx_core/src/core/models/blocx_base_form_entity.dart'
     show BlocxBaseFormEntity;
 import 'package:blocx_core/src/core/localizations/loc_provider.dart' show loc;
 
-class BlocxPhoneE164Validator<F extends BlocxBaseFormEntity<F, E>,
-    E extends Enum> extends BlocxFieldValidator<F, E, String> {
+class BlocxPhoneE164Validator<
+  F extends BlocxBaseFormEntity<F, E>,
+  E extends Enum
+>
+    extends BlocxFieldValidator<F, E, String> {
   static final RegExp _e164 = RegExp(r'^\+[1-9]\d{7,14}$');
 
   @override

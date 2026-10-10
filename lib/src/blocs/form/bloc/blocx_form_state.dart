@@ -38,24 +38,27 @@ class BlocxFormState<F, E extends Enum> extends BlocxBaseState {
   String allErrors(FieldNameProvider<E> nameProvider) {
     if (errors.isEmpty) return '';
 
-    return errors.entries.map((entry) {
-      final fieldName = nameProvider(entry.key);
-      final fieldErrors = entry.value.join(', ');
-      return '$fieldName: $fieldErrors';
-    }).join('\n');
+    return errors.entries
+        .map((entry) {
+          final fieldName = nameProvider(entry.key);
+          final fieldErrors = entry.value.join(', ');
+          return '$fieldName: $fieldErrors';
+        })
+        .join('\n');
   }
 }
 
 class BlocxFormStateInitial<F, E extends Enum> extends BlocxFormState<F, E> {
   BlocxFormStateInitial({required super.formData})
-      : super(
-            shouldListen: false,
-            shouldRebuild: true,
-            step: 0,
-            errors: {},
-            fieldsFetchingInfo: {},
-            checkingUniqueFields: {},
-            isFormValid: true);
+    : super(
+        shouldListen: false,
+        shouldRebuild: true,
+        step: 0,
+        errors: {},
+        fieldsFetchingInfo: {},
+        checkingUniqueFields: {},
+        isFormValid: true,
+      );
 }
 
 class BlocxFormStateLoaded<F, E extends Enum> extends BlocxFormState<F, E> {
@@ -73,43 +76,49 @@ class BlocxFormStateLoaded<F, E extends Enum> extends BlocxFormState<F, E> {
 class BlocxFormStateApplyInitialDataToForm<F, E extends Enum>
     extends BlocxFormState<F, E> {
   BlocxFormStateApplyInitialDataToForm({required super.formData})
-      : super(
-            shouldRebuild: false,
-            shouldListen: true,
-            step: 0,
-            errors: {},
-            fieldsFetchingInfo: {},
-            checkingUniqueFields: {},
-            isFormValid: true);
+    : super(
+        shouldRebuild: false,
+        shouldListen: true,
+        step: 0,
+        errors: {},
+        fieldsFetchingInfo: {},
+        checkingUniqueFields: {},
+        isFormValid: true,
+      );
 }
 
 class BlocxFormStateSubmittingForm<F, E extends Enum>
     extends BlocxFormState<F, E> {
   final String? buttonText;
-  BlocxFormStateSubmittingForm(
-      {required super.step, required super.formData, this.buttonText})
-      : super(
-            shouldRebuild: true,
-            shouldListen: false,
-            errors: {},
-            fieldsFetchingInfo: {},
-            checkingUniqueFields: {},
-            isFormValid: false);
+  BlocxFormStateSubmittingForm({
+    required super.step,
+    required super.formData,
+    this.buttonText,
+  }) : super(
+         shouldRebuild: true,
+         shouldListen: false,
+         errors: {},
+         fieldsFetchingInfo: {},
+         checkingUniqueFields: {},
+         isFormValid: false,
+       );
 }
 
 class BlocxFormStateFormSubmitted<F, E extends Enum>
     extends BlocxFormState<F, E> {
   final dynamic submittedData;
-  BlocxFormStateFormSubmitted(
-      {required super.formData, required this.submittedData})
-      : super(
-            shouldRebuild: false,
-            shouldListen: true,
-            errors: {},
-            step: 0,
-            fieldsFetchingInfo: {},
-            checkingUniqueFields: {},
-            isFormValid: true);
+  BlocxFormStateFormSubmitted({
+    required super.formData,
+    required this.submittedData,
+  }) : super(
+         shouldRebuild: false,
+         shouldListen: true,
+         errors: {},
+         step: 0,
+         fieldsFetchingInfo: {},
+         checkingUniqueFields: {},
+         isFormValid: true,
+       );
 }
 
 class BlocxFormStateFormUpdated<F, E extends Enum>

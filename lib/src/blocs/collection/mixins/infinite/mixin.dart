@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/collection_bloc.dart'
     show
@@ -21,7 +22,10 @@ mixin BlocxCollectionInfiniteMixin<Entity extends BlocxBaseEntity, Payload>
   /// Registers next-page event handling.
   @override
   bool initInfiniteList() {
-    on<BlocxCollectionEventLoadNextPage<Entity>>(loadNextPage);
+    on<BlocxCollectionEventLoadNextPage<Entity>>(
+      loadNextPage,
+      transformer: droppable(),
+    );
     return true;
   }
 
@@ -30,7 +34,14 @@ mixin BlocxCollectionInfiniteMixin<Entity extends BlocxBaseEntity, Payload>
   /// Defaults to [paginationTask]. Override this only when next-page loading
   /// requires a different use case or input shape.
   BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Entity>?
-      get loadNextPageTask => paginationTask;
+  get loadNextPageTask => paginationTask;
+
+  /// Task responsible for loading the next page using cursor pagination.
+  ///
+  /// Defaults to [cursorPaginationTask]. Override this only when next-page loading
+  /// requires a different cursor task or input shape.
+  BlocxCursorPaginatedUseCaseTask<BlocxCursorPaginatedInput, Entity>?
+  get loadNextPageCursorTask => cursorPaginationTask;
 
   /// Handles next-page loading.
   Future<void> loadNextPage(
@@ -47,11 +58,16 @@ mixin BlocxCollectionInfiniteMixin<Entity extends BlocxBaseEntity, Payload>
 
     if (hasReachedEnd || isLoadingNextPage) return;
 
+    final cursorTask = loadNextPageCursorTask;
+    if (cursorTask != null) {
+      return _fetchNextPageWithCursor(cursorTask, emit);
+    }
+
     final task = loadNextPageTask;
     if (task == null) {
       throw UnimplementedError(
-        'Provide `paginationTask` or `loadNextPageTask`, '
-        'or override `loadNextPage()`.',
+        'Provide `paginationTask`, `cursorPaginationTask`, `loadNextPageTask`, '
+        'or `loadNextPageCursorTask`, or override `loadNextPage()`.',
       );
     }
 
@@ -63,10 +79,13 @@ mixin BlocxCollectionInfiniteMixin<Entity extends BlocxBaseEntity, Payload>
     BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Entity> task,
     Emitter<BlocxCollectionState<Entity>> emit,
   ) async {
+    final gen = loadGeneration;
     isLoadingNextPage = true;
+    emitState(emit);
 
     try {
-      final result = await task.execute(offset: list.length, limit: limit);
+      final result = await task.execute(offset: offset, limit: limit);
+      if (gen != loadGeneration) return;
 
       if (result.isFailure) {
         await handleError(result.error!, emit, stacktrace: result.stackTrace);
@@ -77,21 +96,78 @@ mixin BlocxCollectionInfiniteMixin<Entity extends BlocxBaseEntity, Payload>
             hasReachedEnd,
           ),
         );
-
         return;
       }
 
       final page = result.data!;
 
-      await insertToList(
-        page.items,
-        !page.hasNext,
-        DataInsertSource.nextPage,
-      );
+      await insertToList(page.items, !page.hasNext, DataInsertSource.nextPage);
 
-      emitState(emit);
+      offset += page.items.length;
+      nextCursor = page.nextCursor;
     } finally {
+      if (gen == loadGeneration) {
+        isLoadingNextPage = false;
+        emitState(emit);
+      }
+    }
+  }
+
+  /// Executes the next-page cursor task.
+  Future<void> _fetchNextPageWithCursor(
+    BlocxCursorPaginatedUseCaseTask<BlocxCursorPaginatedInput, Entity> task,
+    Emitter<BlocxCollectionState<Entity>> emit,
+  ) async {
+    if (nextCursor == null || nextCursor!.isEmpty) {
+      await insertToList(const [], true, DataInsertSource.nextPage);
       isLoadingNextPage = false;
+      infiniteListBloc.add(
+        BlocxInfiniteListEventChangeLoadBottomDataStatus(false, true),
+      );
+      emitState(emit);
+      return;
+    }
+
+    final gen = loadGeneration;
+    isLoadingNextPage = true;
+    emitState(emit);
+
+    try {
+      final result = await task.execute(cursor: nextCursor, limit: limit);
+      if (gen != loadGeneration) return;
+
+      if (result.isFailure) {
+        await handleError(result.error!, emit, stacktrace: result.stackTrace);
+
+        infiniteListBloc.add(
+          BlocxInfiniteListEventChangeLoadBottomDataStatus(
+            false,
+            hasReachedEnd,
+          ),
+        );
+        return;
+      }
+
+      final page = result.data!;
+
+      final isLast =
+          !page.hasNext || page.nextCursor == null || page.nextCursor!.isEmpty;
+
+      await insertToList(page.items, isLast, DataInsertSource.nextPage);
+
+      offset += page.items.length;
+      nextCursor = page.nextCursor;
+    } finally {
+      if (gen == loadGeneration) {
+        isLoadingNextPage = false;
+        infiniteListBloc.add(
+          BlocxInfiniteListEventChangeLoadBottomDataStatus(
+            false,
+            hasReachedEnd,
+          ),
+        );
+        emitState(emit);
+      }
     }
   }
 }

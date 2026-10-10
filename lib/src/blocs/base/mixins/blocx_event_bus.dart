@@ -53,7 +53,10 @@ class BlocxSimpleEventHub implements BlocxEventHub {
   @override
   void emit(BlocxAppEvent event) {
     if (!_controller.isClosed) {
-      event.debugTrace = StackTrace.current;
+      assert(() {
+        event.debugTrace ??= StackTrace.current;
+        return true;
+      }());
       _controller.add(event);
     }
   }
@@ -81,11 +84,7 @@ class BlocxSimpleEventHub implements BlocxEventHub {
   }) {
     if (entities.isEmpty) return;
     emit(
-      BlocxEntityEvent<T>(
-        entities: entities,
-        command: command,
-        origin: origin,
-      ),
+      BlocxEntityEvent<T>(entities: entities, command: command, origin: origin),
     );
   }
 
@@ -99,19 +98,22 @@ class BlocxSimpleEventHub implements BlocxEventHub {
         .where((e) => e is BlocxEntityEvent)
         .cast<BlocxEntityEvent>()
         .where((e) {
-      if (commandSet != null && !commandSet.contains(e.command)) {
-        return false;
-      }
-      if (e is BlocxEntityEvent<T>) return true;
-      return e.entities.isNotEmpty && e.entities.every((item) => item is T);
-    }).map((e) {
-      if (e is BlocxEntityEvent<T>) return e;
-      return BlocxEntityEvent<T>(
-        entities: List<T>.from(e.entities),
-        command: e.command,
-        origin: e.origin,
-        debugTrace: e.debugTrace,
-      );
-    });
+          if (commandSet != null && !commandSet.contains(e.command)) {
+            return false;
+          }
+          if (e is BlocxEntityEvent<T>) return true;
+          return e.entities.any((item) => item is T);
+        })
+        .map((e) {
+          if (e is BlocxEntityEvent<T>) return e;
+          return BlocxEntityEvent<T>(
+            entities: e.entities.whereType<T>().toList(),
+            command: e.command,
+            origin: e.origin,
+            debugTrace: e.debugTrace,
+            id: e.id,
+            createdAt: e.createdAt,
+          );
+        });
   }
 }

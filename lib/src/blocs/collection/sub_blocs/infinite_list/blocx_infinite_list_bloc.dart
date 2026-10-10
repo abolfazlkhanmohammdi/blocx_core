@@ -36,37 +36,22 @@ class BlocxInfiniteListBloc
   double get swipeRefreshHeight => _swipeRefreshHeight;
   bool get hasReachedEnd => _hasReachedEnd;
 
-  BlocxInfiniteListBloc({
-    this.refreshThreshold = 64.0,
-  })  : assert(
-          refreshThreshold >= 0,
-          'refreshThreshold must be greater than zero.',
-        ),
-        super(BlocxInfiniteListStateInitial()) {
-    on<BlocxInfiniteListEventChangeLoadTopDataStatus>(
-      _changeLoadTopDataStatus,
-    );
+  BlocxInfiniteListBloc({this.refreshThreshold = 64.0})
+    : assert(
+        refreshThreshold >= 0,
+        'refreshThreshold must be greater than zero.',
+      ),
+      super(BlocxInfiniteListStateInitial()) {
+    on<BlocxInfiniteListEventChangeLoadTopDataStatus>(_changeLoadTopDataStatus);
     on<BlocxInfiniteListEventChangeLoadBottomDataStatus>(
       _changeLoadBottomDataStatus,
     );
-    on<BlocxInfiniteListEventVerticalDragStarted>(
-      _onDragStarted,
-    );
-    on<BlocxInfiniteListEventVerticalDragUpdated>(
-      _onDragUpdated,
-    );
-    on<BlocxInfiniteListEventVerticalDragEnded>(
-      _onDragEnded,
-    );
-    on<BlocxInfiniteListEventOnScroll>(
-      _onScroll,
-    );
-    on<BlocxInfiniteListEventCloseRefresh>(
-      _closeRefresh,
-    );
-    on<BlocxInfiniteListEventSetReachedEnd>(
-      _setReachedEnd,
-    );
+    on<BlocxInfiniteListEventVerticalDragStarted>(_onDragStarted);
+    on<BlocxInfiniteListEventVerticalDragUpdated>(_onDragUpdated);
+    on<BlocxInfiniteListEventVerticalDragEnded>(_onDragEnded);
+    on<BlocxInfiniteListEventOnScroll>(_onScroll);
+    on<BlocxInfiniteListEventCloseRefresh>(_closeRefresh);
+    on<BlocxInfiniteListEventSetReachedEnd>(_setReachedEnd);
   }
 
   void _emitLoaded(Emitter<BlocxInfiniteListState> emit) {
@@ -155,10 +140,7 @@ class BlocxInfiniteListBloc
     // and normalizes movement in the wrong direction back to the start.
     final delta = (currentY - startY).abs();
 
-    _swipeRefreshHeight = min(
-      refreshThreshold,
-      delta,
-    );
+    _swipeRefreshHeight = min(refreshThreshold, delta);
 
     _emitLoaded(emit);
   }
@@ -220,10 +202,7 @@ class BlocxInfiniteListBloc
     _emitLoaded(emit);
   }
 
-  void setLoadingBottomStatus(
-    bool status, [
-    bool? hasReachedEnd,
-  ]) {
+  void setLoadingBottomStatus(bool status, [bool? hasReachedEnd]) {
     add(
       BlocxInfiniteListEventChangeLoadBottomDataStatus(
         status,
@@ -233,9 +212,7 @@ class BlocxInfiniteListBloc
   }
 
   void setLoadingTopStatus(bool status) {
-    add(
-      BlocxInfiniteListEventChangeLoadTopDataStatus(status),
-    );
+    add(BlocxInfiniteListEventChangeLoadTopDataStatus(status));
   }
 
   FutureOr<void> _setReachedEnd(

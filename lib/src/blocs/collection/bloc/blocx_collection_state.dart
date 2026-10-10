@@ -109,6 +109,8 @@ class BlocxCollectionStateError<T extends BlocxBaseEntity>
     super.beingSelectedItemIds = const {},
     super.highlightedItemIds = const {},
     super.beingRemovedItemIds = const {},
+    super.expandedItemIds = const {},
+    super.additionalInfo,
   }) : super(shouldRebuild: true, shouldListen: false);
 }
 
@@ -117,17 +119,18 @@ class BlocxCollectionStateScrollToItem<T extends BlocxBaseEntity>
   final T item;
   final int index;
 
-  const BlocxCollectionStateScrollToItem(
-      {required this.item, required this.index})
-      : super(
-          list: const [],
-          hasReachedEnd: false,
-          isLoadingNextPage: false,
-          isRefreshing: false,
-          isSearching: false,
-          shouldRebuild: false,
-          shouldListen: true,
-        );
+  const BlocxCollectionStateScrollToItem({
+    required this.item,
+    required this.index,
+  }) : super(
+         list: const [],
+         hasReachedEnd: false,
+         isLoadingNextPage: false,
+         isRefreshing: false,
+         isSearching: false,
+         shouldRebuild: false,
+         shouldListen: true,
+       );
 }
 
 class BlocxCollectionStateSelectionChanged<T extends BlocxBaseEntity>

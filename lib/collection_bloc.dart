@@ -1,6 +1,7 @@
 export 'src/blocs/collection/bloc/blocx_collection_bloc.dart';
 export 'src/blocs/collection/models/blocx_page.dart';
 export 'src/blocs/collection/sub_blocs/infinite_list/blocx_infinite_list_bloc.dart';
+export 'src/blocs/collection/use_cases/blocx_cursor_paginated_use_case.dart';
 export 'src/blocs/collection/use_cases/blocx_paginated_use_case.dart';
 export 'src/blocs/collection/models/selection_changed_data.dart';
 

@@ -6,7 +6,7 @@ import 'package:blocx_core/src/blocs/base/error_translator.dart';
 import 'package:blocx_core/src/blocs/base/readable_error.dart';
 import 'package:blocx_core/src/blocs/screen_manager/screen_manager_cubit.dart';
 import 'package:blocx_core/src/core/enum_error_codes.dart';
-import 'package:blocx_core/src/core/localizations/loc_provider.dart';
+import 'package:blocx_core/src/core/localizations/blocx_localizations.dart';
 import 'package:meta/meta.dart';
 
 part 'blocx_base_event.dart';
@@ -48,19 +48,48 @@ part 'blocx_base_state.dart';
 ///
 /// Register a [BlocxErrorTranslator] once at app startup to map raw exceptions
 /// to human-readable [ReadableError] instances. Blocs pick it up automatically.
+/// Alternatively, pass an [errorTranslator] and [localizations] directly to the
+/// bloc constructor for dependency injection.
 abstract class BlocxBaseBloc<E extends BlocxBaseEvent, S extends BlocxBaseState>
     extends Bloc<E, S> {
   /// Internal screen-manager instance. Created once per bloc, closed on [close].
   final ScreenManagerCubit _screenManagerCubit = ScreenManagerCubit();
+  final BlocxErrorTranslator? _injectedErrorTranslator;
+  final BlocXLocalizations? _injectedLocalizations;
 
   /// Creates a [BlocxBaseBloc] with the given [initialState].
   ///
-  /// No external dependencies required — [ScreenManagerCubit] is managed
-  /// internally.
-  BlocxBaseBloc(super.initialState);
+  /// Optionally accepts an [errorTranslator] and [localizations] for per-bloc
+  /// configuration or testing. When omitted, falls back to the static defaults.
+  BlocxBaseBloc(
+    super.initialState, {
+    BlocxErrorTranslator? errorTranslator,
+    BlocXLocalizations? localizations,
+  }) : _injectedErrorTranslator = errorTranslator,
+       _injectedLocalizations = localizations;
+
+  /// The error translator used by this bloc to translate errors to [ReadableError]s.
+  ///
+  /// Defaults to the injected [errorTranslator] if provided in constructor,
+  /// or falls back to the static [BlocxErrorTranslator.instance].
+  BlocxErrorTranslator? get errorTranslator =>
+      _injectedErrorTranslator ?? BlocxErrorTranslator.instance;
+
+  /// The localizations used by this bloc.
+  ///
+  /// Defaults to the injected [localizations] if provided in constructor,
+  /// or falls back to [BlocXLocalizations.localizations].
+  BlocXLocalizations get localizations =>
+      _injectedLocalizations ?? BlocXLocalizations.localizations;
+
+  /// Shorthand alias for [localizations].
+  BlocXLocalizations get loc => localizations;
 
   /// Triggers a pop/back-navigation signal.
   void pop() => _screenManagerCubit.pop();
+
+  /// Clears any currently displayed full-page error, resetting the screen manager to its initial state.
+  void clearError() => _screenManagerCubit.clearError();
 
   /// Displays a full-page error widget for [error].
   void displayErrorWidget(ReadableError error) =>
@@ -71,12 +100,11 @@ abstract class BlocxBaseBloc<E extends BlocxBaseEvent, S extends BlocxBaseState>
     BlocXErrorCode errorCode, {
     Object? error,
     StackTrace? stackTrace,
-  }) =>
-      _screenManagerCubit.displayErrorWidgetByErrorCode(
-        errorCode,
-        error: error,
-        st: stackTrace,
-      );
+  }) => _screenManagerCubit.displayErrorWidgetByErrorCode(
+    errorCode,
+    error: error,
+    st: stackTrace,
+  );
 
   /// Displays a warning snackbar with [message] and optional [title].
   void displayWarningSnackbar(String message, {String? title}) =>
@@ -102,6 +130,12 @@ abstract class BlocxBaseBloc<E extends BlocxBaseEvent, S extends BlocxBaseState>
         title: title,
       );
 
+  /// Translates [error] to a [ReadableError] using [errorTranslator] or [defaultError].
+  ReadableError readableErrorOf(Object error, {StackTrace? stacktrace}) {
+    return errorTranslator?.makeErrorReadable(error, stackTrace: stacktrace) ??
+        defaultError;
+  }
+
   /// Logs [error], translates it to a [ReadableError], then surfaces it
   /// according to [errorDisplayPolicy].
   ///
@@ -114,9 +148,7 @@ abstract class BlocxBaseBloc<E extends BlocxBaseEvent, S extends BlocxBaseState>
   }) {
     dev.log(error.toString());
     if (stacktrace != null) dev.log(stacktrace.toString());
-    final readableError =
-        errorTranslator?.makeErrorReadable(error, stackTrace: stacktrace) ??
-            defaultError;
+    final readableError = readableErrorOf(error, stacktrace: stacktrace);
     if (errorDisplayPolicy == ErrorDisplayPolicy.snackBar) {
       displayErrorSnackbar(readableError.message, title: readableError.title);
     } else {

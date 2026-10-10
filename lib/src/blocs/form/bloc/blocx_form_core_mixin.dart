@@ -107,23 +107,21 @@ mixin BlocxFormCoreMixin<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
     var oldValue = formData.getValueByKey(event.key);
     formData = await updateFormData(event.key, event.data);
     if (isUniqueFieldValidator &&
-        (this as BlocxUniqueFieldValidatorMixin<F, P, E>)
-            .uniqueFieldKeys
+        (this as BlocxUniqueFieldValidatorMixin<F, P, E>).uniqueFieldKeys
             .contains(event.key)) {
-      add(
-        BlocxFormEventCheckUniqueValue(
-          key: event.key,
-          data: event.data,
-        ),
-      );
+      add(BlocxFormEventCheckUniqueValue(key: event.key, data: event.data));
     }
     emitChangesOnUpdate(event.key, oldValue, event.data, emit);
 
     emitState(emit);
   }
 
-  void emitChangesOnUpdate(E formKey, dynamic oldValue, dynamic newValue,
-      Emitter<BlocxFormState<F, E>> emit) {
+  void emitChangesOnUpdate(
+    E formKey,
+    dynamic oldValue,
+    dynamic newValue,
+    Emitter<BlocxFormState<F, E>> emit,
+  ) {
     if (shouldEmitChangesOnUpdate) {
       emit(
         BlocxFormStateFormUpdated(
@@ -189,12 +187,7 @@ mixin BlocxFormCoreMixin<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
         return;
       }
 
-      emit(
-        BlocxFormStateSubmittingForm(
-          formData: formData,
-          step: stepIndex,
-        ),
-      );
+      emit(BlocxFormStateSubmittingForm(formData: formData, step: stepIndex));
 
       final result = await submitUseCaseTask.execute();
 
@@ -231,9 +224,7 @@ mixin BlocxFormCoreMixin<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
   /// Runs before the submit use case.
   ///
   /// Return `false` to stop submission.
-  Future<bool> doBeforeSubmit(
-    Emitter<BlocxFormState<F, E>> emit,
-  ) async {
+  Future<bool> doBeforeSubmit(Emitter<BlocxFormState<F, E>> emit) async {
     return true;
   }
 

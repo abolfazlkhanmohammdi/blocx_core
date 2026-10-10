@@ -23,8 +23,11 @@ class BlocxPaginatedInput<Filter> {
   /// Zero-based index of the first item to fetch.
   final int offset;
   final Filter? filter;
-  const BlocxPaginatedInput(
-      {required this.limit, required this.offset, this.filter});
+  const BlocxPaginatedInput({
+    required this.limit,
+    required this.offset,
+    this.filter,
+  });
 }
 
 /// Base use case for paginated list operations.
@@ -56,8 +59,10 @@ class BlocxPaginatedInput<Filter> {
 /// class GetFilteredOrdersUseCase
 ///     extends BlocxPaginationUseCase<OrderFilterInput, Order> { ... }
 /// ```
-abstract class BlocxPaginatedUseCase<Input extends BlocxPaginatedInput,
-        Output extends BlocxBaseEntity>
+abstract class BlocxPaginatedUseCase<
+  Input extends BlocxPaginatedInput,
+  Output extends BlocxBaseEntity
+>
     extends BlocxBaseUseCase<Input, BlocxPage<Output>> {
   const BlocxPaginatedUseCase({
     super.eventHub,
@@ -80,12 +85,7 @@ abstract class BlocxPaginatedUseCase<Input extends BlocxPaginatedInput,
   BlocxUseCaseResult<BlocxPage<Output>> successResult({
     required List<Output> items,
     required BlocxPaginatedInput input,
-  }) =>
-      success(
-        BlocxPage(
-          items: items,
-          offset: input.offset,
-          limit: input.limit,
-        ),
-      );
+  }) => success(
+    BlocxPage(items: items, offset: input.offset, limit: input.limit),
+  );
 }

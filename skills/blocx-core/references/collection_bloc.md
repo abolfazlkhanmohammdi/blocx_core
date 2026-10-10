@@ -48,7 +48,8 @@ abstract class BlocxCollectionBloc<Entity extends BlocxBaseEntity, Payload>
 - `BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Entity>? get loadInitialPageTask => paginationTask;`
   Override only if initial loading uses a different UseCase from `paginationTask`.
 - `int get limit => 20;` (page size per request)
-- `int get offset => list.length;` (current item count)
+- `int get offset => _loadedCount;` (tracks items loaded from datasource independently of local mutations to prevent pagination offset drift)
+- `int get loadGeneration => _loadGeneration;` (monotonic load generation counter used to discard responses from obsolete asynchronous operations)
 
 ### State & List Properties
 - `Payload? payload`: Stored from the latest `BlocxCollectionEventLoadInitialPage`.
@@ -59,11 +60,11 @@ abstract class BlocxCollectionBloc<Entity extends BlocxBaseEntity, Payload>
 ### List Manipulation & Lifecycle Hooks
 - `Future<List<Entity>> modifyListBeforeInsert(List<Entity> data) async => data;` (override to transform/filter fetched pages before insertion)
 - `void doAfterInsert() {}` (hook called after `insertToList`, e.g., to sort the list)
-- `void clearList()`
+- `void clearList()` (clears `list` and resets `_loadedCount` to 0)
 - `void replaceList(List<Entity> newList)`
 - `void replaceItemInList(Entity item)`
 - `void removeItemFromList(Entity item)`
-- `void insertToListSingle(Entity item, {int index = 0})`
+- `void insertToListSingle(Entity item, {int index = 0})` (inserts or updates in-place if already present)
 - `void sortList(Comparator<Entity> comparator)`
 - `void emitState(Emitter<BlocxCollectionState<Entity>> emit)` (emits `BlocxCollectionStateLoaded<Entity>` with all current list and mixin sets)
 
@@ -73,8 +74,8 @@ abstract class BlocxCollectionBloc<Entity extends BlocxBaseEntity, Payload>
 
 | Event Class | Constructor / Properties | Behavior |
 |---|---|---|
-| `BlocxCollectionEventLoadInitialPage<T, P>` | `BlocxCollectionEventLoadInitialPage({required P? payload})` | Stores `payload`, emits `BlocxCollectionStateLoading<T>()`, executes `loadInitialPageTask(offset: 0, limit: limit)`, clears old list, inserts items, applies initial selection if selectable, and emits `BlocxCollectionStateLoaded<T>`. |
-| `BlocxCollectionEventAddItem<T>` | `BlocxCollectionEventAddItem({required T item, int index = 0})` | Inserts `item` into `list` at `index.clamp(0, list.length)` and emits `BlocxCollectionStateLoaded<T>`. |
+| `BlocxCollectionEventLoadInitialPage<T, P>` | `BlocxCollectionEventLoadInitialPage({required P? payload})` | Handled with `restartable()`. Stores `payload`, increments `loadGeneration`, emits `BlocxCollectionStateLoading<T>()`, executes `loadInitialPageTask(offset: 0, limit: limit)`, clears old list, inserts items, applies initial selection if selectable, and emits `BlocxCollectionStateLoaded<T>`. Discards stale responses if generation has advanced. |
+| `BlocxCollectionEventAddItem<T>` | `BlocxCollectionEventAddItem({required T item, int index = 0})` | Inserts `item` into `list` at `index.clamp(0, list.length)`, or updates it in-place if an item with matching `identifier` already exists (preventing duplicate rows), and emits `BlocxCollectionStateLoaded<T>`. |
 | `BlocxCollectionEventUpdateItem<T>` | `BlocxCollectionEventUpdateItem({required T item})` | Finds item in `list` by `identifier` and replaces it (no-op if not found). Triggers highlight if `isHighlightable` is `true`, and emits state. |
 | `BlocxCollectionEventReplaceList<T>` | `BlocxCollectionEventReplaceList({required List<T> newItems})` | Replaces the entire `list` with `newItems` and emits state. |
 | `BlocxCollectionEventRemoveFromList<T>` | `BlocxCollectionEventRemoveFromList({required T item})` | Removes `item` locally by `identifier` and emits state. |
@@ -105,14 +106,14 @@ abstract class BlocxCollectionBloc<Entity extends BlocxBaseEntity, Payload>
 - **Events**: `BlocxCollectionEventLoadNextPage<Entity>()`
 - **Overrides**:
   - `BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Entity>? get loadNextPageTask => paginationTask;`
-- **Behavior**: Guards against `hasReachedEnd || isLoadingNextPage`. If `isSearchable` and `searchText.isNotEmpty`, automatically dispatches `BlocxCollectionEventSearchNextPage<Entity>()`. Otherwise executes `loadNextPageTask(offset: list.length, limit: limit)` and appends items.
+- **Behavior**: Handled with `droppable()`. Guards against `hasReachedEnd || isLoadingNextPage`. If `isSearchable` and `searchText.isNotEmpty`, automatically dispatches `BlocxCollectionEventSearchNextPage<Entity>()`. Otherwise executes `loadNextPageTask(offset: offset, limit: limit)` and appends items. Discards stale responses if load generation has advanced.
 
 ### 5.2 `BlocxCollectionRefreshableMixin<Entity, Payload>` (Pull-to-Refresh)
 - **Events**: `BlocxCollectionEventRefreshData<Entity>({bool clearSelection = true})`
 - **Overrides**:
   - `BlocxPaginatedUseCaseTask<BlocxPaginatedInput, Entity>? get refreshPageUseCaseTask => paginationTask;`
   - `double get refreshThreshold => 64.0;`
-- **Behavior**: Clears selection if `clearSelection && isSelectable`. Delegates to `BlocxCollectionEventSearchRefresh<Entity>()` if a search query is active. Otherwise executes `refreshPageUseCaseTask(offset: 0, limit: limit)`, clears the list, and inserts fresh items.
+- **Behavior**: Handled with `restartable()`. Increments `loadGeneration`. Clears selection if `clearSelection && isSelectable`. Delegates to `BlocxCollectionEventSearchRefresh<Entity>()` if a search query is active. Otherwise executes `refreshPageUseCaseTask(offset: 0, limit: limit)`, clears the list, and inserts fresh items. Discards stale responses if generation has advanced.
 
 ### 5.3 `BlocxCollectionSearchableMixin<Entity, Payload>` (Debounced Search & Search Pagination)
 - **Events**:

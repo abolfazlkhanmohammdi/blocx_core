@@ -6,6 +6,7 @@ BlocxErrorTranslator? get errorTranslator =>
 abstract class BlocxErrorTranslator {
   static BlocxErrorTranslator? _instance;
   static BlocxErrorTranslator? get errorTranslator => _instance;
+  static BlocxErrorTranslator? get instance => _instance;
   static void setInstance(BlocxErrorTranslator errorTranslator) {
     _instance = errorTranslator;
   }
