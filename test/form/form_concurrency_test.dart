@@ -68,11 +68,16 @@ class _DummyValidator
 
 class ConcurrencyFormBloc
     extends BlocxFormBloc<ConcurrencyFormEntity, String, ConcurrencyField>
-    with BlocxFormValidationMixin<ConcurrencyFormEntity, String, ConcurrencyField> {
+    with
+        BlocxFormValidationMixin<
+          ConcurrencyFormEntity,
+          String,
+          ConcurrencyField
+        > {
   final ControlledSubmitUseCase submitUseCase;
 
   ConcurrencyFormBloc({required this.submitUseCase})
-      : super(const ConcurrencyFormEntity());
+    : super(const ConcurrencyFormEntity());
 
   @override
   BlocxFormValidator<ConcurrencyFormEntity, ConcurrencyField> get validator =>
@@ -108,14 +113,18 @@ void main() {
         final submitUseCase = ControlledSubmitUseCase();
         final bloc = ConcurrencyFormBloc(submitUseCase: submitUseCase);
 
-        bloc.add(BlocxFormEventUpdateData<ConcurrencyField>(
-          key: ConcurrencyField.fieldA,
-          data: 'alpha',
-        ));
-        bloc.add(BlocxFormEventUpdateData<ConcurrencyField>(
-          key: ConcurrencyField.fieldB,
-          data: 'beta',
-        ));
+        bloc.add(
+          BlocxFormEventUpdateData<ConcurrencyField>(
+            key: ConcurrencyField.fieldA,
+            data: 'alpha',
+          ),
+        );
+        bloc.add(
+          BlocxFormEventUpdateData<ConcurrencyField>(
+            key: ConcurrencyField.fieldB,
+            data: 'beta',
+          ),
+        );
 
         await bloc.stream.firstWhere(
           (s) => s.formData.valA == 'alpha' && s.formData.valB == 'beta',
@@ -150,8 +159,12 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 20));
 
         // Submit use case was executed once, NOT twice!
-        expect(submitUseCase.executeCount, equals(1),
-            reason: 'Second submit while first was running should have been dropped');
+        expect(
+          submitUseCase.executeCount,
+          equals(1),
+          reason:
+              'Second submit while first was running should have been dropped',
+        );
 
         // After completion, a new Submit CAN run
         submitUseCase.completer = null;
@@ -175,8 +188,11 @@ void main() {
         bloc.add(BlocxFormEventInit<String>(payload: 'fast'));
         await Future<void>.delayed(const Duration(milliseconds: 100));
 
-        expect(bloc.formData.valA, equals('fast_val'),
-            reason: 'Init restarted with second payload must result in fast_val');
+        expect(
+          bloc.formData.valA,
+          equals('fast_val'),
+          reason: 'Init restarted with second payload must result in fast_val',
+        );
 
         await bloc.close();
       },

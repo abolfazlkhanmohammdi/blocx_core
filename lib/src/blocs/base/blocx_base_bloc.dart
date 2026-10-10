@@ -34,6 +34,9 @@ part 'blocx_base_state.dart';
 /// }
 /// ```
 ///
+/// Override [reportError] to forward unhandled errors to crash reporting services
+/// such as Sentry or Firebase Crashlytics.
+///
 /// To display a full-page error instead, override [errorDisplayPolicy]:
 /// ```dart
 /// @override
@@ -136,6 +139,16 @@ abstract class BlocxBaseBloc<E extends BlocxBaseEvent, S extends BlocxBaseState>
         defaultError;
   }
 
+  /// Hook for logging or reporting errors to external monitoring services (e.g., Sentry, Firebase Crashlytics).
+  ///
+  /// Override this in subclasses or app-level base blocs to forward unhandled errors
+  /// and stack traces to your crash reporting service. By default, logs the error
+  /// and stack trace to `dart:developer`.
+  void reportError(Object error, StackTrace? stackTrace) {
+    dev.log(error.toString());
+    if (stackTrace != null) dev.log(stackTrace.toString());
+  }
+
   /// Logs [error], translates it to a [ReadableError], then surfaces it
   /// according to [errorDisplayPolicy].
   ///
@@ -146,8 +159,7 @@ abstract class BlocxBaseBloc<E extends BlocxBaseEvent, S extends BlocxBaseState>
     Emitter<BlocxBaseState> emit, {
     StackTrace? stacktrace,
   }) {
-    dev.log(error.toString());
-    if (stacktrace != null) dev.log(stacktrace.toString());
+    reportError(error, stacktrace);
     final readableError = readableErrorOf(error, stacktrace: stacktrace);
     if (errorDisplayPolicy == ErrorDisplayPolicy.snackBar) {
       displayErrorSnackbar(readableError.message, title: readableError.title);
