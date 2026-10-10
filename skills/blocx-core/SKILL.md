@@ -334,14 +334,14 @@ Consult the appropriate reference guide in `./references/` when implementing spe
 1. **[`references/use_cases_and_event_hub.md`](./references/use_cases_and_event_hub.md)**
    - `BlocxBaseEntity` equality & extensions
    - `BlocxBaseUseCase` (`perform(input)` vs `execute(input)`, `success(data)`, `failureResult`, `handleError`), `BlocxUseCaseResult` (`when(onSuccess: ..., onFailure: ...)`, `dataOrThrow`)
-   - `BlocxPaginatedUseCase`, `BlocxPaginatedInput`, `BlocxPage({required items, required offset, required limit})`, `BlocxSearchUseCase`, `BlocxSearchInput`
-   - `BlocxUseCaseTask` and `BlocxPaginatedUseCaseTask`
+   - `BlocxPaginatedUseCase`, `BlocxPaginatedInput`, `BlocxPage({required items, required offset, required limit, nextCursor})`, `BlocxCursorPaginatedUseCase`, `BlocxCursorPaginatedInput`, `BlocxSearchUseCase`, `BlocxSearchInput`
+   - `BlocxUseCaseTask`, `BlocxPaginatedUseCaseTask`, and `BlocxCursorPaginatedUseCaseTask`
    - `BlocxEventHub`, `BlocxSimpleEventHub`, `BlocxCommandType` (`create`, `read`, `update`, `delete`), single vs multi-command UseCases, `resolveCommandEntities`, `shouldBroadcastCommandResult`, and listener-only `BlocxEventHubMixin`
 2. **[`references/collection_bloc.md`](./references/collection_bloc.md)**
-   - `BlocxCollectionBloc<Entity, Payload>` & `BlocxCollectionCoreMixin` methods (`insertToList`, `modifyListBeforeInsert`, `doAfterInsert`, `replaceList`, `sortList`, `additionalInfo`)
+   - `BlocxCollectionBloc<Entity, Payload>` & `BlocxCollectionCoreMixin` methods (`insertToList`, `modifyListBeforeInsert`, `doAfterInsert`, `replaceList`, `sortList`, `additionalInfo`, `sortComparator`, `getInsertIndexForItem`)
    - All core events (`BlocxCollectionEventLoadInitialPage`, `BlocxCollectionEventAddItem`, `BlocxCollectionEventUpdateItem`, `BlocxCollectionEventReplaceList`, `BlocxCollectionEventRemoveFromList`)
    - All states (`BlocxCollectionStateLoading`, `BlocxCollectionStateLoaded`, `BlocxCollectionStateError`, `BlocxCollectionStateScrollToItem`, `BlocxCollectionStateSelectionChanged`) and `ListStateExtensions`
-   - Complete API & event reference for all 10 collection mixins (`Infinite`, `Refreshable`, `Searchable`, `Selectable`, `Deletable`, `Highlightable`, `Expandable`, `Scrollable`, `Filter`, `SyncStream`)
+   - Complete API & event reference for all 10 collection mixins (`Infinite` with cursor & offset pagination, `Refreshable`, `Searchable`, `Selectable`, `Deletable`, `Highlightable`, `Expandable`, `Scrollable`, `Filter`, `SyncStream` with sort-aware insertion)
 3. **[`references/form_bloc.md`](./references/form_bloc.md)**
    - `BlocxBaseFormEntity<F, E>`, debug assertion in `updateByKeySafe`, and `getFormattedValueByKey`
    - `BlocxFormBloc<F, P, E>`, `BlocxFormCoreMixin`, `BlocxFormErrorsMixin` (persistent & timed field errors)
@@ -349,7 +349,9 @@ Consult the appropriate reference guide in `./references/` when implementing spe
    - `BlocxFormValidationMixin`, `FormValidationMode`, `BlocxFormValidator`, and the complete constructor table of all 35+ built-in field validators
    - All optional form mixins (`BlocxUniqueFieldValidatorMixin`, `BlocxFormPrefetchMixin`, `BlocxFormSteppedMixin`, `BlocxFormSyncStreamMixin`)
 4. **[`references/error_handling_and_localization.md`](./references/error_handling_and_localization.md)**
-   - `BlocxBaseBloc` helpers, `ErrorDisplayPolicy` (`snackBar` vs `page`), `ScreenManagerCubit` & `ScreenManagerCubitState`s
+   - `BlocxBaseBloc` helpers, `ErrorDisplayPolicy` (`snackBar` vs `page`), `ScreenManagerCubit` (`clearError()`, `ScreenManagerCubitState`s)
+   - Injectable instance-level `errorTranslator` & `localizations` with static singleton fallbacks
    - `BlocxErrorTranslator`, `ReadableError`, `BlocXErrorCode`
-   - Customizing `BlocXLocalizations`
+   - Customizing `BlocXLocalizations` (including `searchingText`, `searchHint`)
+   - `package:blocx_core/testing.dart` test utilities (`BlocxTestEventHub`, `BlocxTestEntity`, `FakePaginatedSource`, `FakeCursorPaginatedSource`, `MockUseCase`, etc.)
    - Pure-Dart unit testing patterns for UseCases, Collection BLoCs, Form BLoCs, and EventHub streams
