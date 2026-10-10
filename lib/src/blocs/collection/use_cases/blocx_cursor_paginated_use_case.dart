@@ -44,7 +44,7 @@ abstract class BlocxCursorPaginatedUseCase<
       items: items,
       limit: input.limit,
       nextCursor: nextCursor,
-      hasNext: hasNext,
+      hasNext: hasNext ?? (nextCursor != null && nextCursor.isNotEmpty),
     ),
   );
 }

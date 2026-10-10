@@ -177,8 +177,10 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
     clearList();
     offset = page.items.length;
     nextCursor = page.nextCursor;
+    final isLast =
+        !page.hasNext || page.nextCursor == null || page.nextCursor!.isEmpty;
 
-    await insertToList(page.items, !page.hasNext, DataInsertSource.init);
+    await insertToList(page.items, isLast, DataInsertSource.init);
     if (isSelectable) await applyInitialSelection();
 
     emitState(emit);

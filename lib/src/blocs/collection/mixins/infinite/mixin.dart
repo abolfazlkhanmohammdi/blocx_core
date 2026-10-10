@@ -118,6 +118,16 @@ mixin BlocxCollectionInfiniteMixin<Entity extends BlocxBaseEntity, Payload>
     BlocxCursorPaginatedUseCaseTask<BlocxCursorPaginatedInput, Entity> task,
     Emitter<BlocxCollectionState<Entity>> emit,
   ) async {
+    if (nextCursor == null || nextCursor!.isEmpty) {
+      await insertToList(const [], true, DataInsertSource.nextPage);
+      isLoadingNextPage = false;
+      infiniteListBloc.add(
+        BlocxInfiniteListEventChangeLoadBottomDataStatus(false, true),
+      );
+      emitState(emit);
+      return;
+    }
+
     final gen = loadGeneration;
     isLoadingNextPage = true;
     emitState(emit);
@@ -140,7 +150,10 @@ mixin BlocxCollectionInfiniteMixin<Entity extends BlocxBaseEntity, Payload>
 
       final page = result.data!;
 
-      await insertToList(page.items, !page.hasNext, DataInsertSource.nextPage);
+      final isLast =
+          !page.hasNext || page.nextCursor == null || page.nextCursor!.isEmpty;
+
+      await insertToList(page.items, isLast, DataInsertSource.nextPage);
 
       offset += page.items.length;
       nextCursor = page.nextCursor;

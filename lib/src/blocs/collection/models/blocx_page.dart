@@ -17,6 +17,8 @@ class BlocxPage<T> {
 
   /// Optional opaque pagination cursor returned by the datasource for the
   /// next page of results.
+  ///
+  /// In cursor pagination, a `null` or empty [nextCursor] indicates the end of the list.
   final String? nextCursor;
 
   final bool? _hasNext;
@@ -34,6 +36,11 @@ class BlocxPage<T> {
   ///
   /// Returns `true` if an explicit [hasNext] was passed, or if [nextCursor] is
   /// non-null and non-empty, or if the number of returned [items] equals [limit].
+  ///
+  /// For cursor pagination, use cases defaulting via `successResult` explicitly set
+  /// `hasNext` based on the cursor presence (`nextCursor != null && nextCursor.isNotEmpty`),
+  /// ensuring a null or empty cursor signals the end of the list even when
+  /// [items.length] equals [limit].
   bool get hasNext {
     if (_hasNext != null) return _hasNext;
     final cursor = nextCursor;
