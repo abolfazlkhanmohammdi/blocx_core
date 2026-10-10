@@ -1,0 +1,52 @@
+name: Release
+
+# Runs when develop is merged into main.
+# 1) re-runs the full CI gate, 2) creates the tag v<pubspec version> if it does not exist.
+# The tag push triggers publish.yml, which is the only workflow that publishes.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  tag:
+    name: Create release tag
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Must be a PAT / GitHub App token. Tags pushed with the default GITHUB_TOKEN
+          # do not trigger other workflows, so publish.yml would never run.
+          token: ${{ secrets.RELEASE_TOKEN }}
+
+      - name: Read version
+        id: v
+        run: echo "version=$(grep -m1 '^version:' pubspec.yaml | awk '{print $2}' | tr -d '\r')" >> "$GITHUB_OUTPUT"
+
+      - name: CHANGELOG must contain this version
+        run: grep -qF "## [${{ steps.v.outputs.version }}]" CHANGELOG.md
+
+      - name: Create and push tag if missing
+        run: |
+          TAG="v${{ steps.v.outputs.version }}"
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists. Nothing to release."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"

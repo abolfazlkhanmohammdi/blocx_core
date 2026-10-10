@@ -1,13 +1,20 @@
 name: CI
 
+# CI validates only. It never uploads anything to pub.dev.
+# Publishing lives in release.yml (tag on merge to main) and publish.yml (tag push).
 on:
   push:
-    branches: [ develop, main ]
+    branches: [develop]
   pull_request:
-    branches: [ develop, main ]
+    branches: [develop, main]
+  workflow_call: # lets release.yml re-run the full gate on main before tagging
+
+permissions:
+  contents: read
 
 jobs:
   build:
+    name: build (${{ matrix.sdk }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -15,39 +22,20 @@ jobs:
         sdk: ['3.8.0', 'stable']
     steps:
       - uses: actions/checkout@v4
-
       - uses: dart-lang/setup-dart@v1
         with:
           sdk: ${{ matrix.sdk }}
-
+      - run: dart --version
       - name: Install dependencies
         run: dart pub get
-
       - name: Verify formatting
-        run: dart format --output=none --set-exit-if-changed .
-
+        run: dart format --output=show --set-exit-if-changed .
       - name: Analyze project source
-        run: dart analyze --fatal-infos 2>&1 | tee -a $GITHUB_STEP_SUMMARY
-
+        # `shell: bash` enables pipefail. Without it, `| tee` hides analyzer failures
+        # and this gate can never fail.
+        shell: bash
+        run: dart analyze --fatal-infos 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Run tests with coverage
         run: dart test --coverage=coverage
-
-  publish:
-    needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: dart-lang/setup-dart@v1
-        with:
-          sdk: stable
-
-      - name: Install dependencies
-        run: dart pub get
-
-      - name: Publish to pub.dev
-        run: dart pub publish --force
-
+      - name: Validate package (dry run, uploads nothing)
+        run: dart pub publish --dry-run
