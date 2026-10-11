@@ -364,10 +364,13 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
     final modifiedData = await modifyListBeforeInsert(data);
     final fresh = <Entity>[];
     final seen = <String>{};
+    final indexById = <String, int>{
+      for (var i = 0; i < _list.length; i++) _list[i].identifier: i,
+    };
     for (final item in modifiedData) {
       if (!seen.add(item.identifier)) continue;
-      final i = _list.indexById(item);
-      if (i != -1) {
+      final i = indexById[item.identifier];
+      if (i != null) {
         _list[i] = item;
       } else {
         fresh.add(item);
