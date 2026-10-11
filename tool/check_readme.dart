@@ -37,11 +37,15 @@ Future<void> main() async {
   if (extraPackages.isNotEmpty) {
     final configFile = File('.dart_tool/package_config.json');
     if (!configFile.existsSync()) {
-      stderr.writeln('Run `dart pub get` / `flutter pub get` first (.dart_tool/package_config.json is missing).');
+      stderr.writeln(
+        'Run `dart pub get` / `flutter pub get` first (.dart_tool/package_config.json is missing).',
+      );
       exit(2);
     }
-    final config = jsonDecode(configFile.readAsStringSync()) as Map<String, dynamic>;
-    for (final package in (config['packages'] as List).cast<Map<String, dynamic>>()) {
+    final config =
+        jsonDecode(configFile.readAsStringSync()) as Map<String, dynamic>;
+    for (final package
+        in (config['packages'] as List).cast<Map<String, dynamic>>()) {
       if (!extraPackages.contains(package['name'])) continue;
       var rootUriStr = package['rootUri'] as String;
       if (!rootUriStr.endsWith('/')) rootUriStr += '/';
@@ -63,13 +67,17 @@ Future<void> main() async {
     if (!seen.add(id) || allow.contains(id)) continue;
     final declared = RegExp('\\b${RegExp.escape(id)}\\b').hasMatch(libSource);
     if (!declared) {
-      problems.add('README mentions `$id`, which is not declared in lib/ or the listed packages');
+      problems.add(
+        'README mentions `$id`, which is not declared in lib/ or the listed packages',
+      );
     }
   }
 
   for (final token in forbidden) {
     if (RegExp('\\b${RegExp.escape(token)}\\b').hasMatch(readme)) {
-      problems.add('README contains forbidden (renamed or nonexistent) token `$token`');
+      problems.add(
+        'README contains forbidden (renamed or nonexistent) token `$token`',
+      );
     }
   }
 
