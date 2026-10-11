@@ -606,6 +606,23 @@ final bloc = ProductsBloc(
 );
 ```
 
+### Error Reporting Hook (`reportError`)
+
+Override `reportError` on `BlocxBaseBloc` to forward unhandled errors and stack traces to external monitoring services (e.g., Sentry, Firebase Crashlytics) whenever `handleError` is invoked:
+
+```dart
+class AppBaseBloc<E extends BlocxBaseEvent, S extends BlocxBaseState>
+    extends BlocxBaseBloc<E, S> {
+  AppBaseBloc(super.initialState);
+
+  @override
+  void reportError(Object error, StackTrace? stackTrace) {
+    super.reportError(error, stackTrace);
+    FirebaseCrashlytics.instance.recordError(error, stackTrace);
+  }
+}
+```
+
 ---
 
 ## Unit Testing with `package:blocx_core/testing.dart`

@@ -80,15 +80,8 @@ abstract class BlocxFormBloc<
   ///
   /// No [ScreenManagerCubit] is needed. It is managed by [BlocxBaseBloc].
   /// Optionally accepts an [errorTranslator] and [localizations] for dependency injection.
-  BlocxFormBloc(
-    F formData, {
-    BlocxErrorTranslator? errorTranslator,
-    BlocXLocalizations? localizations,
-  }) : super(
-         BlocxFormStateInitial(formData: formData),
-         errorTranslator: errorTranslator,
-         localizations: localizations,
-       ) {
+  BlocxFormBloc(F formData, {super.errorTranslator, super.localizations})
+    : super(BlocxFormStateInitial(formData: formData)) {
     initData(formData);
     initErrors();
 

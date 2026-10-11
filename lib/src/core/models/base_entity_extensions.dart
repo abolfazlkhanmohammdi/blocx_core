@@ -7,7 +7,12 @@ extension ListEntityExtension<T extends BlocxBaseEntity> on List<T> {
     this[index] = item;
   }
 
-  void removeById(T item) =>
-      removeWhere((e) => e.identifier == item.identifier);
+  bool removeById(T item) {
+    final index = indexById(item);
+    if (index == -1) return false;
+    removeAt(index);
+    return true;
+  }
+
   int indexById(T item) => indexWhere((e) => e.identifier == item.identifier);
 }

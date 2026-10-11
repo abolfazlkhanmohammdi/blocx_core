@@ -223,7 +223,17 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   int get limit => 20;
 
   int _loadedCount = 0;
+  int _localOffsetDelta = 0;
   String? _nextCursor;
+
+  /// Whether local inserts/removals (mirrored from the server by this app) shift the
+  /// next request offset.
+  ///
+  /// A local insert shifts the next request offset only when it lands before the end of
+  /// the loaded list; an item appended at the end is assumed to belong after the loaded
+  /// range. Removals always shift it. Override to false if your server ordering means a
+  /// local mutation never shifts existing rows.
+  bool get adjustOffsetForLocalChanges => true;
 
   /// Current pagination cursor returned by the datasource.
   String? get nextCursor => _nextCursor;
@@ -232,16 +242,25 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   @protected
   set nextCursor(String? value) => _nextCursor = value;
 
-  /// Current pagination offset based on items fetched from the datasource.
-  ///
-  /// This tracks the server pagination cursor independently of local additions
-  /// or removals (e.g. from sync streams or local mutations), preventing
-  /// pagination offset drift when loading subsequent pages.
-  int get offset => _loadedCount;
+  /// Current pagination offset based on items fetched from the datasource and local mutations.
+  int get offset => _loadedCount + _localOffsetDelta;
 
   /// Updates the pagination offset cursor.
   @protected
-  set offset(int value) => _loadedCount = value;
+  set offset(int value) => _loadedCount = value - _localOffsetDelta;
+
+  @protected
+  int get localOffsetDelta => _localOffsetDelta;
+
+  @protected
+  void noteLocalInsert() {
+    if (adjustOffsetForLocalChanges) _localOffsetDelta++;
+  }
+
+  @protected
+  void noteLocalRemoval() {
+    if (adjustOffsetForLocalChanges) _localOffsetDelta--;
+  }
 
   int _loadGeneration = 0;
 
@@ -254,7 +273,16 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
 
   /// Increments and returns the next load generation identifier.
   @protected
-  int nextLoadGeneration() => ++_loadGeneration;
+  int nextLoadGeneration() {
+    final hadNextPageInFlight = isLoadingNextPage;
+    isLoadingNextPage = false;
+    if (hadNextPageInFlight) {
+      infiniteListBloc.add(
+        BlocxInfiniteListEventChangeLoadBottomDataStatus(false, hasReachedEnd),
+      );
+    }
+    return ++_loadGeneration;
+  }
 
   /// Allows modification of incoming data before insertion.
   Future<List<Entity>> modifyListBeforeInsert(List<Entity> data) async => data;
@@ -334,11 +362,23 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
     DataInsertSource insertSource,
   ) async {
     final modifiedData = await modifyListBeforeInsert(data);
+    final fresh = <Entity>[];
+    final seen = <String>{};
+    final indexById = <String, int>{
+      for (var i = 0; i < _list.length; i++) _list[i].identifier: i,
+    };
+    for (final item in modifiedData) {
+      if (!seen.add(item.identifier)) continue;
+      final i = indexById[item.identifier];
+      if (i != null) {
+        _list[i] = item;
+      } else {
+        fresh.add(item);
+      }
+    }
     final index = insertSource.insertIndex(list);
-
     _addBlocxInfiniteListEvent(insertSource);
-
-    _list.insertAll(index, modifiedData);
+    _list.insertAll(index, fresh);
 
     doAfterInsert();
 
@@ -355,21 +395,47 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   void clearList() {
     _list.clear();
     _loadedCount = 0;
+    _localOffsetDelta = 0;
     _nextCursor = null;
   }
 
   /// Replaces the entire collection with [newList].
+  ///
+  /// Resets [_loadedCount] to the length of [newList] and [_localOffsetDelta] to 0.
   void replaceList(List<Entity> newList) {
     _list
       ..clear()
       ..addAll(newList);
+    _loadedCount = newList.length;
+    _localOffsetDelta = 0;
   }
 
   /// Replaces one existing item.
   void replaceItemInList(Entity item) => _list.replaceItem(item);
 
   /// Removes one item from the collection.
-  void removeItemFromList(Entity item) => _list.removeById(item);
+  void removeItemFromList(Entity item) {
+    final removed = _list.removeById(item);
+    if (removed) {
+      pruneItemState(item.identifier);
+      noteLocalRemoval();
+    }
+  }
+
+  /// Prunes removed item identifiers from selection, highlight, and expansion sets.
+  @protected
+  void pruneItemState(String identifier) {
+    if (isSelectable) {
+      selectedItemIds.remove(identifier);
+      beingSelectedItemIds.remove(identifier);
+    }
+    if (isHighlightable) {
+      highlightedItemIds.remove(identifier);
+    }
+    if (isExpandable) {
+      expandedItemIds.remove(identifier);
+    }
+  }
 
   void _addBlocxInfiniteListEvent(DataInsertSource insertSource) {
     switch (insertSource) {
@@ -399,6 +465,9 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
 
   bool get isSelectable;
 
+  /// Whether item expansion is enabled.
+  bool get isExpandable;
+
   /// Adds [event.item] to the collection.
   ///
   /// If an item with matching [identifier] already exists in the collection,
@@ -418,7 +487,9 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
     }
 
     final safeIndex = event.index.clamp(0, _list.length);
+    final landsInsideLoadedRange = safeIndex < _list.length;
     _list.insert(safeIndex, event.item);
+    if (landsInsideLoadedRange) noteLocalInsert();
     emitState(emit);
   }
 
@@ -452,7 +523,9 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
       return;
     }
     final safeIndex = index.clamp(0, _list.length);
+    final landsInsideLoadedRange = safeIndex < _list.length;
     _list.insert(safeIndex, item);
+    if (landsInsideLoadedRange) noteLocalInsert();
   }
 
   /// Sorts the collection using [comparator].
@@ -478,9 +551,10 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
     BlocxCollectionEventRemoveFromList<Entity> event,
     Emitter<BlocxCollectionState<Entity>> emit,
   ) async {
-    var index = _list.indexById(event.item);
-    if (index < 0) return;
-    _list.removeAt(index);
+    final removed = _list.removeById(event.item);
+    if (!removed) return;
+    pruneItemState(event.item.identifier);
+    noteLocalRemoval();
     emitState(emit);
   }
 }

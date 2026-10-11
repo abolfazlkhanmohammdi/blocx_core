@@ -48,6 +48,8 @@ mixin BlocxCollectionInfiniteMixin<Entity extends BlocxBaseEntity, Payload>
     BlocxCollectionEventLoadNextPage<Entity> event,
     Emitter<BlocxCollectionState<Entity>> emit,
   ) async {
+    if (hasReachedEnd || isLoadingNextPage) return;
+
     if (isSearchable &&
         (this as BlocxCollectionSearchableMixin<Entity, Payload>)
             .searchText
@@ -55,8 +57,6 @@ mixin BlocxCollectionInfiniteMixin<Entity extends BlocxBaseEntity, Payload>
       add(BlocxCollectionEventSearchNextPage<Entity>());
       return;
     }
-
-    if (hasReachedEnd || isLoadingNextPage) return;
 
     final cursorTask = loadNextPageCursorTask;
     if (cursorTask != null) {

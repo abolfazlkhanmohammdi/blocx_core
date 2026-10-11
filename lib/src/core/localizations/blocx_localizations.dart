@@ -30,6 +30,15 @@ abstract class BlocXLocalizations {
   String get deleteItem;
   String get areYouSure;
   String get areYouSureYouWantToDeleteThisItem;
+  String get itemDeleted => 'Item deleted';
+  String get itemDeleteFailed => 'Failed to delete item';
+  String get selectItemFailed => 'Could not select the item. Please try again.';
+  String get deselectItemFailed =>
+      'Could not deselect the item. Please try again.';
+  String itemsDeleted(int count) => 'Deleted $count item(s).';
+  String itemsDeleteFailed(int count) => 'Failed to delete $count item(s).';
+  String itemsDeletedPartially(int deleted, int failed) =>
+      'Deleted $deleted, failed $failed.';
 
   String errorCodeMessage(BlocXErrorCode errorCode);
 

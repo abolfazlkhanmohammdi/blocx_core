@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/form_bloc.dart';
 import 'package:meta/meta.dart';
@@ -48,11 +49,17 @@ mixin BlocxFormCoreMixin<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
   void initData(F formData) {
     this.formData = formData;
 
-    on<BlocxFormEventInit<P>>(initForm);
-    on<BlocxFormEventUpdateData<E>>(updateData);
-    on<BlocxFormEventSubmit>(submit);
-    on<BlocxFormEventUpdateFormData<P>>(handleUpdateFormDataEvent);
-    on<BlocxFormEventSyncFormData<F>>(handleSyncFormDataEvent);
+    on<BlocxFormEventInit<P>>(initForm, transformer: restartable());
+    on<BlocxFormEventUpdateData<E>>(updateData, transformer: sequential());
+    on<BlocxFormEventSubmit>(submit, transformer: droppable());
+    on<BlocxFormEventUpdateFormData<P>>(
+      handleUpdateFormDataEvent,
+      transformer: restartable(),
+    );
+    on<BlocxFormEventSyncFormData<F>>(
+      handleSyncFormDataEvent,
+      transformer: sequential(),
+    );
   }
 
   /// Handles the initial form event.
@@ -68,15 +75,19 @@ mixin BlocxFormCoreMixin<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
     _payload = event.payload;
     _isUpdate = event.payload != null;
 
+    var updatedData = formData;
     if (_payload != null) {
-      formData = await applyPayloadToFormData(_payload as P);
+      updatedData = await applyPayloadToFormData(_payload as P);
     }
+    if (emit.isDone) return;
+    formData = updatedData;
 
     emit(BlocxFormStateApplyInitialDataToForm(formData: formData));
 
     if (validateOnInit) {
       await validateForm(formData, forceFullValidation: true);
     }
+    if (emit.isDone) return;
 
     emitState(emit);
 

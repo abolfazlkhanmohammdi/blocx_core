@@ -83,6 +83,7 @@ abstract class BlocxCollectionBloc<Entity extends BlocxBaseEntity, Payload>
   late final bool isInfinite;
   late final bool isDeletable;
   late final bool isScrollable;
+  @override
   late final bool isExpandable;
   late final bool isStreamable;
 
@@ -99,14 +100,8 @@ abstract class BlocxCollectionBloc<Entity extends BlocxBaseEntity, Payload>
   /// No [ScreenManagerCubit] needed — it is managed by [BlocxBaseBloc].
   /// Enabled mixins are detected and initialised automatically.
   /// Optionally accepts an [errorTranslator] and [localizations] for dependency injection.
-  BlocxCollectionBloc({
-    BlocxErrorTranslator? errorTranslator,
-    BlocXLocalizations? localizations,
-  }) : super(
-         BlocxCollectionStateLoading(),
-         errorTranslator: errorTranslator,
-         localizations: localizations,
-       ) {
+  BlocxCollectionBloc({super.errorTranslator, super.localizations})
+    : super(BlocxCollectionStateLoading()) {
     initCoreMixin();
     isSelectable = initSelection();
     isHighlightable = initHighlight();
