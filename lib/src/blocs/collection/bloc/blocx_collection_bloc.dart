@@ -83,6 +83,7 @@ abstract class BlocxCollectionBloc<Entity extends BlocxBaseEntity, Payload>
   late final bool isInfinite;
   late final bool isDeletable;
   late final bool isScrollable;
+  @override
   late final bool isExpandable;
   late final bool isStreamable;
 

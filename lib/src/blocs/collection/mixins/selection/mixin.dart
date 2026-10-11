@@ -234,9 +234,7 @@ mixin BlocxCollectionSelectableMixin<Entity extends BlocxBaseEntity, Payload>
   /// Called when remote selection or deselection sync fails.
   void onSelectionSyncFailed(Entity item, {required bool isSelectOperation}) {
     displayWarningSnackbar(
-      isSelectOperation
-          ? 'Could not select the item. Please try again.'
-          : 'Could not deselect the item. Please try again.',
+      isSelectOperation ? loc.selectItemFailed : loc.deselectItemFailed,
     );
   }
 

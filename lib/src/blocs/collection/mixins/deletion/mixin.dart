@@ -216,11 +216,13 @@ mixin BlocxCollectionDeletableMixin<Entity extends BlocxBaseEntity, Payload>
     final failedCount = results.length - successCount;
 
     if (failedCount == 0) {
-      displayInfoSnackbar('Deleted $successCount item(s).');
+      displayInfoSnackbar(loc.itemsDeleted(successCount));
     } else if (successCount == 0) {
-      displayWarningSnackbar('Failed to delete $failedCount item(s).');
+      displayWarningSnackbar(loc.itemsDeleteFailed(failedCount));
     } else {
-      displayWarningSnackbar('Deleted $successCount, failed $failedCount.');
+      displayWarningSnackbar(
+        loc.itemsDeletedPartially(successCount, failedCount),
+      );
     }
   }
 

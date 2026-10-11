@@ -417,7 +417,23 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   void removeItemFromList(Entity item) {
     final removed = _list.removeById(item);
     if (removed) {
+      pruneItemState(item.identifier);
       noteLocalRemoval();
+    }
+  }
+
+  /// Prunes removed item identifiers from selection, highlight, and expansion sets.
+  @protected
+  void pruneItemState(String identifier) {
+    if (isSelectable) {
+      selectedItemIds.remove(identifier);
+      beingSelectedItemIds.remove(identifier);
+    }
+    if (isHighlightable) {
+      highlightedItemIds.remove(identifier);
+    }
+    if (isExpandable) {
+      expandedItemIds.remove(identifier);
     }
   }
 
@@ -448,6 +464,9 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   bool get isHighlightable;
 
   bool get isSelectable;
+
+  /// Whether item expansion is enabled.
+  bool get isExpandable;
 
   /// Adds [event.item] to the collection.
   ///
@@ -534,6 +553,7 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   ) async {
     final removed = _list.removeById(event.item);
     if (!removed) return;
+    pruneItemState(event.item.identifier);
     noteLocalRemoval();
     emitState(emit);
   }
