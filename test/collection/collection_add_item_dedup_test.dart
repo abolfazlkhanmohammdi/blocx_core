@@ -89,7 +89,7 @@ void main() {
         // Wait for bloc to process events
         await bloc.stream.firstWhere((s) => s.list.any((e) => e.id == 'dup_1'));
         // Allow event loop to process any trailing queued event
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         final dupItems = bloc.list.where((e) => e.id == 'dup_1').toList();
         expect(

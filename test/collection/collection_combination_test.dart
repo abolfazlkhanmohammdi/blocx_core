@@ -1,6 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/collection_bloc.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:test/test.dart';
 
 import '../helpers/fake_use_cases.dart';
@@ -103,9 +104,9 @@ void main() {
       ),
       act: (bloc) async {
         bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
-        await Future<void>.delayed(const Duration(milliseconds: 30));
+        await pumpEventQueue();
         bloc.add(BlocxCollectionEventLoadNextPage());
-        await Future<void>.delayed(const Duration(milliseconds: 30));
+        await pumpEventQueue();
       },
       verify: (bloc) {
         expect(bloc.state.list.length, equals(20));
@@ -129,18 +130,18 @@ void main() {
       act: (bloc) async {
         // 1. Initial load
         bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
-        await Future<void>.delayed(const Duration(milliseconds: 30));
+        await pumpEventQueue();
 
         // 2. Sync incoming new item created by a UseCase
         eventHub.emitEntity<TestItem>(
           const TestItem(id: 'item_new', title: 'New Item', order: -1),
           BlocxCommandType.create,
         );
-        await Future<void>.delayed(const Duration(milliseconds: 30));
+        await pumpEventQueue();
 
         // 3. Next page load
         bloc.add(BlocxCollectionEventLoadNextPage());
-        await Future<void>.delayed(const Duration(milliseconds: 30));
+        await pumpEventQueue();
       },
       verify: (bloc) {
         // List has 1 synced + 10 initial + 10 next = 21 items
@@ -166,14 +167,14 @@ void main() {
       ),
       act: (bloc) async {
         bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
-        await Future<void>.delayed(const Duration(milliseconds: 30));
+        await pumpEventQueue();
 
         final itemToSelect = bloc.state.list.first;
         bloc.add(BlocxCollectionEventSelectItem(item: itemToSelect));
-        await Future<void>.delayed(const Duration(milliseconds: 30));
+        await pumpEventQueue();
 
         bloc.add(BlocxCollectionEventRemoveItem(item: itemToSelect));
-        await Future<void>.delayed(const Duration(milliseconds: 30));
+        await pumpEventQueue();
       },
       verify: (bloc) {
         expect(bloc.state.list.any((e) => e.id == 'item_0'), isFalse);
@@ -182,32 +183,37 @@ void main() {
       },
     );
 
-    blocTest<CombinationCollectionBloc, BlocxCollectionState<TestItem>>(
+    test(
       'searches debounced, replaces active list, and clearSearch reloads initial collection',
-      build: () => CombinationCollectionBloc(
-        paginatedUseCase: paginatedUseCase,
-        searchUseCase: searchUseCase,
-        deleteUseCase: deleteUseCase,
-        eventHub: eventHub,
-      ),
-      act: (bloc) async {
-        bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
-        await Future<void>.delayed(const Duration(milliseconds: 30));
+      () {
+        fakeAsync((async) {
+          final bloc = CombinationCollectionBloc(
+            paginatedUseCase: paginatedUseCase,
+            searchUseCase: searchUseCase,
+            deleteUseCase: deleteUseCase,
+            eventHub: eventHub,
+          );
 
-        // Search for specific product
-        bloc.add(BlocxCollectionEventSearch(searchText: 'Product 5'));
-        // Wait for search debounce
-        await Future<void>.delayed(const Duration(milliseconds: 350));
+          bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
+          async.flushMicrotasks();
 
-        // Clear search
-        bloc.add(BlocxCollectionEventClearSearch());
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-      },
-      verify: (bloc) {
-        expect(bloc.state.isSearching, isFalse);
-        expect(bloc.searchText, isEmpty);
-        expect(bloc.state.list.length, equals(10));
-        expect(bloc.state.list.first.id, equals('item_0'));
+          // Search for specific product
+          bloc.add(BlocxCollectionEventSearch(searchText: 'Product 5'));
+          // Wait for search debounce (300ms)
+          async.elapse(const Duration(milliseconds: 350));
+          async.flushMicrotasks();
+
+          // Clear search
+          bloc.add(BlocxCollectionEventClearSearch());
+          async.flushMicrotasks();
+
+          expect(bloc.state.isSearching, isFalse);
+          expect(bloc.searchText, isEmpty);
+          expect(bloc.state.list.length, equals(10));
+          expect(bloc.state.list.first.id, equals('item_0'));
+
+          bloc.close();
+        });
       },
     );
 
@@ -221,13 +227,13 @@ void main() {
       ),
       act: (bloc) async {
         bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
-        await Future<void>.delayed(const Duration(milliseconds: 30));
+        await pumpEventQueue();
 
         bloc.add(BlocxCollectionEventLoadNextPage());
-        await Future<void>.delayed(const Duration(milliseconds: 30));
+        await pumpEventQueue();
 
         bloc.add(BlocxCollectionEventRefreshData());
-        await Future<void>.delayed(const Duration(milliseconds: 30));
+        await pumpEventQueue();
       },
       verify: (bloc) {
         expect(bloc.state.list.length, equals(10));

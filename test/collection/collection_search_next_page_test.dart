@@ -95,7 +95,7 @@ void main() {
 
         // Search initial page
         bloc.add(BlocxCollectionEventSearch<TestItem>(searchText: 'query'));
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await pumpEventQueue();
         expect(searchUseCase.calls.length, equals(1));
         searchUseCase.calls.first.completeSuccess([
           const TestItem(id: 's1', title: 'Search 1'),
@@ -110,7 +110,7 @@ void main() {
 
         // Request next page of search
         bloc.add(BlocxCollectionEventLoadNextPage<TestItem>());
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         expect(searchUseCase.calls.length, equals(2));
         expect(
@@ -137,7 +137,7 @@ void main() {
 
         // Additional LoadNextPage events after reaching end must produce ZERO extra use-case calls
         bloc.add(BlocxCollectionEventLoadNextPage<TestItem>());
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await pumpEventQueue();
         expect(
           searchUseCase.calls.length,
           equals(2),
@@ -160,7 +160,7 @@ void main() {
 
         // Search initial page
         bloc.add(BlocxCollectionEventSearch<TestItem>(searchText: 'query'));
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await pumpEventQueue();
         expect(searchUseCase.calls.length, equals(1));
         searchUseCase.calls.first.completeSuccess([
           const TestItem(id: 's1', title: 'Search 1'),
@@ -171,13 +171,13 @@ void main() {
 
         // Request next page (fails)
         bloc.add(BlocxCollectionEventLoadNextPage<TestItem>());
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         expect(bloc.isLoadingNextPage, isTrue);
 
         searchUseCase.calls.last.completeFailure(
           Exception('Search network timeout'),
         );
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await pumpEventQueue();
 
         expect(
           bloc.isLoadingNextPage,
