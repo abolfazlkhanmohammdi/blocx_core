@@ -5,14 +5,25 @@
 ### Fixed
 * Fixed stuck `isLoadingNextPage` when `loadGeneration` increments during an in-flight pagination request (F1 / K1): `nextLoadGeneration()` now always clears `isLoadingNextPage = false` and signals bottom loader completion.
 * Fixed local pagination offset drift when entities are inserted or removed locally (F2 / K2): introduced `_localOffsetDelta` tracking with `noteLocalInsert()`, `noteLocalRemoval()`, and `adjustOffsetForLocalChanges()` across initial load, next page, search, and refresh.
+* Accounted for appended items in local pagination offset drift tracking (C-B): extended `noteLocalInsert` with `bool isAppended` to ensure items appended to the tail of the list do not shift pagination fetch offsets.
 * Fixed duplicate entity insertions in `insertToList()` (F3 / K3): bulk inserts now check `identifier` against existing items and replace existing matches in-place while inserting new items at the target position.
+* Optimized `insertToList` deduplication to $O(N + M)$ linear time (C-G): indexed existing collection items by `identifier` in a hash map before merging new items.
 * Guarded `searchNextPage` against redundant in-flight triggers (F5 / K5): now verifies `!hasReachedEnd && !isLoadingNextPage`, tracks `isLoadingNextPage` with a generation-safe `try/finally`, and verifies search guards when delegating from `loadNextPage`.
 * Concurrency and event transformers for `BlocxFormCoreMixin` (F4 / K4): registered `Init` with `restartable()`, `UpdateData` with `sequential()`, `Submit` with `droppable()`, `UpdateFormData` with `restartable()`, and `SyncFormData` with `sequential()`; guarded `initForm` against cancelled emissions (`if (emit.isDone) return`).
-* Localized delete confirmation and failure snackbars (F6 / K6): added default getters `itemDeleted` and `itemDeleteFailed` to `BlocXLocalizations`, and updated `deletion/mixin.dart` to use localized strings instead of hardcoded English.
+* Stepped form navigation boundary guards (C-D): guarded `goToNextStep`, `goToPreviousStep`, and `goToStep` in `BlocxFormSteppedMixin` against invalid or out-of-bounds step transitions.
+* Pruned removed item states on deletion (C-E): added `pruneItemState(identifier)` removing deleted entities from `selectedItemIds`, `beingSelectedItemIds`, `highlightedItemIds`, and `expandedItemIds` across `removeItemFromList` and `removeFromList`.
+* Guarded unique field availability checks (C-F): in `BlocxFormCoreMixin._checkUniqueValue`, evaluated the unique-field task before emitting pending state or assigning in-flight tokens, preventing dangling validation tokens when no task is configured.
+* Localized delete confirmation and failure snackbars (F6 / K6, C-E): added default getters `itemDeleted`, `itemDeleteFailed`, `itemsDeleted`, `itemsDeleteFailed`, `itemsDeletedPartially`, `selectItemFailed`, and `deselectItemFailed` to `BlocXLocalizations`, and updated `deletion/mixin.dart` and `selection/mixin.dart` to use localized strings.
 
 ### Added
 * Added `reportError(Object error, StackTrace? stackTrace)` hook to `BlocxBaseBloc` (F7 / K7): called automatically from `handleError` before UI translation, allowing subclasses to forward unhandled errors to crash reporting services (such as Sentry or Firebase Crashlytics) without coupling to UI layers.
 * Documented error monitoring best practices across `BlocxBaseBloc` and `BlocxBaseUseCase`.
+
+### Infrastructure & Testing
+* Resolved static analysis warnings on Dart stable (C-A): corrected dead code branches and deprecated member usages.
+* Strengthened invariant test suite (C-C): expanded randomized fuzzing invariants across seeds 1 through 30 for collection ordering, deduplication, and pagination integrity.
+* Replaced arbitrary test sleep waits with deterministic synchronization (C-H): converted all real `Future.delayed` sleeps in collection and form tests to `pumpEventQueue()`, `Completer`, or `fakeAsync`.
+* Configured GitHub Actions CI/CD workflows (`ci.yml`, `release.yml`, `publish.yml`) supporting OIDC automated pub.dev publishing on release tag push.
 
 ## [1.1.0] - 2026-10-10
 
