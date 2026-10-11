@@ -307,7 +307,7 @@ void main() {
         await bloc.stream.firstWhere(
           (s) => s.isSearching || s.list.length == 10,
         );
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
         // Search clear restores collection
         bloc.add(BlocxCollectionEventClearSearch<TestItem>());
         await bloc.stream.firstWhere((s) => s.list.length == 10);
@@ -451,12 +451,12 @@ void main() {
     });
 
     test(
-      'invariant test: random creates, deletes, and next-page loads maintain order and uniqueness',
+      'C-C.1: head model invariant: random creates at head, deletes, and next-page loads maintain exact server prefix and full list',
       () async {
-        for (var seed = 1; seed <= 20; seed++) {
+        for (var seed = 1; seed <= 30; seed++) {
           final random = Random(seed);
           final serverItems = List.generate(
-            200,
+            60,
             (i) => TestItem(id: 'server_$i', title: 'Server Item $i'),
           );
           final source = FakePaginatedSource(List.of(serverItems));
@@ -467,9 +467,8 @@ void main() {
             eventHub: eventHub,
           );
 
-          // Initial load (10 items)
           bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
-          await bloc.stream.firstWhere((s) => s.list.isNotEmpty);
+          await pumpEventQueue();
 
           var nextCreatedId = 1000;
           for (var step = 0; step < 30; step++) {
@@ -481,42 +480,146 @@ void main() {
                 title: 'Local Created',
               );
               source.items.insert(0, newItem);
-              final lengthBefore = bloc.list.length;
               eventHub.emitEntity<TestItem>(newItem, BlocxCommandType.create);
-              await bloc.stream.firstWhere(
-                (s) => s.list.length == lengthBefore + 1,
-              );
+              await pumpEventQueue();
             } else if (action == 1) {
               // Delete a loaded item if any exists
               if (bloc.list.isNotEmpty) {
                 final target = bloc.list[random.nextInt(bloc.list.length)];
                 source.items.removeWhere((e) => e.id == target.id);
-                final lengthBefore = bloc.list.length;
                 eventHub.emitEntity<TestItem>(target, BlocxCommandType.delete);
-                await bloc.stream.firstWhere(
-                  (s) => s.list.length == lengthBefore - 1,
-                );
+                await pumpEventQueue();
               }
             } else {
               // Next page
               if (!bloc.hasReachedEnd) {
-                final lengthBefore = bloc.list.length;
                 bloc.add(BlocxCollectionEventLoadNextPage<TestItem>());
-                await Future<void>.delayed(const Duration(milliseconds: 15));
-                if (bloc.list.length > lengthBefore) {
-                  // Loaded
-                }
+                await pumpEventQueue();
               }
             }
 
-            // Invariant check
-            final ids = bloc.list.map((e) => e.id).toList();
+            // Exact prefix check after every step
+            final loadedIds = bloc.list.map((e) => e.id).toList();
+            final expectedPrefixIds = source.items
+                .take(bloc.list.length)
+                .map((e) => e.id)
+                .toList();
             expect(
-              ids.toSet().length,
-              equals(ids.length),
-              reason: 'Seed $seed step $step: Duplicate IDs in list',
+              loadedIds,
+              equals(expectedPrefixIds),
+              reason:
+                  'Seed $seed step $step: bloc.list ids did not match exact server prefix',
             );
           }
+
+          // Load remaining pages until hasReachedEnd
+          while (!bloc.hasReachedEnd) {
+            bloc.add(BlocxCollectionEventLoadNextPage<TestItem>());
+            await pumpEventQueue();
+          }
+
+          expect(
+            bloc.list.map((e) => e.id).toList(),
+            equals(source.items.map((e) => e.id).toList()),
+            reason:
+                'Seed $seed: final bloc.list ids did not match all source.items ids',
+          );
+
+          await bloc.close();
+          eventHub.dispose();
+        }
+      },
+    );
+
+    test(
+      'C-C.2: sorted model invariant: random creates anywhere in order, deletes, and next-page loads yield exact set with no duplicates',
+      () async {
+        int byTitle(TestItem a, TestItem b) {
+          final cmp = a.title.compareTo(b.title);
+          return cmp != 0 ? cmp : a.id.compareTo(b.id);
+        }
+
+        for (var seed = 1; seed <= 30; seed++) {
+          final random = Random(seed);
+          final serverItems = List.generate(
+            60,
+            (i) => TestItem(
+              id: 'server_$i',
+              title: 'Key_${(i * 10).toString().padLeft(4, '0')}',
+            ),
+          )..sort(byTitle);
+          final source = FakePaginatedSource(List.of(serverItems));
+          final eventHub = BlocxSimpleEventHub();
+          final useCase = FakePaginatedUseCase(source: source);
+          final bloc = SyncInfiniteCollectionBloc(
+            paginatedUseCase: useCase,
+            eventHub: eventHub,
+            comparator: byTitle,
+          );
+
+          bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
+          await pumpEventQueue();
+
+          var nextCreatedId = 1000;
+          for (var step = 0; step < 30; step++) {
+            final action = random.nextInt(3);
+            if (action == 0) {
+              // Random key: either anywhere inside the loaded server range,
+              // or after the loaded range.
+              final loadedServerKeys = bloc.list
+                  .where((e) => e.id.startsWith('server_'))
+                  .map((e) => int.parse(e.title.substring(4)))
+                  .toList();
+              final maxLoadedServerKey = loadedServerKeys.isEmpty
+                  ? 0
+                  : loadedServerKeys.reduce(max);
+              final insertAfterRange =
+                  maxLoadedServerKey == 0 || random.nextBool();
+              final randomKey = insertAfterRange
+                  ? 1000 + nextCreatedId
+                  : random.nextInt(maxLoadedServerKey);
+              final newItem = TestItem(
+                id: 'local_${nextCreatedId++}',
+                title: 'Key_${randomKey.toString().padLeft(4, '0')}',
+              );
+              source.items
+                ..add(newItem)
+                ..sort(byTitle);
+              eventHub.emitEntity<TestItem>(newItem, BlocxCommandType.create);
+              await pumpEventQueue();
+            } else if (action == 1) {
+              if (bloc.list.isNotEmpty) {
+                final target = bloc.list[random.nextInt(bloc.list.length)];
+                source.items.removeWhere((e) => e.id == target.id);
+                eventHub.emitEntity<TestItem>(target, BlocxCommandType.delete);
+                await pumpEventQueue();
+              }
+            } else {
+              if (!bloc.hasReachedEnd) {
+                bloc.add(BlocxCollectionEventLoadNextPage<TestItem>());
+                await pumpEventQueue();
+              }
+            }
+          }
+
+          while (!bloc.hasReachedEnd) {
+            bloc.add(BlocxCollectionEventLoadNextPage<TestItem>());
+            await pumpEventQueue();
+          }
+
+          final ids = bloc.list.map((e) => e.id).toList();
+          final sourceIds = source.items.map((e) => e.id).toSet();
+          expect(
+            ids.toSet().length,
+            equals(ids.length),
+            reason: 'Seed $seed: duplicate ids found in bloc.list',
+          );
+          expect(
+            ids.toSet(),
+            equals(sourceIds),
+            reason:
+                'Seed $seed: Set(bloc.list ids) != Set(source ids) (missing: ${sourceIds.difference(ids.toSet())})',
+          );
 
           await bloc.close();
           eventHub.dispose();
