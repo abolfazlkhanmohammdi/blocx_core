@@ -75,6 +75,7 @@ class ConcurrencyFormBloc
           ConcurrencyField
         > {
   final ControlledSubmitUseCase submitUseCase;
+  Completer<void>? slowPayloadCompleter;
 
   ConcurrencyFormBloc({required this.submitUseCase})
     : super(const ConcurrencyFormEntity());
@@ -96,7 +97,9 @@ class ConcurrencyFormBloc
   @override
   FutureOr<ConcurrencyFormEntity> applyPayloadToFormData(String payload) async {
     if (payload == 'slow') {
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      if (slowPayloadCompleter != null) {
+        await slowPayloadCompleter!.future;
+      }
       return const ConcurrencyFormEntity(valA: 'slow_val');
     } else if (payload == 'fast') {
       return const ConcurrencyFormEntity(valA: 'fast_val');
@@ -156,7 +159,7 @@ void main() {
 
         // Complete the in-flight submit
         submitCompleter.complete();
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await pumpEventQueue();
 
         // Submit use case was executed once, NOT twice!
         expect(
@@ -169,7 +172,7 @@ void main() {
         // After completion, a new Submit CAN run
         submitUseCase.completer = null;
         bloc.add(BlocxFormEventSubmit());
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await pumpEventQueue();
         expect(submitUseCase.executeCount, equals(2));
 
         await bloc.close();
@@ -181,12 +184,18 @@ void main() {
       () async {
         final submitUseCase = ControlledSubmitUseCase();
         final bloc = ConcurrencyFormBloc(submitUseCase: submitUseCase);
+        final slowCompleter = Completer<void>();
+        bloc.slowPayloadCompleter = slowCompleter;
 
         bloc.add(BlocxFormEventInit<String>(payload: 'slow'));
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         bloc.add(BlocxFormEventInit<String>(payload: 'fast'));
-        await Future<void>.delayed(const Duration(milliseconds: 100));
+        await bloc.stream.firstWhere((s) => s.formData.valA == 'fast_val');
+
+        // Complete the canceled slow task; its result should be ignored by restartable
+        slowCompleter.complete();
+        await pumpEventQueue();
 
         expect(
           bloc.formData.valA,

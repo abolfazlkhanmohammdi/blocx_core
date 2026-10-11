@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/collection_bloc.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:test/test.dart';
 
 import '../helpers/helpers.dart';
@@ -158,7 +159,7 @@ void main() {
         inFlightNextPageCall.completeSuccess([
           const TestItem(id: 'stale_item', title: 'Stale Item'),
         ]);
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await pumpEventQueue();
 
         // Stale item not added, flag still false
         expect(bloc.list.any((e) => e.id == 'stale_item'), isFalse);
@@ -167,7 +168,7 @@ void main() {
 
         // Dispatch LoadNextPage again -> new use-case call is made
         bloc.add(BlocxCollectionEventLoadNextPage<TestItem>());
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         expect(
           useCase.calls.length,
           equals(4),
@@ -187,7 +188,7 @@ void main() {
 
         // Initial load
         bloc.add(BlocxCollectionEventLoadInitialPage(payload: 'init'));
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         useCase.calls[0].completeSuccess(
           List.generate(5, (i) => TestItem(id: 'p1_$i', title: 'Item $i')),
           hasNext: true,
@@ -196,14 +197,14 @@ void main() {
 
         // Start next page (in flight)
         bloc.add(BlocxCollectionEventLoadNextPage<TestItem>());
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         expect(bloc.isLoadingNextPage, isTrue);
         expect(useCase.calls.length, equals(2));
         final nextPageCall = useCase.calls[1];
 
         // Restart initial load
         bloc.add(BlocxCollectionEventLoadInitialPage(payload: 'restart'));
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         expect(
           bloc.isLoadingNextPage,
@@ -230,14 +231,14 @@ void main() {
         nextPageCall.completeSuccess([
           const TestItem(id: 'stale_item', title: 'Stale Item'),
         ]);
-        await Future<void>.delayed(const Duration(milliseconds: 10));
+        await pumpEventQueue();
 
         // Stale item ignored
         expect(bloc.list.any((e) => e.id == 'stale_item'), isFalse);
 
         // Can load next page again
         bloc.add(BlocxCollectionEventLoadNextPage<TestItem>());
-        await Future<void>.delayed(const Duration(milliseconds: 10));
+        await pumpEventQueue();
         expect(useCase.calls.length, equals(4));
         expect(useCase.calls.last.input.offset, equals(5));
 
@@ -245,32 +246,36 @@ void main() {
       },
     );
 
-    test('search start resets in-flight next-page request', () async {
-      final useCase = ControlledPaginatedUseCase();
-      final bloc = InvalidationTestCollectionBloc(paginatedUseCase: useCase);
+    test('search start resets in-flight next-page request', () {
+      fakeAsync((async) {
+        final useCase = ControlledPaginatedUseCase();
+        final bloc = InvalidationTestCollectionBloc(paginatedUseCase: useCase);
 
-      // Initial load
-      bloc.add(BlocxCollectionEventLoadInitialPage(payload: 'init'));
-      await Future<void>.delayed(Duration.zero);
-      useCase.calls[0].completeSuccess(
-        List.generate(5, (i) => TestItem(id: 'p1_$i', title: 'Item $i')),
-        hasNext: true,
-      );
-      await bloc.stream.firstWhere((s) => s.list.length == 5);
+        // Initial load
+        bloc.add(BlocxCollectionEventLoadInitialPage(payload: 'init'));
+        async.flushMicrotasks();
+        useCase.calls[0].completeSuccess(
+          List.generate(5, (i) => TestItem(id: 'p1_$i', title: 'Item $i')),
+          hasNext: true,
+        );
+        async.flushMicrotasks();
+        expect(bloc.list.length, equals(5));
 
-      // Start next page
-      bloc.add(BlocxCollectionEventLoadNextPage<TestItem>());
-      await Future<void>.delayed(Duration.zero);
-      expect(bloc.isLoadingNextPage, isTrue);
+        // Start next page
+        bloc.add(BlocxCollectionEventLoadNextPage<TestItem>());
+        async.flushMicrotasks();
+        expect(bloc.isLoadingNextPage, isTrue);
 
-      // Start search
-      bloc.add(BlocxCollectionEventSearch<TestItem>(searchText: 'query'));
-      await Future<void>.delayed(const Duration(milliseconds: 350)); // debounce
+        // Start search
+        bloc.add(BlocxCollectionEventSearch<TestItem>(searchText: 'query'));
+        async.elapse(const Duration(milliseconds: 350)); // debounce
+        async.flushMicrotasks();
 
-      expect(bloc.isLoadingNextPage, isFalse);
-      expect(bloc.state.isLoadingNextPage, isFalse);
+        expect(bloc.isLoadingNextPage, isFalse);
+        expect(bloc.state.isLoadingNextPage, isFalse);
 
-      await bloc.close();
+        bloc.close();
+      });
     });
   });
 }

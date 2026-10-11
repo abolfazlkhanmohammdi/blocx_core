@@ -54,7 +54,7 @@ void main() {
       bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
 
       // Wait for async processing
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await pumpEventQueue();
 
       expect(states.length, equals(2));
       expect(states[0], isA<BlocxCollectionStateLoading<TestItem>>());

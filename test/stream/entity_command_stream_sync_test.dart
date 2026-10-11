@@ -263,7 +263,7 @@ void main() {
       await readUseCase.execute(const NoteEntity(id: '10', title: 'Read'));
       await deleteUseCase.execute(note);
 
-      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await pumpEventQueue();
 
       expect(receivedEvents.length, equals(4));
       expect(receivedEvents[0].command, equals(BlocxCommandType.create));
@@ -287,7 +287,7 @@ void main() {
         final multiUseCase = MultiCommandUseCase(eventHub);
         await multiUseCase.execute(const NoteEntity(id: '7', title: 'Multi'));
 
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await pumpEventQueue();
 
         expect(receivedEvents.length, equals(2));
         expect(
@@ -319,7 +319,7 @@ void main() {
           NoteEntity(id: '2', title: 'Note 2'),
         ]);
 
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await pumpEventQueue();
 
         expect(receivedEvents.length, equals(2));
         expect(receivedEvents[0].command, equals(BlocxCommandType.read));
@@ -345,7 +345,7 @@ void main() {
           const NoteEntity(id: '1', title: 'Note 1'),
         );
 
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await pumpEventQueue();
         expect(receivedEvents, isEmpty);
 
         await sub.cancel();
@@ -368,7 +368,7 @@ void main() {
         BlocxCommandType.update,
       );
 
-      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await pumpEventQueue();
 
       expect(received.length, equals(1));
       expect(received.first.command, equals(BlocxCommandType.update));
@@ -386,7 +386,7 @@ void main() {
       eventHub = BlocxSimpleEventHub();
       bloc = SyncedNotesCollectionBloc(eventHub);
       bloc.add(BlocxCollectionEventLoadInitialPage(payload: 1));
-      await Future<void>.delayed(const Duration(milliseconds: 40));
+      await pumpEventQueue();
     });
 
     tearDown(() async {
@@ -407,7 +407,7 @@ void main() {
         await createUseCase.execute(
           const NoteEntity(id: '100', title: 'Duplicate Create', userId: 1),
         );
-        await Future<void>.delayed(const Duration(milliseconds: 40));
+        await pumpEventQueue();
 
         expect(bloc.list.length, equals(4));
         expect(bloc.list.first.id, equals('100'));
@@ -418,7 +418,7 @@ void main() {
         await updateUseCase.execute(
           const NoteEntity(id: '2', title: 'Note 2 Updated', userId: 1),
         );
-        await Future<void>.delayed(const Duration(milliseconds: 40));
+        await pumpEventQueue();
 
         final note2 = bloc.list.firstWhere((e) => e.id == '2');
         expect(note2.title, equals('Note 2 Updated'));
@@ -428,19 +428,19 @@ void main() {
         await readUseCase.execute(
           const NoteEntity(id: '3', title: 'Note 3 Hydrated', userId: 1),
         );
-        await Future<void>.delayed(const Duration(milliseconds: 40));
+        await pumpEventQueue();
 
         final note3 = bloc.list.firstWhere((e) => e.id == '3');
         expect(note3.title, equals('Note 3 Hydrated'));
 
         // 4. Select item 2, then Delete command removes and deselects it
         bloc.add(BlocxCollectionEventSelectItem(item: note2));
-        await Future<void>.delayed(const Duration(milliseconds: 30));
+        await pumpEventQueue();
         expect(bloc.selectedItemIds, contains('2'));
 
         final deleteUseCase = DeleteNoteUseCase(eventHub);
         await deleteUseCase.execute(note2);
-        await Future<void>.delayed(const Duration(milliseconds: 40));
+        await pumpEventQueue();
 
         expect(bloc.list.any((e) => e.id == '2'), isFalse);
         expect(bloc.selectedItemIds, isNot(contains('2')));
@@ -453,7 +453,7 @@ void main() {
       await createUseCase.execute(
         const NoteEntity(id: '500', title: 'Other User Note', userId: 99),
       );
-      await Future<void>.delayed(const Duration(milliseconds: 40));
+      await pumpEventQueue();
 
       expect(bloc.list.any((e) => e.id == '500'), isFalse);
 
@@ -463,12 +463,12 @@ void main() {
         customCommands: const [BlocxCommandType.delete],
       );
       deleteOnlyBloc.add(BlocxCollectionEventLoadInitialPage(payload: 1));
-      await Future<void>.delayed(const Duration(milliseconds: 40));
+      await pumpEventQueue();
 
       await createUseCase.execute(
         const NoteEntity(id: '600', title: 'Ignored Create', userId: 1),
       );
-      await Future<void>.delayed(const Duration(milliseconds: 40));
+      await pumpEventQueue();
 
       expect(deleteOnlyBloc.list.any((e) => e.id == '600'), isFalse);
 
@@ -476,7 +476,7 @@ void main() {
       await deleteUseCase.execute(
         const NoteEntity(id: '1', title: 'Note 1', userId: 1),
       );
-      await Future<void>.delayed(const Duration(milliseconds: 40));
+      await pumpEventQueue();
 
       expect(deleteOnlyBloc.list.any((e) => e.id == '1'), isFalse);
       await deleteOnlyBloc.close();
@@ -491,7 +491,7 @@ void main() {
           customInsertMissingOnRead: true,
         );
         customBloc.add(BlocxCollectionEventLoadInitialPage(payload: 1));
-        await Future<void>.delayed(const Duration(milliseconds: 40));
+        await pumpEventQueue();
 
         final createUseCase = CreateNoteUseCase(eventHub);
         await createUseCase.execute(
@@ -502,7 +502,7 @@ void main() {
         await readUseCase.execute(
           const NoteEntity(id: '777', title: 'Inserted via Read', userId: 1),
         );
-        await Future<void>.delayed(const Duration(milliseconds: 40));
+        await pumpEventQueue();
 
         expect(
           customBloc.list.firstWhere((e) => e.id == '1').title,
@@ -530,17 +530,17 @@ void main() {
         // Create Note with title 'A Note' -> should be inserted at index 0
         final createA = CreateNoteUseCase(eventHub);
         await createA.execute(const NoteEntity(id: '5', title: 'A Note'));
-        await Future<void>.delayed(const Duration(milliseconds: 30));
+        await pumpEventQueue();
 
         // Create Note with title 'C Note' -> should be inserted between B and D
         final createC = CreateNoteUseCase(eventHub);
         await createC.execute(const NoteEntity(id: '20', title: 'C Note'));
-        await Future<void>.delayed(const Duration(milliseconds: 30));
+        await pumpEventQueue();
 
         // Create Note with title 'E Note' -> should be inserted at end
         final createE = CreateNoteUseCase(eventHub);
         await createE.execute(const NoteEntity(id: '40', title: 'E Note'));
-        await Future<void>.delayed(const Duration(milliseconds: 30));
+        await pumpEventQueue();
 
         final titles = sortedBloc.state.list.map((n) => n.title).toList();
         expect(
@@ -579,7 +579,7 @@ void main() {
         await updateUseCase.execute(
           const NoteEntity(id: '1', title: 'Externally Updated Title'),
         );
-        await Future<void>.delayed(const Duration(milliseconds: 40));
+        await pumpEventQueue();
 
         expect(formBloc.formData.title, equals('Externally Updated Title'));
         expect(
@@ -603,7 +603,7 @@ void main() {
       await updateUseCase.execute(
         const NoteEntity(id: '999', title: 'Other Note Title'),
       );
-      await Future<void>.delayed(const Duration(milliseconds: 40));
+      await pumpEventQueue();
 
       expect(formBloc.formData.title, equals('Initial Title'));
     });
@@ -617,7 +617,7 @@ void main() {
       );
 
       submittingFormBloc.add(BlocxFormEventSubmit());
-      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await pumpEventQueue();
       expect(
         submittingFormBloc.state,
         isA<BlocxFormStateSubmittingForm<NoteFormData, NoteFormField>>(),
@@ -627,10 +627,10 @@ void main() {
       await updateUseCase.execute(
         const NoteEntity(id: '1', title: 'Concurrent External Update'),
       );
-      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await pumpEventQueue();
 
       completer.complete();
-      await Future<void>.delayed(const Duration(milliseconds: 40));
+      await pumpEventQueue();
 
       expect(submittingFormBloc.formData.title, equals('Submitting Title'));
       await submittingFormBloc.close();
@@ -646,7 +646,7 @@ void main() {
         await deleteUseCase.execute(
           const NoteEntity(id: '1', title: 'Deleted Note'),
         );
-        await Future<void>.delayed(const Duration(milliseconds: 40));
+        await pumpEventQueue();
 
         expect(
           screenStates.any((s) => s is ScreenManagerCubitStatePop),

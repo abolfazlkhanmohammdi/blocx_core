@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/collection_bloc.dart';
 import 'package:test/test.dart';
@@ -68,7 +66,7 @@ void main() {
         final bloc = TestBaseBloc();
         bloc.add(_TestEvent());
 
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await pumpEventQueue();
 
         expect(bloc.reportedErrors.length, equals(1));
         expect(bloc.reportedErrors.first, isA<StateError>());
@@ -102,7 +100,7 @@ void main() {
 
         bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
 
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         expect(bloc.reportedErrors.length, equals(1));
         expect(bloc.reportedErrors.first, equals(expectedError));

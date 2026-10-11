@@ -103,7 +103,7 @@ void main() {
         ]);
 
         // Give event loop time to process if not guarded
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // CRITICAL ASSERTION: The bloc state must still contain Version 2 items, NOT overwritten by Version 1
         expect(
@@ -162,7 +162,7 @@ void main() {
         ]);
 
         // Give event loop time to process
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // CRITICAL ASSERTION: Stale page 2 items from previous generation must not be appended
         expect(
@@ -247,7 +247,7 @@ void main() {
           const TestItem(id: 'search_v1', title: 'Stale First Search Result'),
         ]);
 
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         expect(
           bloc.list.map((e) => e.id).toList(),
