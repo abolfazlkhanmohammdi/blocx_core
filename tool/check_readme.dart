@@ -43,7 +43,9 @@ Future<void> main() async {
     final config = jsonDecode(configFile.readAsStringSync()) as Map<String, dynamic>;
     for (final package in (config['packages'] as List).cast<Map<String, dynamic>>()) {
       if (!extraPackages.contains(package['name'])) continue;
-      final root = configFile.absolute.uri.resolve(package['rootUri'] as String);
+      var rootUriStr = package['rootUri'] as String;
+      if (!rootUriStr.endsWith('/')) rootUriStr += '/';
+      final root = configFile.absolute.uri.resolve(rootUriStr);
       final libUri = root.resolve((package['packageUri'] as String?) ?? 'lib/');
       addDartFilesOf(Directory.fromUri(libUri));
     }
