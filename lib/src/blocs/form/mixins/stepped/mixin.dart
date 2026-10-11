@@ -1,11 +1,12 @@
-import 'dart:async';
-
 import 'package:bloc/bloc.dart';
 import 'package:blocx_core/src/blocs/form/bloc/blocx_form_bloc.dart';
 import 'package:blocx_core/src/core/models/blocx_base_form_entity.dart';
 
 import 'events.dart';
 
+/// Provides stepped form navigation for [BlocxFormBloc].
+///
+/// Navigation past the first/last step is ignored.
 mixin BlocxFormSteppedMixin<
   F extends BlocxBaseFormEntity<F, E>,
   P,
@@ -24,24 +25,22 @@ mixin BlocxFormSteppedMixin<
     return true;
   }
 
-  FutureOr<void> nextStep(
+  void nextStep(
     BlocxFormEventNextStep event,
     Emitter<BlocxFormState<F, E>> emit,
   ) {
-    if (_stepIndex == maxStep) {
-      throw StateError("Max step is $maxStep you cannot go further");
-    }
+    if (_stepIndex >= maxStep) return;
     _previousStepIndex = _stepIndex;
     _stepIndex++;
     onStepChanged(emit);
     emitState(emit);
   }
 
-  FutureOr<void> previousStep(
+  void previousStep(
     BlocxFormEventPreviousStep event,
     Emitter<BlocxFormState<F, E>> emit,
   ) {
-    if (_stepIndex == 0) throw ("this is the first step you cannot go back");
+    if (_stepIndex <= 0) return;
     _previousStepIndex = _stepIndex;
     _stepIndex--;
     onStepChanged(emit);
@@ -55,13 +54,15 @@ mixin BlocxFormSteppedMixin<
     _stepIndex = index;
   }
 
-  FutureOr<void> goToStep(
+  void goToStep(
     BlocxFormEventGoToStep event,
     Emitter<BlocxFormState<F, E>> emit,
   ) {
-    if (event.stepIndex < 0 || event.stepIndex > maxStep) {
-      throw StateError("Invalid step index $event.stepIndex");
-    }
+    assert(
+      event.stepIndex >= 0 && event.stepIndex <= maxStep,
+      'Invalid step index ${event.stepIndex} (maxStep: $maxStep)',
+    );
+    if (event.stepIndex < 0 || event.stepIndex > maxStep) return;
     _previousStepIndex = _stepIndex;
     _stepIndex = event.stepIndex;
     onStepChanged(emit);
