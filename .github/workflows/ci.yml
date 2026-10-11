@@ -28,6 +28,8 @@ jobs:
       - run: dart --version
       - name: Install dependencies
         run: dart pub get
+      - name: README identifiers exist in lib/
+        run: dart run tool/check_readme.dart
       - name: Verify formatting
         run: dart format --output=show --set-exit-if-changed .
       - name: Analyze project source

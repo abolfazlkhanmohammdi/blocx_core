@@ -109,9 +109,9 @@ class ProductsBloc extends BlocxCollectionBloc<Product, void>
 ### 📦 Collections & Paginated Lists (`package:blocx_core/collection_bloc.dart`)
 - **Offset/Limit Pagination & Infinite Scroll**: Built-in `BlocxPage<T>` tracking and `BlocxCollectionInfiniteMixin`.
 - **Debounced Search & Dynamic Filters**: `BlocxCollectionSearchableMixin` and `BlocxCollectionFilterMixin` with automatic page resets.
-- **Interactive Item States**: Single/multi-selection (`SelectableMixin`), row expansion (`ExpandableMixin`), temporary row highlighting (`HighlightableMixin`), and programmatic scroll-to-item (`ScrollableMixin`).
-- **Single & Bulk Deletion**: Local or remote deletion with per-item loading indicators (`DeletableMixin`).
-- **Live EventHub Sync**: Automatically insert, update, or remove items in real time when UseCases broadcast CRUD commands (`SyncStreamMixin`).
+- **Interactive Item States**: Single/multi-selection (`BlocxCollectionSelectableMixin`), row expansion (`BlocxCollectionExpandableMixin`), temporary row highlighting (`BlocxCollectionHighlightableMixin`), and programmatic scroll-to-item (`BlocxCollectionScrollableMixin`).
+- **Single & Bulk Deletion**: Local or remote deletion with per-item loading indicators (`BlocxCollectionDeletableMixin`).
+- **Live EventHub Sync**: Automatically insert, update, or remove items in real time when UseCases broadcast CRUD commands (`BlocxCollectionSyncStreamMixin`).
 
 ### 📝 Reactive Forms & Validation (`package:blocx_core/form_bloc.dart`)
 - **Strongly Typed Form Entities**: Immutable `BlocxBaseFormEntity<F, E>` keyed by a field ` enum`.
@@ -132,7 +132,7 @@ Add `blocx_core` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  blocx_core: ^1.1.0
+  blocx_core: ^1.2.1
 ```
 
 Or via the CLI:
@@ -175,7 +175,7 @@ import 'package:blocx_core/form_bloc.dart';
 ┌───────────────────────────────────┐    ┌─────────────────────────────┐
 │     Your BLoC (State Layer)       │    │        BlocxEventHub        │
 │  BlocxCollectionBloc + Mixins     │◄───│  create / read / update /   │
-│  BlocxFormBloc + Mixins           │    │  delete BlocxEntityEvents   │
+│  BlocxFormBloc + Mixins           │    │  delete BlocxEntityEvent    │
 └───────────────┬───────────────────┘    └─────────────────────────────┘
                 │ emits state & ScreenManagerCubit intents
                 ▼
@@ -282,13 +282,13 @@ class DeleteProductUseCase extends BlocxBaseUseCase<ProductEntity, bool> {
 | Mixin | Capability Added |
 | :--- | :--- |
 | `BlocxCollectionInfiniteMixin<T, P>` | Infinite scrolling (`paginationTask` / `loadNextPageTask`) |
-| `BlocxCollectionRefreshableMixin<T, P>` | Pull-to-refresh list reload (`refreshTask`) |
+| `BlocxCollectionRefreshableMixin<T, P>` | Pull-to-refresh list reload (`refreshPageUseCaseTask` / `refreshPageCursorTask`) |
 | `BlocxCollectionSearchableMixin<T, P>` | Debounced search & paginated search results (`searchUseCaseTask`) |
-| `BlocxCollectionFilterMixin<T, P, F>` | Strongly typed filter state (`currentFilter`) with automatic reload |
+| `BlocxCollectionFilterMixin<T, P, F>` | Strongly typed filter state (`setFilter(...)` / `getFilter()`) with automatic reload |
 | `BlocxCollectionSelectableMixin<T, P>` | Single/multi-selection (`selectedItems`) with optional remote sync |
 | `BlocxCollectionDeletableMixin<T, P>` | Single & bulk deletion (`deleteItemTask`, `deleteMultipleItemsTask`) |
-| `BlocxCollectionHighlightableMixin<T, P>` | Row highlight state (`highlightedItems`) |
-| `BlocxCollectionExpandableMixin<T, P>` | Single or multi-row expansion (`expandedItems`) |
+| `BlocxCollectionHighlightableMixin<T, P>` | Row highlight state (`highlightedItemIds`) |
+| `BlocxCollectionExpandableMixin<T, P>` | Single or multi-row expansion (`expandedItemIds`) |
 | `BlocxCollectionScrollableMixin<T, P>` | Programmatic scroll-to-item with optional highlight after scroll |
 | `BlocxCollectionSyncStreamMixin<T, P>` | Real-time list updates from `BlocxEventHub` or custom entity streams |
 
@@ -409,7 +409,7 @@ class ProductsCollectionBloc extends BlocxCollectionBloc<ProductEntity, void>
 
 ### Sorted Insertion (`sortComparator`)
 
-Override `sortComparator` on your collection BLoC to preserve ordered placement when newly created or synced entities are inserted via `insertItem`, `addItem`, or `BlocxCollectionSyncStreamMixin`:
+Override `sortComparator` on your collection BLoC to preserve ordered placement when newly created or synced entities are added with `BlocxCollectionEventAddItem` or synced through `BlocxCollectionSyncStreamMixin`:
 
 ```dart
 @override
@@ -439,7 +439,7 @@ When an unrecoverable full-page error occurs, calling `clearError()` on `BlocxBa
 | `BlocxFormValidationMixin<F, P, E>` | Per-field and full-form validation (`none`, `onSubmit`, `onUserInteraction`, `always`) |
 | `BlocxUniqueFieldValidatorMixin<F, P, E>` | Debounced async uniqueness checks per field (e.g. username/email availability) |
 | `BlocxFormPrefetchMixin<F, P, E>` | Prefetch remote reference data (e.g. dropdown options) before form interaction |
-| `BlocxFormSteppedMixin<F, P, E>` | Multi-step wizard progression (`currentStep`, `totalSteps`) |
+| `BlocxFormSteppedMixin<F, P, E>` | Multi-step wizard progression (`stepIndex`, `maxStep`) |
 | `BlocxFormSyncStreamMixin<F, P, E, WatchedEntity>` | Live form updates when the watched entity is modified—and auto-`pop()` if deleted |
 
 ### Quickstart: Validated Edit Form BLoC with Live Sync
@@ -653,9 +653,9 @@ Available test utilities:
 - `BlocxTestEventHub`: In-memory synchronous event hub with recorded events.
 - `BlocxTestEntity` & `BlocxTestFormEntity`: Lightweight test entities.
 - `FakePaginatedSource` & `FakePaginatedUseCase`: Offset/limit paginated source.
-- `FakeCursorPaginatedSource` & `FakeCursorPaginatedUseCase`: Cursor-based paginated source.
+- `FakePaginatedSource` & `FakeCursorPaginatedUseCase`: Cursor-based paginated source.
 - `FakeSearchUseCase`: In-memory searchable use case test double.
-- `FakeUseCase` & `MockUseCase`: Generic use-case stubs.
+- `FakeUseCase`: Generic use-case stubs.
 
 ---
 
