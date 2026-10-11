@@ -58,18 +58,15 @@ mixin BlocxUniqueFieldValidatorMixin<
     var isFieldValid = await checkIsFieldValid(formData, event.key);
     if (!isFieldValid) return;
     if (errors[event.key] != null) return;
+
+    final task = useCaseIsUniqueValueAvailable(formData, event.key, event.data);
+    if (task == null) return;
+
     final token = Object();
     _inFlightTokenByField[event.key] = token;
     emitState(emit);
 
     try {
-      final task = useCaseIsUniqueValueAvailable(
-        formData,
-        event.key,
-        event.data,
-      );
-      if (task == null) return;
-
       final result = await task.execute();
 
       if (_inFlightTokenByField[event.key] != token) return;
