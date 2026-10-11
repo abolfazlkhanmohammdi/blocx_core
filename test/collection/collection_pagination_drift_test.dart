@@ -12,6 +12,7 @@ class SyncInfiniteCollectionBloc extends BlocxCollectionBloc<TestItem, void>
         BlocxCollectionSyncStreamMixin<TestItem, void> {
   final FakePaginatedUseCase paginatedUseCase;
   final bool _adjustOffset;
+  final Comparator<TestItem>? _comparator;
   @override
   final BlocxEventHub eventHub;
 
@@ -19,11 +20,16 @@ class SyncInfiniteCollectionBloc extends BlocxCollectionBloc<TestItem, void>
     required this.paginatedUseCase,
     required this.eventHub,
     bool adjustOffset = true,
+    Comparator<TestItem>? comparator,
   }) : _adjustOffset = adjustOffset,
+       _comparator = comparator,
        super();
 
   @override
   bool get adjustOffsetForLocalChanges => _adjustOffset;
+
+  @override
+  Comparator<TestItem>? get sortComparator => _comparator;
 
   @override
   int get limit => 10;
@@ -311,6 +317,138 @@ void main() {
         eventHub.dispose();
       },
     );
+
+    test(
+      'C-B.1: sorted bloc does not shift offset when created item sorts after loaded range',
+      () async {
+        int byTitle(TestItem a, TestItem b) => a.title.compareTo(b.title);
+        final initialItems = List.generate(
+          50,
+          (i) => TestItem(
+            id: 'item_$i',
+            title: 'Item ${i.toString().padLeft(2, '0')}',
+          ),
+        )..sort(byTitle);
+        final source = FakePaginatedSource(initialItems);
+        final eventHub = BlocxSimpleEventHub();
+        final useCase = FakePaginatedUseCase(source: source);
+        final bloc = SyncInfiniteCollectionBloc(
+          paginatedUseCase: useCase,
+          eventHub: eventHub,
+          comparator: byTitle,
+        );
+
+        bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
+        await bloc.stream.firstWhere((s) => s.list.isNotEmpty);
+        expect(bloc.list.length, equals(10));
+        expect(bloc.offset, equals(10));
+
+        // Create an item that sorts after every loaded row ('zzz')
+        const tailItem = TestItem(id: 'new_tail', title: 'zzz');
+        source.items
+          ..add(tailItem)
+          ..sort(byTitle);
+
+        eventHub.emitEntity<TestItem>(tailItem, BlocxCommandType.create);
+        await bloc.stream.firstWhere(
+          (s) => s.list.any((e) => e.id == 'new_tail'),
+        );
+
+        expect(bloc.list.last.id, equals('new_tail'));
+        expect(bloc.offset, equals(10));
+
+        while (!bloc.hasReachedEnd) {
+          bloc.add(BlocxCollectionEventLoadNextPage<TestItem>());
+          await pumpEventQueue();
+        }
+
+        final ids = bloc.list.map((e) => e.id).toList();
+        expect(ids.length, equals(source.items.length));
+        expect(ids.toSet().length, equals(ids.length));
+        expect(ids.toSet(), equals(source.items.map((e) => e.id).toSet()));
+
+        await bloc.close();
+        eventHub.dispose();
+      },
+    );
+
+    test(
+      'C-B.2: sorted bloc shifts offset +1 when created item sorts inside loaded range',
+      () async {
+        int byTitle(TestItem a, TestItem b) => a.title.compareTo(b.title);
+        final initialItems = List.generate(
+          50,
+          (i) => TestItem(
+            id: 'item_$i',
+            title: 'Item ${i.toString().padLeft(2, '0')}',
+          ),
+        )..sort(byTitle);
+        final source = FakePaginatedSource(initialItems);
+        final eventHub = BlocxSimpleEventHub();
+        final useCase = FakePaginatedUseCase(source: source);
+        final bloc = SyncInfiniteCollectionBloc(
+          paginatedUseCase: useCase,
+          eventHub: eventHub,
+          comparator: byTitle,
+        );
+
+        bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
+        await bloc.stream.firstWhere((s) => s.list.isNotEmpty);
+        expect(bloc.list.length, equals(10));
+
+        // Create an item that sorts inside the loaded range (between Item 04 and Item 05)
+        const midItem = TestItem(id: 'new_mid', title: 'Item 04_mid');
+        source.items
+          ..add(midItem)
+          ..sort(byTitle);
+
+        eventHub.emitEntity<TestItem>(midItem, BlocxCommandType.create);
+        await bloc.stream.firstWhere(
+          (s) => s.list.any((e) => e.id == 'new_mid'),
+        );
+
+        expect(bloc.offset, equals(11));
+
+        while (!bloc.hasReachedEnd) {
+          bloc.add(BlocxCollectionEventLoadNextPage<TestItem>());
+          await pumpEventQueue();
+        }
+
+        expect(
+          bloc.list.map((e) => e.id).toList(),
+          equals(source.items.map((e) => e.id).toList()),
+        );
+
+        await bloc.close();
+        eventHub.dispose();
+      },
+    );
+
+    test('C-B.4: empty list + create does not change the offset', () async {
+      final source = FakePaginatedSource(<TestItem>[]);
+      final eventHub = BlocxSimpleEventHub();
+      final useCase = FakePaginatedUseCase(source: source);
+      final bloc = SyncInfiniteCollectionBloc(
+        paginatedUseCase: useCase,
+        eventHub: eventHub,
+      );
+
+      bloc.add(BlocxCollectionEventLoadInitialPage(payload: null));
+      await pumpEventQueue();
+      expect(bloc.list, isEmpty);
+      expect(bloc.offset, equals(0));
+
+      const firstItem = TestItem(id: 'only_1', title: 'Only 1');
+      source.items.insert(0, firstItem);
+      eventHub.emitEntity<TestItem>(firstItem, BlocxCommandType.create);
+      await bloc.stream.firstWhere((s) => s.list.isNotEmpty);
+
+      expect(bloc.list.length, equals(1));
+      expect(bloc.offset, equals(0));
+
+      await bloc.close();
+      eventHub.dispose();
+    });
 
     test(
       'invariant test: random creates, deletes, and next-page loads maintain order and uniqueness',
