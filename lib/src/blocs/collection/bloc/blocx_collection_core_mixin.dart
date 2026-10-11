@@ -227,8 +227,12 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
   String? _nextCursor;
 
   /// Whether local inserts/removals (mirrored from the server by this app) shift the
-  /// next request offset. Override to false if your server ordering means a local
-  /// create does not move existing rows (e.g. new rows sort to the end).
+  /// next request offset.
+  ///
+  /// A local insert shifts the next request offset only when it lands before the end of
+  /// the loaded list; an item appended at the end is assumed to belong after the loaded
+  /// range. Removals always shift it. Override to false if your server ordering means a
+  /// local mutation never shifts existing rows.
   bool get adjustOffsetForLocalChanges => true;
 
   /// Current pagination cursor returned by the datasource.
@@ -461,8 +465,9 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
     }
 
     final safeIndex = event.index.clamp(0, _list.length);
+    final landsInsideLoadedRange = safeIndex < _list.length;
     _list.insert(safeIndex, event.item);
-    noteLocalInsert();
+    if (landsInsideLoadedRange) noteLocalInsert();
     emitState(emit);
   }
 
@@ -496,8 +501,9 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
       return;
     }
     final safeIndex = index.clamp(0, _list.length);
+    final landsInsideLoadedRange = safeIndex < _list.length;
     _list.insert(safeIndex, item);
-    noteLocalInsert();
+    if (landsInsideLoadedRange) noteLocalInsert();
   }
 
   /// Sorts the collection using [comparator].
