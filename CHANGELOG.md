@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.1] - 2026-10-11
+
+### Documentation
+* Corrected outdated class and method names throughout `README.md` (`refreshPageUseCaseTask`/`refreshPageCursorTask`, `setFilter`/`getFilter`, `highlightedItemIds`, `expandedItemIds`, `BlocxCollectionEventAddItem`, `stepIndex`/`maxStep`, `FakePaginatedSource`, full mixin names).
+* Added automated `tool/check_readme.dart` validation in CI to prevent referencing nonexistent symbols in documentation.
+
+### Infrastructure
+* Transitioned GitHub Actions release automation to a token-free model using `workflow_dispatch` on tags without requiring personal access tokens.
+
 ## [1.2.0] - 2026-10-10
 
 ### Fixed
