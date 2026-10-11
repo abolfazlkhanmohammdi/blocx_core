@@ -82,5 +82,52 @@ void main() {
         await bloc.close();
       },
     );
+
+    test(
+      'smoke test: inserting a 1,000-item page into a 5,000-item list succeeds with correct deduping',
+      () async {
+        final initialItems = List.generate(
+          5000,
+          (i) => TestItem(id: '$i', title: 'Initial $i'),
+        );
+        // 500 overlapping items with updated title + 500 fresh items
+        final incomingPage = [
+          ...List.generate(
+            500,
+            (i) => TestItem(id: '${4500 + i}', title: 'Updated ${4500 + i}'),
+          ),
+          ...List.generate(
+            500,
+            (i) => TestItem(id: '${5000 + i}', title: 'Fresh ${5000 + i}'),
+          ),
+        ];
+
+        final source = FakePaginatedSource([...initialItems, ...incomingPage]);
+        final useCase = FakePaginatedUseCase(source: source);
+        final bloc = OverlapPaginationCollectionBloc(paginatedUseCase: useCase);
+
+        // Preload initial 5,000 items directly via replaceList
+        bloc.replaceList(initialItems);
+        expect(bloc.list.length, equals(5000));
+
+        // Insert the 1,000-item incoming page as next page
+        await bloc.insertToList(incomingPage, false, DataInsertSource.nextPage);
+
+        // Assert correctness: total unique items is 5500
+        expect(bloc.list.length, equals(5500));
+        final uniqueIds = bloc.list.map((e) => e.id).toSet();
+        expect(uniqueIds.length, equals(5500));
+
+        // Overlapping items were updated in place
+        expect(bloc.list[4500].title, equals('Updated 4500'));
+        expect(bloc.list[4999].title, equals('Updated 4999'));
+
+        // Fresh items were appended
+        expect(bloc.list[5000].id, equals('5000'));
+        expect(bloc.list[5499].id, equals('5499'));
+
+        await bloc.close();
+      },
+    );
   });
 }
