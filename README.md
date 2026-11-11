@@ -132,7 +132,7 @@ Add `blocx_core` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  blocx_core: ^1.2.1
+  blocx_core: ^1.3.0
 ```
 
 Or via the CLI:
@@ -424,6 +424,24 @@ Comparator<ProductEntity>? get sortComparator =>
 - Ties are inserted after equal items.
 - Insertion is an O(n) scan across the list.
 
+### Inline Error Recovery, Retry & Filter Inspection
+
+By default (`useInlineErrorForInitialLoad == true`), failures during initial load, search, filter reloads, and empty-list refreshes emit `BlocxCollectionStateError` with `state.initialError` populated while keeping `ScreenManagerCubit` silent—preserving search inputs and filter controls in your UI. Secondary failures (`loadNextPage`, non-empty `refresh`, `delete`, `select`) continue routing through `errorDisplayPolicy` (`ErrorDisplayPolicy.snackBar` by default):
+
+```dart
+// Inspect query, filter, and inline error state directly on BlocxCollectionState:
+if (state.hasInitialError) {
+  bloc.add(const BlocxCollectionEventRetryLastLoad<ProductEntity>());
+} else if (state.isEmptyFilteredResult) {
+  // Empty solely because `state.hasActiveQueryOrFilters` is true
+}
+
+final status = state.filterValue<String>('status');
+final isArchived = state.hasFilter('status', 'archived');
+```
+
+Override `useInlineErrorForInitialLoad => false` to route initial failures to `ScreenManagerCubit.displayErrorWidget` (`ErrorDisplayPolicy.page`).
+
 ### Dismissing Full-Page Errors (`clearError()`)
 
 When an unrecoverable full-page error occurs, calling `clearError()` on `BlocxBaseBloc` or `ScreenManagerCubit` emits `ScreenManagerCubitStateInitial(shouldRebuild: true)`. This dismisses full-page error overlays and restores normal screen display without resurrecting error states on subsequent messages or snackbars.
@@ -568,6 +586,15 @@ class ProductFormBloc
 }
 ```
 
+### Form Readiness, Dirty Tracking & Reset
+
+Every `BlocxFormState` exposes deterministic UI readiness and dirty-tracking getters (`initialData`, `isDirty`, `isPrefetching`, `hasPendingUniqueChecks`, `isSubmittingForm`, and `canSubmit`), and `BlocxFormEventReset()` restores `initialData`, clears errors/timers/pending uniqueness checks, and resyncs controllers:
+
+```dart
+final submitEnabled = state.canSubmit && state.isDirty;
+bloc.add(const BlocxFormEventReset());
+```
+
 ### Built-in Field Validators (`package:blocx_core/form_bloc.dart`)
 
 - **String**: `BlocxStringRequiredValidator`, `BlocxStringMinLengthValidator(minLength)`, `BlocxStringMaxLengthValidator(maxLength)`, `BlocxStringLengthRangeValidator(minLength: ..., maxLength: ...)`, `BlocxStringExactLengthValidator(length)`, `BlocxStringEmailValidator`, `BlocxStringNumericValidator`, `BlocxStringAlphanumericValidator`, `BlocxStringUrlValidator`, `BlocxStringMatchValidator(otherKey)`
@@ -651,11 +678,12 @@ void main() {
 
 Available test utilities:
 - `BlocxTestEventHub`: In-memory synchronous event hub with recorded events.
-- `BlocxTestEntity` & `BlocxTestFormEntity`: Lightweight test entities.
+- `BlocxTestEntity` & `BlocxTestFormEntity`: Lightweight test entities with value equality on `BlocxTestFormEntity`.
 - `FakePaginatedSource` & `FakePaginatedUseCase`: Offset/limit paginated source.
 - `FakePaginatedSource` & `FakeCursorPaginatedUseCase`: Cursor-based paginated source.
 - `FakeSearchUseCase`: In-memory searchable use case test double.
 - `FakeUseCase`: Generic use-case stubs.
+- `buildTestCollectionState` / `BlocxCollectionStateSeeder` & `buildTestFormState` / `BlocxFormStateSeeder`: One-line state-seeding helpers for unit and widget tests.
 
 ---
 

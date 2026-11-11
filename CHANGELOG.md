@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.3.0] - 2026-11-11
+
+### Added
+* **Inline Collection Error Policy & Retry Last Load**:
+  * Added `ErrorDisplayPolicy.none` and internal forwarding via `handleErrorWithPolicy` on `BlocxBaseBloc` (preserving backwards-compatible `handleError` override signatures).
+  * Added `useInlineErrorForInitialLoad` (defaults to `true`), `initialLoadErrorDisplayPolicy`, `initialLoadError`, `emitInitialLoadError`, `onRetryLastLoad`, `activeSearchQuery`, `activeFilter`, and `activeFilters` to `BlocxCollectionCoreMixin`.
+  * Full-replacement collection loads (`loadInitialPage`, initial `search`, filtered reloads, and empty-list `refresh`) surface failures inline on `BlocxCollectionStateError` (`initialError` populated) when `useInlineErrorForInitialLoad` is `true`, keeping `ScreenManagerCubit` silent so headers and search/filter controls stay mounted; secondary actions (`loadNextPage`, `searchNextPage`, `deleteItem`, `selectItem`, and non-empty `refresh`) continue showing snackbars (`errorDisplayPolicy`).
+  * Added `BlocxCollectionEventRetryLastLoad<T>` (and `const BlocxBaseEvent` / `const BlocxCollectionEvent`) to retry an active non-empty search immediately without debounce, or reload the initial page preserving the last known `payload` and active filter.
+* **Collection Query, Filter & Loading Helpers (`BlocxCollectionState`)**:
+  * Added `initialError`, `initialLoadError`, `searchQuery`, `filter`, `activeFilters`, `isInitialLoading`, `hasInitialError`, `hasActiveQueryOrFilters`, `isEmptyFilteredResult`, `filterValue<F>(String key)`, and `hasFilter(String key, [Object? expectedValue])`, plus `clearInitialError` in `BlocxCollectionStateLoaded.copyWith`.
+  * Added configurable `filterDebounceDuration` (defaults to 500ms) and automatic `activeFilter` / `activeFilters` state propagation in `BlocxCollectionFilterMixin`.
+* **Form Readiness, Dirty Tracking & Reset (`BlocxFormBloc`)**:
+  * Added `initialData`, `hasPendingUniqueChecks`, `isPrefetching`, `isSubmittingForm`, `isDirty`, and `canSubmit` on `BlocxFormState<F, E>`.
+  * Tracked baseline `initialFormData` and `hasUserModifiedForm` across `BlocxFormEventInit`, `BlocxFormEventUpdateFormData`, `BlocxFormEventSyncFormData`, and `BlocxFormPrefetchMixin` completion (`syncInitialFormDataBaseline`).
+  * Added `const BlocxFormEventReset({bool applyToControllers = true, bool validate = false})` and `cancelPendingUniqueChecks()` on `BlocxUniqueFieldValidatorMixin` to restore `initialData`, clear errors/timers/in-flight unique checks, and sync controllers cleanly.
+* **Testing Library State Seeders (`package:blocx_core/testing.dart`)**:
+  * Added `buildTestCollectionState`, `BlocxCollectionStateSeeder`, `buildTestFormState`, and `BlocxFormStateSeeder` factory helpers, plus `operator ==` and `hashCode` on `BlocxTestFormEntity`.
+
+### Fixed
+* Guarded `finally` cleanup in `BlocxCollectionSearchableMixin` (`_fetchSearchResult`, `_fetchSearchRefreshResult`) and `BlocxCollectionRefreshableMixin` (`_fetchRefreshPage`, `_fetchRefreshPageWithCursor`) so `BlocxCollectionStateLoaded` cannot overwrite an inline `BlocxCollectionStateError`.
+
 ## [1.2.1] - 2026-10-11
 
 ### Documentation

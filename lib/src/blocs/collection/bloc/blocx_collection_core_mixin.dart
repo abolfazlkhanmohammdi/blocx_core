@@ -10,12 +10,15 @@ import 'package:blocx_core/collection_bloc.dart'
         BlocxCollectionEvent,
         BlocxCollectionState,
         BlocxCollectionEventLoadInitialPage,
+        BlocxCollectionEventRetryLastLoad,
         BlocxCollectionEventUpdateItem,
         BlocxCollectionEventReplaceList,
+        BlocxCollectionSearchableMixin,
         DataInsertSource,
         BlocxInfiniteListBloc,
         BlocxCollectionStateLoading,
         BlocxCollectionStateLoaded,
+        BlocxCollectionStateError,
         BlocxInfiniteListEventSetReachedEnd,
         BlocxInfiniteListEventChangeLoadBottomDataStatus;
 import 'package:blocx_core/src/blocs/collection/bloc/blocx_collection_bloc.dart';
@@ -50,6 +53,41 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
 
   /// Whether the collection has reached the final page.
   bool hasReachedEnd = false;
+
+  /// Last readable error from an initial, search-initial, or empty-refresh load.
+  @protected
+  ReadableError? initialLoadError;
+
+  /// When `true` (default), initial, search, and empty-refresh load failures are
+  /// recorded in [BlocxCollectionState.initialError] (`state.hasInitialError == true`)
+  /// for inline rendering inside the collection viewport instead of replacing the
+  /// entire screen via [ScreenManagerCubit.displayErrorWidget].
+  ///
+  /// Secondary operations (`loadNextPage`, non-empty `refresh`, `delete`,
+  /// `select`) continue using [errorDisplayPolicy] ([ErrorDisplayPolicy.snackBar]
+  /// by default).
+  bool get useInlineErrorForInitialLoad => true;
+
+  @protected
+  ErrorDisplayPolicy get initialLoadErrorDisplayPolicy =>
+      useInlineErrorForInitialLoad
+      ? ErrorDisplayPolicy.none
+      : ErrorDisplayPolicy.page;
+
+  /// Active search query surfaced on emitted [BlocxCollectionState]s.
+  ///
+  /// Overridden by [BlocxCollectionSearchableMixin].
+  String? get activeSearchQuery => null;
+
+  /// Active raw filter object surfaced on emitted [BlocxCollectionState]s.
+  ///
+  /// Overridden by [BlocxCollectionFilterMixin].
+  Object? get activeFilter => null;
+
+  /// Active key-value filters surfaced on emitted [BlocxCollectionState]s.
+  ///
+  /// Overridden by [BlocxCollectionFilterMixin] when the active filter is a map.
+  Map<String, dynamic> get activeFilters => const {};
 
   /// Whether a search operation is currently active.
   bool isSearching = false;
@@ -120,6 +158,7 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
     Emitter<BlocxCollectionState<Entity>> emit,
   ) async {
     payload = event.payload;
+    initialLoadError = null;
 
     final cursorTask = loadInitialPageCursorTask;
     if (cursorTask != null) {
@@ -143,13 +182,20 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
     Emitter<BlocxCollectionState<Entity>> emit,
   ) async {
     final gen = nextLoadGeneration();
-    emit(BlocxCollectionStateLoading<Entity>());
+    initialLoadError = null;
+    emit(
+      BlocxCollectionStateLoading<Entity>(
+        searchQuery: activeSearchQuery,
+        filter: activeFilter,
+        activeFilters: activeFilters,
+      ),
+    );
 
     final result = await task.execute(cursor: null, limit: limit);
     if (gen != _loadGeneration) return;
 
     if (result.isFailure) {
-      await _emitInitialLoadError(result.error!, result.stackTrace, emit);
+      await emitInitialLoadError(result.error!, result.stackTrace, emit);
       return;
     }
 
@@ -165,13 +211,20 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
     Emitter<BlocxCollectionState<Entity>> emit,
   ) async {
     final gen = nextLoadGeneration();
-    emit(BlocxCollectionStateLoading<Entity>());
+    initialLoadError = null;
+    emit(
+      BlocxCollectionStateLoading<Entity>(
+        searchQuery: activeSearchQuery,
+        filter: activeFilter,
+        activeFilters: activeFilters,
+      ),
+    );
 
     final result = await task.execute(offset: 0, limit: limit);
     if (gen != _loadGeneration) return;
 
     if (result.isFailure) {
-      await _emitInitialLoadError(result.error!, result.stackTrace, emit);
+      await emitInitialLoadError(result.error!, result.stackTrace, emit);
       return;
     }
 
@@ -179,16 +232,27 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
     await _applyInitialPage(page, !page.hasNext, emit);
   }
 
-  Future<void> _emitInitialLoadError(
+  /// Handles initial, search-initial, or empty-refresh load failures according
+  /// to [initialLoadErrorDisplayPolicy] and emits [BlocxCollectionStateError]
+  /// with `initialError` populated for inline recovery.
+  @protected
+  Future<void> emitInitialLoadError(
     Object error,
     StackTrace? st,
     Emitter<BlocxCollectionState<Entity>> emit,
   ) async {
-    await handleError(error, emit, stacktrace: st);
+    await handleErrorWithPolicy(
+      error,
+      emit,
+      stacktrace: st,
+      displayPolicy: initialLoadErrorDisplayPolicy,
+    );
     final readableError = readableErrorOf(error, stacktrace: st);
+    initialLoadError = readableError;
     emit(
       BlocxCollectionStateError<Entity>(
         message: readableError.message,
+        initialError: readableError,
         list: List<Entity>.unmodifiable(_list),
         hasReachedEnd: hasReachedEnd,
         isLoadingNextPage: isLoadingNextPage,
@@ -200,6 +264,9 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
         beingRemovedItemIds: Set<String>.unmodifiable(beingRemovedItemIds),
         expandedItemIds: Set<String>.unmodifiable(expandedItemIds),
         additionalInfo: additionalInfo,
+        searchQuery: activeSearchQuery,
+        filter: activeFilter,
+        activeFilters: activeFilters,
       ),
     );
   }
@@ -209,6 +276,7 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
     bool isLast,
     Emitter<BlocxCollectionState<Entity>> emit,
   ) async {
+    initialLoadError = null;
     clearList();
     offset = page.items.length;
     nextCursor = page.nextCursor;
@@ -323,11 +391,44 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
       loadInitialPage,
       transformer: restartable(),
     );
+    on<BlocxCollectionEventRetryLastLoad<Entity>>(
+      onRetryLastLoad,
+      transformer: restartable(),
+    );
     on<BlocxCollectionEventAddItem<Entity>>(addItem);
     on<BlocxCollectionEventUpdateItem<Entity>>(updateItem);
     on<BlocxCollectionEventReplaceList<Entity>>(handleReplaceList);
     on<BlocxCollectionEventRemoveFromList<Entity>>(removeFromList);
   }
+
+  /// Retries the most recent initial, filtered, or search load.
+  ///
+  /// When search is enabled and a non-empty query is active, retries search
+  /// immediately without waiting for [BlocxCollectionSearchableMixin.searchDebounceDuration].
+  /// Otherwise reloads the initial page using the last known [payload] and
+  /// active filter.
+  @protected
+  Future<void> onRetryLastLoad(
+    BlocxCollectionEventRetryLastLoad<Entity> event,
+    Emitter<BlocxCollectionState<Entity>> emit,
+  ) async {
+    if (isSearchable &&
+        (this as BlocxCollectionSearchableMixin<Entity, Payload>)
+            .searchText
+            .isNotEmpty) {
+      await (this as BlocxCollectionSearchableMixin<Entity, Payload>)
+          .retrySearch(emit);
+      return;
+    }
+
+    await loadInitialPage(
+      BlocxCollectionEventLoadInitialPage<Entity, Payload>(payload: payload),
+      emit,
+    );
+  }
+
+  /// Whether debounced search is enabled on this collection bloc.
+  bool get isSearchable;
 
   /// Emits the current loaded collection state.
   ///
@@ -348,6 +449,9 @@ mixin BlocxCollectionCoreMixin<Entity extends BlocxBaseEntity, Payload>
         highlightedItemIds: Set<String>.unmodifiable(highlightedItemIds),
         beingRemovedItemIds: Set<String>.unmodifiable(beingRemovedItemIds),
         expandedItemIds: Set<String>.unmodifiable(expandedItemIds),
+        searchQuery: activeSearchQuery,
+        filter: activeFilter,
+        activeFilters: activeFilters,
       ),
     );
   }

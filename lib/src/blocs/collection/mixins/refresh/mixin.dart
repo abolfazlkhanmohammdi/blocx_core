@@ -93,7 +93,9 @@ mixin BlocxCollectionRefreshableMixin<Entity extends BlocxBaseEntity, Payload>
     Emitter<BlocxCollectionState<Entity>> emit,
   ) async {
     final gen = nextLoadGeneration();
+    initialLoadError = null;
     isRefreshing = true;
+    var emittedInlineError = false;
     emitState(emit);
 
     try {
@@ -101,6 +103,13 @@ mixin BlocxCollectionRefreshableMixin<Entity extends BlocxBaseEntity, Payload>
       if (gen != loadGeneration) return;
 
       if (result.isFailure) {
+        if (list.isEmpty) {
+          isRefreshing = false;
+          infiniteListBloc.add(BlocxInfiniteListEventCloseRefresh());
+          await emitInitialLoadError(result.error!, result.stackTrace, emit);
+          emittedInlineError = true;
+          return;
+        }
         await handleError(result.error!, emit, stacktrace: result.stackTrace);
         return;
       }
@@ -117,7 +126,9 @@ mixin BlocxCollectionRefreshableMixin<Entity extends BlocxBaseEntity, Payload>
       if (gen == loadGeneration) {
         isRefreshing = false;
         infiniteListBloc.add(BlocxInfiniteListEventCloseRefresh());
-        emitState(emit);
+        if (!emittedInlineError) {
+          emitState(emit);
+        }
       }
     }
   }
@@ -128,7 +139,9 @@ mixin BlocxCollectionRefreshableMixin<Entity extends BlocxBaseEntity, Payload>
     Emitter<BlocxCollectionState<Entity>> emit,
   ) async {
     final gen = nextLoadGeneration();
+    initialLoadError = null;
     isRefreshing = true;
+    var emittedInlineError = false;
     emitState(emit);
 
     try {
@@ -136,6 +149,13 @@ mixin BlocxCollectionRefreshableMixin<Entity extends BlocxBaseEntity, Payload>
       if (gen != loadGeneration) return;
 
       if (result.isFailure) {
+        if (list.isEmpty) {
+          isRefreshing = false;
+          infiniteListBloc.add(BlocxInfiniteListEventCloseRefresh());
+          await emitInitialLoadError(result.error!, result.stackTrace, emit);
+          emittedInlineError = true;
+          return;
+        }
         await handleError(result.error!, emit, stacktrace: result.stackTrace);
         return;
       }
@@ -156,7 +176,9 @@ mixin BlocxCollectionRefreshableMixin<Entity extends BlocxBaseEntity, Payload>
       if (gen == loadGeneration) {
         isRefreshing = false;
         infiniteListBloc.add(BlocxInfiniteListEventCloseRefresh());
-        emitState(emit);
+        if (!emittedInlineError) {
+          emitState(emit);
+        }
       }
     }
   }

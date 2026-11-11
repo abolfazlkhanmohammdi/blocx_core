@@ -149,6 +149,8 @@ abstract class BlocxBaseBloc<E extends BlocxBaseEvent, S extends BlocxBaseState>
     if (stackTrace != null) dev.log(stackTrace.toString());
   }
 
+  ErrorDisplayPolicy? _overrideErrorDisplayPolicy;
+
   /// Logs [error], translates it to a [ReadableError], then surfaces it
   /// according to [errorDisplayPolicy].
   ///
@@ -161,17 +163,41 @@ abstract class BlocxBaseBloc<E extends BlocxBaseEvent, S extends BlocxBaseState>
   }) {
     reportError(error, stacktrace);
     final readableError = readableErrorOf(error, stacktrace: stacktrace);
-    if (errorDisplayPolicy == ErrorDisplayPolicy.snackBar) {
-      displayErrorSnackbar(readableError.message, title: readableError.title);
-    } else {
-      displayErrorWidget(readableError);
+    final effectivePolicy = _overrideErrorDisplayPolicy ?? errorDisplayPolicy;
+    switch (effectivePolicy) {
+      case ErrorDisplayPolicy.snackBar:
+        displayErrorSnackbar(readableError.message, title: readableError.title);
+      case ErrorDisplayPolicy.page:
+        displayErrorWidget(readableError);
+      case ErrorDisplayPolicy.none:
+        break;
+    }
+  }
+
+  /// Calls [handleError] with a temporary [displayPolicy] override so
+  /// error reporting and translation still run while routing UI feedback
+  /// per operation (for example [ErrorDisplayPolicy.none] for inline errors).
+  @protected
+  Future<void> handleErrorWithPolicy(
+    Object error,
+    Emitter<BlocxBaseState> emit, {
+    StackTrace? stacktrace,
+    required ErrorDisplayPolicy displayPolicy,
+  }) async {
+    final previousPolicy = _overrideErrorDisplayPolicy;
+    _overrideErrorDisplayPolicy = displayPolicy;
+    try {
+      await handleError(error, emit, stacktrace: stacktrace);
+    } finally {
+      _overrideErrorDisplayPolicy = previousPolicy;
     }
   }
 
   /// Controls how errors are surfaced to the user.
   ///
   /// Defaults to [ErrorDisplayPolicy.snackBar]. Override to use
-  /// [ErrorDisplayPolicy.page] for full-screen error states.
+  /// [ErrorDisplayPolicy.page] for full-screen error states or
+  /// [ErrorDisplayPolicy.none] when errors are rendered inline by state.
   ErrorDisplayPolicy get errorDisplayPolicy => ErrorDisplayPolicy.snackBar;
 
   /// Closes the internal [ScreenManagerCubit] before closing the bloc itself.
@@ -201,4 +227,8 @@ enum ErrorDisplayPolicy {
 
   /// Replace the current screen with a full-page error widget.
   page,
+
+  /// Report and translate the error without emitting a [ScreenManagerCubit]
+  /// snackbar or error page (used for inline state-driven error recovery).
+  none,
 }

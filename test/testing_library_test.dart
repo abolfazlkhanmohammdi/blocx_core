@@ -1,4 +1,6 @@
 import 'package:blocx_core/blocx_core.dart';
+import 'package:blocx_core/collection_bloc.dart';
+import 'package:blocx_core/form_bloc.dart';
 import 'package:blocx_core/testing.dart';
 import 'package:test/test.dart';
 
@@ -32,13 +34,26 @@ void main() {
       expect(entities[4].name, equals('Entity 4'));
     });
 
-    test('BlocxTestFormEntity updates fields correctly', () {
-      const initial = BlocxTestFormEntity(id: 'test-form');
-      final updated = initial.updateByKey(BlocxTestFormField.field1, 'hello');
-      expect(updated.getValueByKey(BlocxTestFormField.field1), equals('hello'));
-      expect(updated.field1, equals('hello'));
-      expect(updated.identifier, equals('test-form'));
-    });
+    test(
+      'BlocxTestFormEntity updates fields correctly and supports equality',
+      () {
+        const initial = BlocxTestFormEntity(id: 'test-form');
+        final updated = initial.updateByKey(BlocxTestFormField.field1, 'hello');
+        final sameAsUpdated = const BlocxTestFormEntity(
+          id: 'test-form',
+          field1: 'hello',
+        );
+        expect(
+          updated.getValueByKey(BlocxTestFormField.field1),
+          equals('hello'),
+        );
+        expect(updated.field1, equals('hello'));
+        expect(updated.identifier, equals('test-form'));
+        expect(updated, equals(sameAsUpdated));
+        expect(updated.hashCode, equals(sameAsUpdated.hashCode));
+        expect(updated, isNot(equals(initial)));
+      },
+    );
 
     test(
       'FakePaginatedUseCase & createFakePaginatedTask slice pages properly',
@@ -125,5 +140,151 @@ void main() {
       expect(result.data, equals(7));
       expect(useCase.recordedInputs, equals(['testing']));
     });
+
+    test(
+      'buildTestCollectionState & BlocxCollectionStateSeeder seed loaded, loading, error and filter states',
+      () {
+        final entities = createTestEntities(2);
+
+        final loaded = buildTestCollectionState<BlocxTestEntity>(
+          list: entities,
+          hasReachedEnd: false,
+          selectedItemIds: const {'0'},
+          expandedItemIds: const {'1'},
+          searchQuery: 'Item',
+          filter: const {'status': 'open'},
+          activeFilters: const {'status': 'open', 'priority': 2},
+          additionalInfo: 'meta',
+        );
+        expect(loaded, isA<BlocxCollectionStateLoaded<BlocxTestEntity>>());
+        expect(loaded.list, equals(entities));
+        expect(loaded.hasReachedEnd, isFalse);
+        expect(loaded.selectedItemIds, equals({'0'}));
+        expect(loaded.expandedItemIds, equals({'1'}));
+        expect(loaded.searchQuery, equals('Item'));
+        expect(loaded.hasActiveQueryOrFilters, isTrue);
+        expect(loaded.filterValue<String>('status'), equals('open'));
+        expect(loaded.filterValue<int>('priority'), equals(2));
+        expect(loaded.hasFilter('status', 'open'), isTrue);
+        expect(loaded.isEmptyFilteredResult, isFalse);
+        expect(loaded.additionalInfo, equals('meta'));
+
+        final emptyFiltered = BlocxCollectionStateSeeder.build<BlocxTestEntity>(
+          activeFilters: const {'status': 'archived'},
+        );
+        expect(emptyFiltered.isEmptyFilteredResult, isTrue);
+
+        final loading = BlocxCollectionStateSeeder.build<BlocxTestEntity>(
+          isInitialLoading: true,
+        );
+        expect(loading, isA<BlocxCollectionStateLoading<BlocxTestEntity>>());
+        expect(loading.isInitialLoading, isTrue);
+
+        final err = ReadableError(
+          title: 'Failed',
+          message: 'Timeout',
+          error: Exception('timeout'),
+        );
+        final errorState = buildTestCollectionState<BlocxTestEntity>(
+          initialError: err,
+          searchQuery: 'query',
+        );
+        expect(errorState, isA<BlocxCollectionStateError<BlocxTestEntity>>());
+        expect(errorState.hasInitialError, isTrue);
+        expect(errorState.initialError, same(err));
+        expect(errorState.initialLoadError, same(err));
+        expect(errorState.searchQuery, equals('query'));
+      },
+    );
+
+    test(
+      'buildTestFormState & BlocxFormStateSeeder seed loaded, dirty, prefetch, unique check and submitting states',
+      () {
+        const baseline = BlocxTestFormEntity(id: 'f1', field1: 'a');
+        const modified = BlocxTestFormEntity(id: 'f1', field1: 'b');
+
+        final cleanValid =
+            buildTestFormState<BlocxTestFormEntity, BlocxTestFormField>(
+              formData: baseline,
+              initialData: baseline,
+              isFormValid: true,
+            );
+        expect(
+          cleanValid,
+          isA<BlocxFormStateLoaded<BlocxTestFormEntity, BlocxTestFormField>>(),
+        );
+        expect(cleanValid.isDirty, isFalse);
+        expect(cleanValid.canSubmit, isTrue);
+
+        final dirtyValid =
+            BlocxFormStateSeeder.build<BlocxTestFormEntity, BlocxTestFormField>(
+              formData: modified,
+              initialData: baseline,
+              isFormValid: true,
+              step: 1,
+              comesFromPreviousStep: true,
+            );
+        expect(dirtyValid.isDirty, isTrue);
+        expect(dirtyValid.canSubmit, isTrue);
+        expect(dirtyValid.step, equals(1));
+        expect(dirtyValid.comesFromPreviousStep, isTrue);
+
+        final blockedByFetch =
+            buildTestFormState<BlocxTestFormEntity, BlocxTestFormField>(
+              formData: modified,
+              initialData: baseline,
+              fieldsFetchingInfo: const {BlocxTestFormField.field1},
+            );
+        expect(blockedByFetch.isPrefetching, isTrue);
+        expect(blockedByFetch.canSubmit, isFalse);
+
+        final blockedByUnique =
+            buildTestFormState<BlocxTestFormEntity, BlocxTestFormField>(
+              formData: modified,
+              initialData: baseline,
+              checkingUniqueFields: const {BlocxTestFormField.field2},
+            );
+        expect(blockedByUnique.hasPendingUniqueChecks, isTrue);
+        expect(blockedByUnique.canSubmit, isFalse);
+
+        final blockedByErrors =
+            buildTestFormState<BlocxTestFormEntity, BlocxTestFormField>(
+              formData: modified,
+              initialData: baseline,
+              errors: const {
+                BlocxTestFormField.field1: {'Required'},
+              },
+            );
+        expect(
+          blockedByErrors.errorByKey(BlocxTestFormField.field1),
+          equals('Required'),
+        );
+        expect(blockedByErrors.canSubmit, isFalse);
+
+        final submitting =
+            BlocxFormStateSeeder.build<BlocxTestFormEntity, BlocxTestFormField>(
+              formData: modified,
+              initialData: baseline,
+              isSubmittingForm: true,
+              submittingButtonText: 'Saving...',
+            );
+        expect(
+          submitting,
+          isA<
+            BlocxFormStateSubmittingForm<
+              BlocxTestFormEntity,
+              BlocxTestFormField
+            >
+          >(),
+        );
+        expect(submitting.isSubmittingForm, isTrue);
+        expect(submitting.isDirty, isTrue);
+        expect(submitting.canSubmit, isFalse);
+        expect(
+          (submitting as BlocxFormStateSubmittingForm).buttonText,
+          equals('Saving...'),
+        );
+      },
+    );
   });
 }

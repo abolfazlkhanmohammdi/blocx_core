@@ -68,7 +68,8 @@ Do not invent extra type parameters on base classes:
 `BlocxBaseBloc` constructs and closes its own `ScreenManagerCubit` internally.
 - Never pass `ScreenManagerCubit` into a BLoC constructor.
 - Call `super(initialState)` in `BlocxBaseBloc`, `super()` in `BlocxCollectionBloc`, and `super(initialFormData)` in `BlocxFormBloc`.
-- Trigger screen actions from inside BLoCs using built-in methods: `pop()`, `displayInfoSnackbar(msg)`, `displayWarningSnackbar(msg)`, `displayErrorSnackbar(msg)`, `displayErrorWidget(readableError)`, or `handleError(error, emit, stacktrace: st)`.
+- Trigger screen actions from inside BLoCs using built-in methods: `pop()`, `displayInfoSnackbar(msg)`, `displayWarningSnackbar(msg)`, `displayErrorSnackbar(msg)`, `displayErrorWidget(readableError)`, `handleError(error, emit, stacktrace: st)`, or `handleErrorWithPolicy(error, emit, stacktrace: st, displayPolicy: ...)`.
+- Collection initial, search, filtered, and empty-refresh load errors default to inline rendering (`useInlineErrorForInitialLoad => true`, keeping `ScreenManagerCubit` silent via `ErrorDisplayPolicy.none` and populating `state.initialError`); dispatch `const BlocxCollectionEventRetryLastLoad<Entity>()` to retry.
 
 ### Rule 5: Auto-Initialized Mixins & Constructor Field Ordering
 `BlocxCollectionBloc` and `BlocxFormBloc` automatically call every mixin's `init*()` method (`initRefresh()`, `initInfiniteList()`, `initSearch()`, `initSelection()`, `initDeletable()`, `initHighlight()`, `initExpandable()`, `initScrollable()`, `initFilters()`, `initStreams()`, `initValidation()`, `initStepped()`, `initUniqueFieldChecker()`, `initInfoFetcher()`) inside their `super()` constructor body.
@@ -338,20 +339,20 @@ Consult the appropriate reference guide in `./references/` when implementing spe
    - `BlocxUseCaseTask`, `BlocxPaginatedUseCaseTask`, and `BlocxCursorPaginatedUseCaseTask`
    - `BlocxEventHub`, `BlocxSimpleEventHub`, `BlocxCommandType` (`create`, `read`, `update`, `delete`), single vs multi-command UseCases, `resolveCommandEntities`, `shouldBroadcastCommandResult`, and listener-only `BlocxEventHubMixin`
 2. **[`references/collection_bloc.md`](./references/collection_bloc.md)**
-   - `BlocxCollectionBloc<Entity, Payload>` & `BlocxCollectionCoreMixin` methods (`insertToList`, `modifyListBeforeInsert`, `doAfterInsert`, `replaceList`, `sortList`, `additionalInfo`, `sortComparator`, `getInsertIndexForItem`)
-   - All core events (`BlocxCollectionEventLoadInitialPage`, `BlocxCollectionEventAddItem`, `BlocxCollectionEventUpdateItem`, `BlocxCollectionEventReplaceList`, `BlocxCollectionEventRemoveFromList`)
-   - All states (`BlocxCollectionStateLoading`, `BlocxCollectionStateLoaded`, `BlocxCollectionStateError`, `BlocxCollectionStateScrollToItem`, `BlocxCollectionStateSelectionChanged`) and `ListStateExtensions`
+   - `BlocxCollectionBloc<Entity, Payload>` & `BlocxCollectionCoreMixin` methods (`insertToList`, `modifyListBeforeInsert`, `doAfterInsert`, `replaceList`, `sortList`, `additionalInfo`, `sortComparator`, `getInsertIndexForItem`, `useInlineErrorForInitialLoad`, `emitInitialLoadError`)
+   - All core events (`BlocxCollectionEventLoadInitialPage`, `BlocxCollectionEventRetryLastLoad`, `BlocxCollectionEventAddItem`, `BlocxCollectionEventUpdateItem`, `BlocxCollectionEventReplaceList`, `BlocxCollectionEventRemoveFromList`)
+   - All states (`BlocxCollectionStateLoading`, `BlocxCollectionStateLoaded`, `BlocxCollectionStateError`, `BlocxCollectionStateScrollToItem`, `BlocxCollectionStateSelectionChanged`), query/filter/error getters (`initialError`, `isInitialLoading`, `hasInitialError`, `searchQuery`, `filter`, `activeFilters`, `hasActiveQueryOrFilters`, `isEmptyFilteredResult`, `filterValue<F>(key)`, `hasFilter(key, [expectedValue])`), and `ListStateExtensions`
    - Complete API & event reference for all 10 collection mixins (`Infinite` with cursor & offset pagination, `Refreshable`, `Searchable`, `Selectable`, `Deletable`, `Highlightable`, `Expandable`, `Scrollable`, `Filter`, `SyncStream` with sort-aware insertion)
 3. **[`references/form_bloc.md`](./references/form_bloc.md)**
    - `BlocxBaseFormEntity<F, E>`, debug assertion in `updateByKeySafe`, and `getFormattedValueByKey`
-   - `BlocxFormBloc<F, P, E>`, `BlocxFormCoreMixin`, `BlocxFormErrorsMixin` (persistent & timed field errors)
-   - All form events (`BlocxFormEventInit`, `BlocxFormEventUpdateData`, `BlocxFormEventSubmit`, `BlocxFormEventUpdateFormData`, `BlocxFormEventSyncFormData`, error events) and states (`Initial`, `Loaded`, `ApplyInitialDataToForm`, `SubmittingForm`, `FormSubmitted`, `FormUpdated`)
+   - `BlocxFormBloc<F, P, E>`, `BlocxFormCoreMixin` (`initialFormData`, `syncInitialFormDataBaseline`), `BlocxFormErrorsMixin` (persistent & timed field errors)
+   - All form events (`BlocxFormEventInit`, `BlocxFormEventReset`, `BlocxFormEventUpdateData`, `BlocxFormEventSubmit`, `BlocxFormEventUpdateFormData`, `BlocxFormEventSyncFormData`, error events) and states (`Initial`, `Loaded`, `ApplyInitialDataToForm`, `SubmittingForm`, `FormSubmitted`, `FormUpdated`) with readiness/dirty getters (`initialData`, `isDirty`, `isPrefetching`, `hasPendingUniqueChecks`, `isSubmittingForm`, `canSubmit`)
    - `BlocxFormValidationMixin`, `FormValidationMode`, `BlocxFormValidator`, and the complete constructor table of all 35+ built-in field validators
    - All optional form mixins (`BlocxUniqueFieldValidatorMixin`, `BlocxFormPrefetchMixin`, `BlocxFormSteppedMixin`, `BlocxFormSyncStreamMixin`)
 4. **[`references/error_handling_and_localization.md`](./references/error_handling_and_localization.md)**
-   - `BlocxBaseBloc` helpers, `ErrorDisplayPolicy` (`snackBar` vs `page`), `ScreenManagerCubit` (`clearError()`, `ScreenManagerCubitState`s)
+   - `BlocxBaseBloc` helpers, `ErrorDisplayPolicy` (`snackBar`, `page`, `none`), `handleErrorWithPolicy`, `ScreenManagerCubit` (`clearError()`, `ScreenManagerCubitState`s)
    - Injectable instance-level `errorTranslator` & `localizations` with static singleton fallbacks
    - `BlocxErrorTranslator`, `ReadableError`, `BlocXErrorCode`
    - Customizing `BlocXLocalizations` (including `searchingText`, `searchHint`)
-   - `package:blocx_core/testing.dart` test utilities (`BlocxTestEventHub`, `BlocxTestEntity`, `FakePaginatedSource`, `FakeCursorPaginatedSource`, `MockUseCase`, etc.)
+   - `package:blocx_core/testing.dart` test utilities (`BlocxTestEventHub`, `BlocxTestEntity`, `BlocxTestFormEntity`, `FakePaginatedSource`, `FakePaginatedUseCase`, `FakeCursorPaginatedUseCase`, `FakeSearchUseCase`, `FakeUseCase`, `buildTestCollectionState`, `BlocxCollectionStateSeeder`, `buildTestFormState`, `BlocxFormStateSeeder`)
    - Pure-Dart unit testing patterns for UseCases, Collection BLoCs, Form BLoCs, and EventHub streams

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:blocx_core/blocx_core.dart';
 import 'package:blocx_core/collection_bloc.dart';
@@ -124,6 +125,18 @@ class BlocxTestFormEntity
       field2: field2 ?? this.field2,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is BlocxTestFormEntity &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          field1 == other.field1 &&
+          field2 == other.field2;
+
+  @override
+  int get hashCode => Object.hash(id, field1, field2);
 }
 
 /// Fake paginated in-memory data source for unit testing.
@@ -344,5 +357,214 @@ BlocxUseCaseTask<Input, Output> createFakeSubmitTask<Input, Output>({
   return BlocxUseCaseTask<Input, Output>(
     useCase: useCase,
     inputBuilder: inputBuilder,
+  );
+}
+
+/// Builds a [BlocxCollectionState] snapshot for unit and widget tests without
+/// repeating boilerplate defaults.
+///
+/// - When [isInitialLoading] is `true`, returns [BlocxCollectionStateLoading].
+/// - Otherwise when [initialError] is non-null, returns
+///   [BlocxCollectionStateError] with [initialError] populated.
+/// - Otherwise returns [BlocxCollectionStateLoaded].
+BlocxCollectionState<T> buildTestCollectionState<T extends BlocxBaseEntity>({
+  List<T> list = const [],
+  bool hasReachedEnd = true,
+  bool isLoadingNextPage = false,
+  bool isRefreshing = false,
+  bool isSearching = false,
+  bool isInitialLoading = false,
+  ReadableError? initialError,
+  Set<String> selectedItemIds = const {},
+  Set<String> beingSelectedItemIds = const {},
+  Set<String> highlightedItemIds = const {},
+  Set<String> beingRemovedItemIds = const {},
+  Set<String> expandedItemIds = const {},
+  dynamic additionalInfo,
+  Object? filter,
+  Map<String, dynamic> activeFilters = const {},
+  String? searchQuery,
+}) {
+  final unmodifiableList = List<T>.unmodifiable(list);
+  final unmodifiableSelected = Set<String>.unmodifiable(selectedItemIds);
+  final unmodifiableBeingSelected = Set<String>.unmodifiable(
+    beingSelectedItemIds,
+  );
+  final unmodifiableHighlighted = Set<String>.unmodifiable(highlightedItemIds);
+  final unmodifiableBeingRemoved = Set<String>.unmodifiable(
+    beingRemovedItemIds,
+  );
+  final unmodifiableExpanded = Set<String>.unmodifiable(expandedItemIds);
+  final unmodifiableFilters = Map<String, dynamic>.unmodifiable(activeFilters);
+
+  if (isInitialLoading) {
+    return BlocxCollectionStateLoading<T>(
+      list: unmodifiableList,
+      hasReachedEnd: hasReachedEnd,
+      isLoadingNextPage: isLoadingNextPage,
+      isRefreshing: isRefreshing,
+      isSearching: isSearching,
+      selectedItemIds: unmodifiableSelected,
+      beingSelectedItemIds: unmodifiableBeingSelected,
+      highlightedItemIds: unmodifiableHighlighted,
+      beingRemovedItemIds: unmodifiableBeingRemoved,
+      expandedItemIds: unmodifiableExpanded,
+      additionalInfo: additionalInfo,
+      initialError: initialError,
+      searchQuery: searchQuery,
+      filter: filter,
+      activeFilters: unmodifiableFilters,
+    );
+  }
+
+  if (initialError != null) {
+    return BlocxCollectionStateError<T>(
+      message: initialError.message,
+      initialError: initialError,
+      list: unmodifiableList,
+      hasReachedEnd: hasReachedEnd,
+      isLoadingNextPage: isLoadingNextPage,
+      isRefreshing: isRefreshing,
+      isSearching: isSearching,
+      selectedItemIds: unmodifiableSelected,
+      beingSelectedItemIds: unmodifiableBeingSelected,
+      highlightedItemIds: unmodifiableHighlighted,
+      beingRemovedItemIds: unmodifiableBeingRemoved,
+      expandedItemIds: unmodifiableExpanded,
+      additionalInfo: additionalInfo,
+      searchQuery: searchQuery,
+      filter: filter,
+      activeFilters: unmodifiableFilters,
+    );
+  }
+
+  return BlocxCollectionStateLoaded<T>(
+    list: unmodifiableList,
+    hasReachedEnd: hasReachedEnd,
+    isLoadingNextPage: isLoadingNextPage,
+    isRefreshing: isRefreshing,
+    isSearching: isSearching,
+    selectedItemIds: unmodifiableSelected,
+    beingSelectedItemIds: unmodifiableBeingSelected,
+    highlightedItemIds: unmodifiableHighlighted,
+    beingRemovedItemIds: unmodifiableBeingRemoved,
+    expandedItemIds: unmodifiableExpanded,
+    additionalInfo: additionalInfo,
+    searchQuery: searchQuery,
+    filter: filter,
+    activeFilters: unmodifiableFilters,
+  );
+}
+
+/// Convenience factory wrapper for seeding [BlocxCollectionState] in tests.
+abstract final class BlocxCollectionStateSeeder {
+  /// Delegates to [buildTestCollectionState].
+  static BlocxCollectionState<T> build<T extends BlocxBaseEntity>({
+    List<T> list = const [],
+    bool hasReachedEnd = true,
+    bool isLoadingNextPage = false,
+    bool isRefreshing = false,
+    bool isSearching = false,
+    bool isInitialLoading = false,
+    ReadableError? initialError,
+    Set<String> selectedItemIds = const {},
+    Set<String> beingSelectedItemIds = const {},
+    Set<String> highlightedItemIds = const {},
+    Set<String> beingRemovedItemIds = const {},
+    Set<String> expandedItemIds = const {},
+    dynamic additionalInfo,
+    Object? filter,
+    Map<String, dynamic> activeFilters = const {},
+    String? searchQuery,
+  }) => buildTestCollectionState<T>(
+    list: list,
+    hasReachedEnd: hasReachedEnd,
+    isLoadingNextPage: isLoadingNextPage,
+    isRefreshing: isRefreshing,
+    isSearching: isSearching,
+    isInitialLoading: isInitialLoading,
+    initialError: initialError,
+    selectedItemIds: selectedItemIds,
+    beingSelectedItemIds: beingSelectedItemIds,
+    highlightedItemIds: highlightedItemIds,
+    beingRemovedItemIds: beingRemovedItemIds,
+    expandedItemIds: expandedItemIds,
+    additionalInfo: additionalInfo,
+    filter: filter,
+    activeFilters: activeFilters,
+    searchQuery: searchQuery,
+  );
+}
+
+/// Builds a [BlocxFormState] snapshot for unit and widget tests without
+/// repeating boilerplate defaults.
+///
+/// - When [isSubmittingForm] is `true`, returns [BlocxFormStateSubmittingForm].
+/// - Otherwise returns [BlocxFormStateLoaded].
+BlocxFormState<F, E>
+buildTestFormState<F extends BlocxBaseFormEntity<F, E>, E extends Enum>({
+  required F formData,
+  F? initialData,
+  Map<E, Set<String>> errors = const {},
+  Set<E> fieldsFetchingInfo = const {},
+  Set<E> checkingUniqueFields = const {},
+  bool isSubmittingForm = false,
+  bool isFormValid = true,
+  int step = 0,
+  bool comesFromPreviousStep = false,
+  String? submittingButtonText,
+}) {
+  final unmodifiableErrors = UnmodifiableMapView<E, Set<String>>({
+    for (final entry in errors.entries)
+      entry.key: Set<String>.unmodifiable(entry.value),
+  });
+
+  if (isSubmittingForm) {
+    return BlocxFormStateSubmittingForm<F, E>(
+      step: step,
+      formData: formData,
+      initialData: initialData,
+      buttonText: submittingButtonText,
+    );
+  }
+
+  return BlocxFormStateLoaded<F, E>(
+    formData: formData,
+    initialData: initialData,
+    step: step,
+    comesFromPreviousStep: comesFromPreviousStep,
+    errors: unmodifiableErrors,
+    fieldsFetchingInfo: Set<E>.unmodifiable(fieldsFetchingInfo),
+    checkingUniqueFields: Set<E>.unmodifiable(checkingUniqueFields),
+    isFormValid: isFormValid,
+  );
+}
+
+/// Convenience factory wrapper for seeding [BlocxFormState] in tests.
+abstract final class BlocxFormStateSeeder {
+  /// Delegates to [buildTestFormState].
+  static BlocxFormState<F, E>
+  build<F extends BlocxBaseFormEntity<F, E>, E extends Enum>({
+    required F formData,
+    F? initialData,
+    Map<E, Set<String>> errors = const {},
+    Set<E> fieldsFetchingInfo = const {},
+    Set<E> checkingUniqueFields = const {},
+    bool isSubmittingForm = false,
+    bool isFormValid = true,
+    int step = 0,
+    bool comesFromPreviousStep = false,
+    String? submittingButtonText,
+  }) => buildTestFormState<F, E>(
+    formData: formData,
+    initialData: initialData,
+    errors: errors,
+    fieldsFetchingInfo: fieldsFetchingInfo,
+    checkingUniqueFields: checkingUniqueFields,
+    isSubmittingForm: isSubmittingForm,
+    isFormValid: isFormValid,
+    step: step,
+    comesFromPreviousStep: comesFromPreviousStep,
+    submittingButtonText: submittingButtonText,
   );
 }

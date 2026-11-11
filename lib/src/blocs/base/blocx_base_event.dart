@@ -1,3 +1,5 @@
 part of 'blocx_base_bloc.dart';
 
-class BlocxBaseEvent {}
+class BlocxBaseEvent {
+  const BlocxBaseEvent();
+}

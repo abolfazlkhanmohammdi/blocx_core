@@ -55,7 +55,9 @@ abstract class BlocxCollectionBloc<Entity extends BlocxBaseEntity, Payload>
 - `Payload? payload`: Stored from the latest `BlocxCollectionEventLoadInitialPage`.
 - `UnmodifiableListView<Entity> get list`: Current items in the collection.
 - `bool isLoadingNextPage`, `bool hasReachedEnd`, `bool isSearching`, `bool isRefreshing`
-- `dynamic get additionalInfo => null`: Optional custom metadata attached to every `BlocxCollectionStateLoaded`.
+- `ReadableError? initialLoadError`: Populated when an initial, search-initial, or empty-list refresh fails; cleared on subsequent loads.
+- `bool get useInlineErrorForInitialLoad => true`: When `true` (default), full-replacement failures (initial load, initial search, filtered reloads, and empty-list refresh) emit `BlocxCollectionStateError` (`state.initialError` / `state.hasInitialError`) while keeping `ScreenManagerCubit` silent (`ErrorDisplayPolicy.none`) so headers and search/filter bars remain usable. Override to `false` to route initial failures to `ScreenManagerCubit` (`ErrorDisplayPolicy.page`). Secondary operations (`loadNextPage`, non-empty `refresh`, `delete`, `select`) continue using `errorDisplayPolicy` (`ErrorDisplayPolicy.snackBar` by default).
+- `dynamic get additionalInfo => null`: Optional custom metadata attached to every `BlocxCollectionStateLoaded` / `BlocxCollectionStateError`.
 
 ### List Manipulation & Lifecycle Hooks
 - `Future<List<Entity>> modifyListBeforeInsert(List<Entity> data) async => data;` (override to transform/filter fetched pages before insertion)
@@ -75,6 +77,7 @@ abstract class BlocxCollectionBloc<Entity extends BlocxBaseEntity, Payload>
 | Event Class | Constructor / Properties | Behavior |
 |---|---|---|
 | `BlocxCollectionEventLoadInitialPage<T, P>` | `BlocxCollectionEventLoadInitialPage({required P? payload})` | Handled with `restartable()`. Stores `payload`, increments `loadGeneration`, emits `BlocxCollectionStateLoading<T>()`, executes `loadInitialPageTask(offset: 0, limit: limit)`, clears old list, inserts items, applies initial selection if selectable, and emits `BlocxCollectionStateLoaded<T>`. Discards stale responses if generation has advanced. |
+| `BlocxCollectionEventRetryLastLoad<T>` | `const BlocxCollectionEventRetryLastLoad()` | Handled with `restartable()`. Retries active non-empty search immediately (bypassing `searchDebounceDuration`), or reloads the initial page using the last known `payload` and active filter. |
 | `BlocxCollectionEventAddItem<T>` | `BlocxCollectionEventAddItem({required T item, int index = 0})` | Inserts `item` into `list` at `index.clamp(0, list.length)`, or updates it in-place if an item with matching `identifier` already exists (preventing duplicate rows), and emits `BlocxCollectionStateLoaded<T>`. |
 | `BlocxCollectionEventUpdateItem<T>` | `BlocxCollectionEventUpdateItem({required T item})` | Finds item in `list` by `identifier` and replaces it (no-op if not found). Triggers highlight if `isHighlightable` is `true`, and emits state. |
 | `BlocxCollectionEventReplaceList<T>` | `BlocxCollectionEventReplaceList({required List<T> newItems})` | Replaces the entire `list` with `newItems` and emits state. |
@@ -86,10 +89,15 @@ abstract class BlocxCollectionBloc<Entity extends BlocxBaseEntity, Payload>
 
 ### State Classes
 - `BlocxCollectionStateLoading<T>` (`shouldRebuild: true, shouldListen: false`)
-- `BlocxCollectionStateLoaded<T>` (`shouldRebuild: true, shouldListen: false`)
-- `BlocxCollectionStateError<T>({required String message, ...})` (`shouldRebuild: true, shouldListen: false`)
+- `BlocxCollectionStateLoaded<T>` (`shouldRebuild: true, shouldListen: false`, includes `copyWith(..., clearInitialError: ...)`)
+- `BlocxCollectionStateError<T>({required String message, ReadableError? initialError, ...})` (`shouldRebuild: true, shouldListen: false`)
 - `BlocxCollectionStateScrollToItem<T>({required T item, required int index})` (`shouldRebuild: false, shouldListen: true`)
 - `BlocxCollectionStateSelectionChanged<T>({required SelectionChangedData<T> selectionData, ...})` (`shouldRebuild: false, shouldListen: true`)
+
+### Computed Query, Filter & Error Helpers on `BlocxCollectionState<T>`
+- **Error & Loading**: `state.initialError`, `state.initialLoadError`, `state.isInitialLoading`, `state.hasInitialError`
+- **Search & Filters**: `state.searchQuery`, `state.filter` (raw `Filter?`), `state.activeFilters` (`Map<String, dynamic>` auto-populated when `Filter` is a `Map`), `state.hasActiveQueryOrFilters`, `state.isEmptyFilteredResult`
+- **Typed Filter Accessors**: `state.filterValue<F>(String key)` (returns typed value or `null`), `state.hasFilter(String key, [Object? expectedValue])`
 
 ### `ListStateExtensions<T>` on `BlocxCollectionState<T>`
 - **Selection**: `state.isSelected(item)`, `state.isSelectedId(id)`, `state.hasSelection`, `state.selectedCount`, `state.selectedItems`, `state.firstSelectedItemOrNull()`, `state.isBeingSelected(item)`, `state.isBeingSelectedId(id)`
@@ -196,8 +204,10 @@ abstract class BlocxCollectionBloc<Entity extends BlocxBaseEntity, Payload>
 
 ### 5.9 `BlocxCollectionFilterMixin<Entity, Payload, Filter>` (Debounced Filter & Reload)
 - **Note**: Takes **3** type parameters: `<Entity, Payload, Filter>`.
-- **Events**: `BlocxCollectionEventFilter<Entity, Filter>(Filter filter)` (debounced 500ms; stores `_filter` and dispatches `BlocxCollectionEventLoadInitialPage(payload: payload)`).
-- **Helper**: `Filter? getFilter() => _filter;`
+- **Events**: `BlocxCollectionEventFilter<Entity, Filter>(filter: ...)` (debounced by `filterDebounceDuration`, default `500ms`; stores `_filter`, surfaces `state.filter` and `state.activeFilters`, and dispatches `BlocxCollectionEventLoadInitialPage(payload: payload)`).
+- **Overrides / Helpers**:
+  - `Duration get filterDebounceDuration => const Duration(milliseconds: 500);`
+  - `Filter? getFilter() => _filter;`
 
 ### 5.10 `BlocxCollectionSyncStreamMixin<T extends BlocxBaseEntity, P>` (Real-Time EventHub CRUD Sync)
 Listens to `eventHub.onEntity<T>(commands: listenedCommands)` and automatically synchronizes the collection whenever any UseCase broadcasts a `BlocxEntityEvent<T>`.
