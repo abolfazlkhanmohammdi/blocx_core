@@ -2,6 +2,11 @@ part of 'blocx_form_bloc.dart';
 
 class BlocxFormState<F, E extends Enum> extends BlocxBaseState {
   final F formData;
+
+  /// Baseline form snapshot captured after initialization, hydration,
+  /// prefetching, or reset; used to compute [isDirty].
+  final F? initialData;
+
   final int step;
   final bool comesFromPreviousStep;
   final Map<E, Set<String>> errors;
@@ -12,6 +17,7 @@ class BlocxFormState<F, E extends Enum> extends BlocxBaseState {
     required this.isFormValid,
     required this.step,
     required this.formData,
+    this.initialData,
     required this.errors,
     required this.fieldsFetchingInfo,
     required this.checkingUniqueFields,
@@ -23,6 +29,28 @@ class BlocxFormState<F, E extends Enum> extends BlocxBaseState {
   bool isFetchingFieldInfo(E key) {
     return fieldsFetchingInfo.contains(key);
   }
+
+  /// True when any field is currently undergoing asynchronous uniqueness checks.
+  bool get hasPendingUniqueChecks => checkingUniqueFields.isNotEmpty;
+
+  /// True while required reference/initial datasets are being prefetched.
+  bool get isPrefetching => fieldsFetchingInfo.isNotEmpty;
+
+  /// True while the form submission request is in progress.
+  bool get isSubmittingForm => this is BlocxFormStateSubmittingForm<F, E>;
+
+  /// True when [formData] differs from [initialData] (or when no baseline
+  /// [initialData] snapshot has been recorded).
+  bool get isDirty => initialData == null ? true : formData != initialData;
+
+  /// True when the form is valid, has no field/uniqueness errors, and is not
+  /// submitting, prefetching, or running async unique-field checks.
+  bool get canSubmit =>
+      isFormValid &&
+      errors.isEmpty &&
+      !isSubmittingForm &&
+      !isPrefetching &&
+      !hasPendingUniqueChecks;
 
   bool get isValid =>
       errors.isEmpty &&
@@ -49,7 +77,7 @@ class BlocxFormState<F, E extends Enum> extends BlocxBaseState {
 }
 
 class BlocxFormStateInitial<F, E extends Enum> extends BlocxFormState<F, E> {
-  BlocxFormStateInitial({required super.formData})
+  BlocxFormStateInitial({required super.formData, super.initialData})
     : super(
         shouldListen: false,
         shouldRebuild: true,
@@ -68,6 +96,7 @@ class BlocxFormStateLoaded<F, E extends Enum> extends BlocxFormState<F, E> {
     required super.errors,
     required super.fieldsFetchingInfo,
     required super.formData,
+    super.initialData,
     required super.checkingUniqueFields,
     required super.isFormValid,
   }) : super(shouldListen: false, shouldRebuild: true);
@@ -75,16 +104,18 @@ class BlocxFormStateLoaded<F, E extends Enum> extends BlocxFormState<F, E> {
 
 class BlocxFormStateApplyInitialDataToForm<F, E extends Enum>
     extends BlocxFormState<F, E> {
-  BlocxFormStateApplyInitialDataToForm({required super.formData})
-    : super(
-        shouldRebuild: false,
-        shouldListen: true,
-        step: 0,
-        errors: {},
-        fieldsFetchingInfo: {},
-        checkingUniqueFields: {},
-        isFormValid: true,
-      );
+  BlocxFormStateApplyInitialDataToForm({
+    required super.formData,
+    super.initialData,
+  }) : super(
+         shouldRebuild: false,
+         shouldListen: true,
+         step: 0,
+         errors: {},
+         fieldsFetchingInfo: {},
+         checkingUniqueFields: {},
+         isFormValid: true,
+       );
 }
 
 class BlocxFormStateSubmittingForm<F, E extends Enum>
@@ -93,6 +124,7 @@ class BlocxFormStateSubmittingForm<F, E extends Enum>
   BlocxFormStateSubmittingForm({
     required super.step,
     required super.formData,
+    super.initialData,
     this.buttonText,
   }) : super(
          shouldRebuild: true,
@@ -109,6 +141,7 @@ class BlocxFormStateFormSubmitted<F, E extends Enum>
   final dynamic submittedData;
   BlocxFormStateFormSubmitted({
     required super.formData,
+    super.initialData,
     required this.submittedData,
   }) : super(
          shouldRebuild: false,
@@ -133,6 +166,7 @@ class BlocxFormStateFormUpdated<F, E extends Enum>
     required this.newValue,
     required super.step,
     required super.formData,
+    super.initialData,
     required super.errors,
     required super.fieldsFetchingInfo,
     required super.checkingUniqueFields,

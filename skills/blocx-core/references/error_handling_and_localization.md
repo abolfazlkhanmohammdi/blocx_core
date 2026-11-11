@@ -23,13 +23,16 @@ Every BLoC in `blocx_core` extends `BlocxBaseBloc<E extends BlocxBaseEvent, S ex
 - `ReadableError readableErrorOf(Object error, {StackTrace? stacktrace})`:
   Translates `error` to a `ReadableError` using `BlocxErrorTranslator` or `defaultError`.
 - `FutureOr<void> handleError(Object error, Emitter<BlocxBaseState> emit, {StackTrace? stacktrace})`:
-  Translates `error` using `readableErrorOf` and surfaces it according to `errorDisplayPolicy`.
+  Translates `error` using `readableErrorOf`, forwards to `reportError`, and surfaces it according to `errorDisplayPolicy`.
+- `FutureOr<void> handleErrorWithPolicy(Object error, Emitter<BlocxBaseState> emit, {StackTrace? stacktrace, ErrorDisplayPolicy? displayPolicy})`:
+  Executes `handleError` while overriding `errorDisplayPolicy` for a single call (without breaking subclass `handleError` overrides).
 
 ### `ErrorDisplayPolicy`
 ```dart
 enum ErrorDisplayPolicy {
   snackBar, // Default: calls displayErrorSnackbar
   page,     // Calls displayErrorWidget
+  none,     // Reports error via reportError/translator without emitting to ScreenManagerCubit
 }
 ```
 Override in any BLoC to show full-page errors instead of snackbars:
@@ -144,3 +147,20 @@ void main() {
   expect(screenStates.whereType<ScreenManagerCubitStatePop>(), isNotEmpty);
   await sub.cancel();
   ```
+
+### State Seeders & Test Doubles (`package:blocx_core/testing.dart`)
+Import `package:blocx_core/testing.dart` for in-memory test doubles (`BlocxTestEventHub`, `FakePaginatedSource`, `FakePaginatedUseCase`, `FakeCursorPaginatedUseCase`, `FakeSearchUseCase`, `FakeUseCase`) and 1-line state seeders:
+
+```dart
+final collectionState = buildTestCollectionState<BlocxTestEntity>(
+  list: createTestEntities(3),
+  activeFilters: const {'status': 'open'},
+  searchQuery: 'Item',
+);
+
+final formState = BlocxFormStateSeeder.build<BlocxTestFormEntity, BlocxTestFormField>(
+  formData: const BlocxTestFormEntity(id: '1', field1: 'updated'),
+  initialData: const BlocxTestFormEntity(id: '1', field1: 'initial'),
+  isFormValid: true,
+);
+```

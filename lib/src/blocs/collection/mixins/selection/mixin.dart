@@ -222,6 +222,9 @@ mixin BlocxCollectionSelectableMixin<Entity extends BlocxBaseEntity, Payload>
         highlightedItemIds: Set<String>.unmodifiable(highlightedItemIds),
         beingRemovedItemIds: Set<String>.unmodifiable(beingRemovedItemIds),
         expandedItemIds: Set<String>.unmodifiable(expandedItemIds),
+        searchQuery: activeSearchQuery,
+        filter: activeFilter,
+        activeFilters: activeFilters,
         selectionData: SelectionChangedData<Entity>(
           selection: selectedItems,
           wasSelected: wasSelected,

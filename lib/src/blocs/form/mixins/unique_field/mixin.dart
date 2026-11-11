@@ -122,6 +122,11 @@ mixin BlocxUniqueFieldValidatorMixin<
   @override
   Set<E> get uniqueKeysBeingChecked => _inFlightTokenByField.keys.toSet();
 
+  @override
+  void cancelPendingUniqueChecks() {
+    _inFlightTokenByField.clear();
+  }
+
   /// Default error message for unavailable values.
   ///
   /// Override this for field-specific or domain-specific messages.

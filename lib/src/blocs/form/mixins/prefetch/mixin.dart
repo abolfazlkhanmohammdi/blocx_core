@@ -98,7 +98,15 @@ mixin BlocxFormPrefetchMixin<
 
       _formInfo[key] = result.data;
       await onInfoFetched(key, result.data, emit);
-      emit(BlocxFormStateApplyInitialDataToForm(formData: formData));
+      if (!hasUserModifiedForm) {
+        syncInitialFormDataBaseline(formData);
+      }
+      emit(
+        BlocxFormStateApplyInitialDataToForm(
+          formData: formData,
+          initialData: initialFormData,
+        ),
+      );
     }
 
     emitState(emit);

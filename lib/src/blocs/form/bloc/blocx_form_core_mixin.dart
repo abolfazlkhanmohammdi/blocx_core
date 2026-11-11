@@ -18,6 +18,33 @@ mixin BlocxFormCoreMixin<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
   /// Current form data.
   late F formData;
 
+  F? _initialFormData;
+  bool _hasUserModifiedForm = false;
+
+  /// Baseline form snapshot used to compute [BlocxFormState.isDirty] and
+  /// restore values on [BlocxFormEventReset].
+  F? get initialFormData => _initialFormData;
+
+  /// Whether any field update has occurred since the last baseline snapshot.
+  @protected
+  bool get hasUserModifiedForm => _hasUserModifiedForm;
+
+  /// Updates the baseline snapshot (e.g. after prefetch populates defaults).
+  @protected
+  void syncInitialFormDataBaseline(F baseline) {
+    _initialFormData = baseline;
+  }
+
+  /// Clears all form errors. Overridden by [BlocxFormErrorsMixin] in [BlocxFormBloc].
+  @protected
+  void clearAllErrors({ErrorMutationSource? source}) {}
+
+  /// Cancels any in-flight asynchronous unique-field checks.
+  ///
+  /// Overridden by [BlocxUniqueFieldValidatorMixin].
+  @protected
+  void cancelPendingUniqueChecks() {}
+
   P? _payload;
   bool _isUpdate = false;
 
@@ -48,10 +75,13 @@ mixin BlocxFormCoreMixin<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
   @mustCallSuper
   void initData(F formData) {
     this.formData = formData;
+    _initialFormData = formData;
+    _hasUserModifiedForm = false;
 
     on<BlocxFormEventInit<P>>(initForm, transformer: restartable());
     on<BlocxFormEventUpdateData<E>>(updateData, transformer: sequential());
     on<BlocxFormEventSubmit>(submit, transformer: droppable());
+    on<BlocxFormEventReset>(resetForm, transformer: sequential());
     on<BlocxFormEventUpdateFormData<P>>(
       handleUpdateFormDataEvent,
       transformer: restartable(),
@@ -74,6 +104,8 @@ mixin BlocxFormCoreMixin<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
   ) async {
     _payload = event.payload;
     _isUpdate = event.payload != null;
+    _hasUserModifiedForm = false;
+    cancelPendingUniqueChecks();
 
     var updatedData = formData;
     if (_payload != null) {
@@ -81,8 +113,14 @@ mixin BlocxFormCoreMixin<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
     }
     if (emit.isDone) return;
     formData = updatedData;
+    _initialFormData = updatedData;
 
-    emit(BlocxFormStateApplyInitialDataToForm(formData: formData));
+    emit(
+      BlocxFormStateApplyInitialDataToForm(
+        formData: formData,
+        initialData: _initialFormData,
+      ),
+    );
 
     if (validateOnInit) {
       await validateForm(formData, forceFullValidation: true);
@@ -115,6 +153,7 @@ mixin BlocxFormCoreMixin<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
     BlocxFormEventUpdateData<E> event,
     Emitter<BlocxFormState<F, E>> emit,
   ) async {
+    _hasUserModifiedForm = true;
     var oldValue = formData.getValueByKey(event.key);
     formData = await updateFormData(event.key, event.data);
     if (isUniqueFieldValidator &&
@@ -138,6 +177,7 @@ mixin BlocxFormCoreMixin<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
         BlocxFormStateFormUpdated(
           step: stepIndex,
           formData: formData,
+          initialData: _initialFormData,
           errors: const {},
           fieldsFetchingInfo: const {},
           checkingUniqueFields: const {},
@@ -198,7 +238,13 @@ mixin BlocxFormCoreMixin<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
         return;
       }
 
-      emit(BlocxFormStateSubmittingForm(formData: formData, step: stepIndex));
+      emit(
+        BlocxFormStateSubmittingForm(
+          formData: formData,
+          initialData: _initialFormData,
+          step: stepIndex,
+        ),
+      );
 
       final result = await submitUseCaseTask.execute();
 
@@ -214,6 +260,7 @@ mixin BlocxFormCoreMixin<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
           BlocxFormStateFormSubmitted(
             submittedData: result.data,
             formData: formData,
+            initialData: _initialFormData,
           ),
         );
       }
@@ -287,9 +334,17 @@ mixin BlocxFormCoreMixin<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
     Emitter<BlocxFormState<F, E>> emit,
   ) async {
     _isUpdate = event.isUpdate;
+    _hasUserModifiedForm = false;
+    cancelPendingUniqueChecks();
     formData = await applyPayloadToFormData(event.payload);
+    _initialFormData = formData;
 
-    emit(BlocxFormStateApplyInitialDataToForm(formData: formData));
+    emit(
+      BlocxFormStateApplyInitialDataToForm(
+        formData: formData,
+        initialData: _initialFormData,
+      ),
+    );
 
     await validateForm(formData, forceFullValidation: true);
 
@@ -304,12 +359,46 @@ mixin BlocxFormCoreMixin<F extends BlocxBaseFormEntity<F, E>, P, E extends Enum>
     formData = event.formData;
 
     if (event.applyToControllers) {
-      emit(BlocxFormStateApplyInitialDataToForm(formData: formData));
+      emit(
+        BlocxFormStateApplyInitialDataToForm(
+          formData: formData,
+          initialData: _initialFormData,
+        ),
+      );
     }
 
     if (event.validate) {
       await validateForm(formData, forceFullValidation: true);
     }
+
+    emitState(emit);
+  }
+
+  /// Handles [BlocxFormEventReset], restoring [formData] back to its baseline
+  /// [initialFormData], clearing errors/timers and pending unique checks, and
+  /// re-emitting the clean state.
+  FutureOr<void> resetForm(
+    BlocxFormEventReset event,
+    Emitter<BlocxFormState<F, E>> emit,
+  ) async {
+    formData = _initialFormData ?? formData;
+    _hasUserModifiedForm = false;
+    cancelPendingUniqueChecks();
+    clearAllErrors(source: ErrorMutationSource.clearAllErrors);
+
+    if (event.applyToControllers) {
+      emit(
+        BlocxFormStateApplyInitialDataToForm(
+          formData: formData,
+          initialData: _initialFormData,
+        ),
+      );
+    }
+
+    if (event.validate || validateOnInit) {
+      await validateForm(formData, forceFullValidation: true);
+    }
+    if (emit.isDone) return;
 
     emitState(emit);
   }

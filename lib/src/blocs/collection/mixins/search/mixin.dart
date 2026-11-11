@@ -25,6 +25,9 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
   /// Current active search query.
   String searchText = '';
 
+  @override
+  String? get activeSearchQuery => searchText.isEmpty ? null : searchText;
+
   int _searchLoadedCount = 0;
 
   /// Current pagination offset for active search results.
@@ -69,6 +72,14 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
     await search(event, emit);
   }
 
+  /// Retries the currently active search query immediately without debounce.
+  Future<void> retrySearch(Emitter<BlocxCollectionState<Entity>> emit) async {
+    await search(
+      BlocxCollectionEventSearch<Entity>(searchText: searchText),
+      emit,
+    );
+  }
+
   /// Runs a search request.
   ///
   /// Override this method for custom search behavior.
@@ -95,6 +106,7 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
     Emitter<BlocxCollectionState<Entity>> emit,
   ) async {
     hasReachedEnd = false;
+    initialLoadError = null;
 
     infiniteListBloc.add(
       BlocxInfiniteListEventSetReachedEnd(hasReachedEnd: false),
@@ -114,6 +126,7 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
     }
 
     final gen = nextLoadGeneration();
+    var emittedInlineError = false;
 
     try {
       isSearching = true;
@@ -124,7 +137,10 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
       if (searchText != event.searchText) return;
 
       if (result.isFailure) {
-        await handleError(result.error!, emit, stacktrace: result.stackTrace);
+        clearList();
+        isSearching = false;
+        await emitInitialLoadError(result.error!, result.stackTrace, emit);
+        emittedInlineError = true;
         return;
       }
 
@@ -139,7 +155,9 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
     } finally {
       if (gen == loadGeneration) {
         isSearching = false;
-        emitState(emit);
+        if (!emittedInlineError) {
+          emitState(emit);
+        }
       }
     }
   }
@@ -256,7 +274,9 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
     Emitter<BlocxCollectionState<Entity>> emit,
   ) async {
     final gen = nextLoadGeneration();
+    initialLoadError = null;
     isSearching = true;
+    var emittedInlineError = false;
     emitState(emit);
 
     try {
@@ -267,6 +287,12 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
       if (gen != loadGeneration) return;
 
       if (result.isFailure) {
+        if (list.isEmpty) {
+          isSearching = false;
+          await emitInitialLoadError(result.error!, result.stackTrace, emit);
+          emittedInlineError = true;
+          return;
+        }
         await handleError(result.error!, emit, stacktrace: result.stackTrace);
         return;
       }
@@ -282,7 +308,9 @@ mixin BlocxCollectionSearchableMixin<Entity extends BlocxBaseEntity, Payload>
     } finally {
       if (gen == loadGeneration) {
         isSearching = false;
-        emitState(emit);
+        if (!emittedInlineError) {
+          emitState(emit);
+        }
       }
     }
   }

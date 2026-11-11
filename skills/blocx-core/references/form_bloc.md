@@ -117,6 +117,8 @@ abstract class BlocxFormBloc<F extends BlocxBaseFormEntity<F, E>, P, E extends E
 
 ### Key State Properties on `BlocxFormBloc`
 - `F formData`: Current form entity.
+- `F? get initialFormData`: Baseline form snapshot updated at construction, `BlocxFormEventInit`, `BlocxFormEventUpdateFormData`, `BlocxFormEventSyncFormData`, and `BlocxFormPrefetchMixin` completion (when the user has not yet modified fields).
+- `bool get hasUserModifiedForm`: `true` once a field update or form sync mutates the form after initialization/reset.
 - `P? get payload`: Payload passed to `BlocxFormEventInit`.
 - `bool get isUpdate`: `true` if initialized with a non-null `payload` (or updated via `BlocxFormEventUpdateFormData`).
 - `bool get isFormSubmittable`: `errors.isEmpty && fieldsFetchingInfo.isEmpty && uniqueKeysBeingChecked.isEmpty`.
@@ -128,7 +130,8 @@ abstract class BlocxFormBloc<F extends BlocxBaseFormEntity<F, E>, P, E extends E
 ### Form Events (`blocx_form_event.dart`)
 | Event Class | Constructor | Description |
 |---|---|---|
-| `BlocxFormEventInit<P>` | `BlocxFormEventInit({required P? payload})` | Hydrates `formData` via `applyPayloadToFormData(payload)` if `payload != null`, emits `BlocxFormStateApplyInitialDataToForm`, optionally validates if `validateOnInit`, emits `BlocxFormStateLoaded`, and dispatches `BlocxFormEventPrefetchRequiredInfo()` if `BlocxFormPrefetchMixin` is applied. |
+| `BlocxFormEventInit<P>` | `BlocxFormEventInit({required P? payload})` | Hydrates `formData` via `applyPayloadToFormData(payload)` if `payload != null`, captures `initialFormData`, emits `BlocxFormStateApplyInitialDataToForm`, optionally validates if `validateOnInit`, emits `BlocxFormStateLoaded`, and dispatches `BlocxFormEventPrefetchRequiredInfo()` if `BlocxFormPrefetchMixin` is applied. |
+| `BlocxFormEventReset` | `const BlocxFormEventReset({bool applyToControllers = true, bool validate = false})` | Restores `formData` to `initialFormData`, clears all field errors, timed-error timers, and in-flight unique-field check tokens (`cancelPendingUniqueChecks()`), optionally validates and emits `BlocxFormStateApplyInitialDataToForm` so UI controllers resync cleanly, and emits `BlocxFormStateLoaded`. |
 | `BlocxFormEventUpdateData<E>` | `BlocxFormEventUpdateData({required E key, required dynamic data})` | Updates `formData` via `updateByKeySafe(key, data)`, validates according to `formValidationMode`, triggers `BlocxFormEventCheckUniqueValue` if `key` is in `uniqueFieldKeys`, and emits state. |
 | `BlocxFormEventSubmit` | `BlocxFormEventSubmit()` | Runs full validation (`forceFullValidation: true`), checks `isFormSubmittable` and `doBeforeSubmit`, emits `BlocxFormStateSubmittingForm`, executes `submitUseCaseTask`, and on success calls `onFormSubmitted` + emits `BlocxFormStateFormSubmitted` and `BlocxFormStateLoaded`. |
 | `BlocxFormEventUpdateFormData<P>` | `BlocxFormEventUpdateFormData({required P payload, bool isUpdate = true})` | Replaces `formData` from a new `payload`, emits `BlocxFormStateApplyInitialDataToForm`, validates, and emits loaded state. |
@@ -139,14 +142,22 @@ abstract class BlocxFormBloc<F extends BlocxBaseFormEntity<F, E>, P, E extends E
 
 ### Form States (`blocx_form_state.dart`)
 All states extend `BlocxFormState<F, E>`:
-- **Common properties**: `formData`, `step`, `comesFromPreviousStep`, `errors` (`Map<E, Set<String>>`), `fieldsFetchingInfo` (`Set<E>`), `checkingUniqueFields` (`Set<E>`), `isFormValid` (`bool`), `isValid` (`errors.isEmpty && fieldsFetchingInfo.isEmpty && checkingUniqueFields.isEmpty`), `errorByKey(E key)` (`String?`), `isFetchingFieldInfo(E key)` (`bool`).
+- **Common properties & readiness getters**:
+  - `formData`, `initialData` (`F?`), `step`, `comesFromPreviousStep`, `errors` (`Map<E, Set<String>>`), `fieldsFetchingInfo` (`Set<E>`), `checkingUniqueFields` (`Set<E>`), `isFormValid` (`bool`)
+  - `hasPendingUniqueChecks`: `checkingUniqueFields.isNotEmpty`
+  - `isPrefetching`: `fieldsFetchingInfo.isNotEmpty`
+  - `isSubmittingForm`: `this is BlocxFormStateSubmittingForm<F, E>`
+  - `isDirty`: `initialData == null ? true : formData != initialData` *(implement `operator ==` & `hashCode` on your `F` entity for accurate dirty tracking!)*
+  - `canSubmit`: `isFormValid && errors.isEmpty && !isSubmittingForm && !isPrefetching && !hasPendingUniqueChecks`
+  - `isValid`: `errors.isEmpty && fieldsFetchingInfo.isEmpty && checkingUniqueFields.isEmpty`
+  - `errorByKey(E key)` (`String?`), `isFetchingFieldInfo(E key)` (`bool`)
 - **Concrete State Subclasses**:
-  1. `BlocxFormStateInitial<F, E>({required F formData})` (`shouldRebuild: true, shouldListen: false`)
-  2. `BlocxFormStateLoaded<F, E>({...})` (`shouldRebuild: true, shouldListen: false`)
-  3. `BlocxFormStateApplyInitialDataToForm<F, E>({required F formData})` (`shouldRebuild: false, shouldListen: true` — signals UI text controllers to sync with `formData`)
-  4. `BlocxFormStateSubmittingForm<F, E>({required int step, required F formData, String? buttonText})` (`shouldRebuild: true, shouldListen: false`)
-  5. `BlocxFormStateFormSubmitted<F, E>({required F formData, required dynamic submittedData})` (`shouldRebuild: false, shouldListen: true`)
-  6. `BlocxFormStateFormUpdated<F, E>({required E updatedKey, required dynamic oldValue, required dynamic newValue, ...})` (`shouldRebuild: false, shouldListen: true`)
+  1. `BlocxFormStateInitial<F, E>({required F formData, F? initialData})` (`shouldRebuild: true, shouldListen: false`)
+  2. `BlocxFormStateLoaded<F, E>({..., F? initialData})` (`shouldRebuild: true, shouldListen: false`)
+  3. `BlocxFormStateApplyInitialDataToForm<F, E>({required F formData, F? initialData})` (`shouldRebuild: false, shouldListen: true` — signals UI text controllers to sync with `formData`)
+  4. `BlocxFormStateSubmittingForm<F, E>({required int step, required F formData, F? initialData, String? buttonText})` (`shouldRebuild: true, shouldListen: false`)
+  5. `BlocxFormStateFormSubmitted<F, E>({required F formData, F? initialData, required dynamic submittedData})` (`shouldRebuild: false, shouldListen: true`)
+  6. `BlocxFormStateFormUpdated<F, E>({required E updatedKey, required dynamic oldValue, required dynamic newValue, ..., F? initialData})` (`shouldRebuild: false, shouldListen: true`)
 
 ---
 

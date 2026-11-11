@@ -1,6 +1,8 @@
 part of 'blocx_form_bloc.dart';
 
-class BlocxFormEvent extends BlocxBaseEvent {}
+class BlocxFormEvent extends BlocxBaseEvent {
+  const BlocxFormEvent();
+}
 
 class BlocxFormEventInit<P> extends BlocxFormEvent {
   final P? payload;
@@ -14,6 +16,23 @@ class BlocxFormEventUpdateData<E> extends BlocxFormEvent {
 }
 
 class BlocxFormEventSubmit extends BlocxFormEvent {}
+
+/// Resets [formData] back to its baseline [BlocxFormState.initialData]
+/// snapshot, clears validation errors and timers, and optionally re-syncs
+/// UI input controllers via [BlocxFormStateApplyInitialDataToForm].
+class BlocxFormEventReset extends BlocxFormEvent {
+  /// Whether to emit [BlocxFormStateApplyInitialDataToForm] so controllers
+  /// re-sync with the restored initial data.
+  final bool applyToControllers;
+
+  /// Whether to run full-form validation immediately after resetting.
+  final bool validate;
+
+  const BlocxFormEventReset({
+    this.applyToControllers = true,
+    this.validate = false,
+  });
+}
 
 class BlocxFormEventSetTimedErrorToField<E extends Enum>
     extends BlocxFormEvent {

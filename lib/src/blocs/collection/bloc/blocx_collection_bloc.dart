@@ -78,6 +78,7 @@ abstract class BlocxCollectionBloc<Entity extends BlocxBaseEntity, Payload>
   late final bool isSelectable;
   @override
   late final bool isHighlightable;
+  @override
   late final bool isSearchable;
   late final bool isRefreshable;
   late final bool isInfinite;

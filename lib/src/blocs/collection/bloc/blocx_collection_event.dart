@@ -3,7 +3,9 @@ part of 'blocx_collection_bloc.dart';
 /// Base class for all list-related events.
 ///
 /// Extend this to define actions that mutate or interact with a [BlocxCollectionBloc].
-class BlocxCollectionEvent<T extends BlocxBaseEntity> extends BlocxBaseEvent {}
+class BlocxCollectionEvent<T extends BlocxBaseEntity> extends BlocxBaseEvent {
+  const BlocxCollectionEvent();
+}
 
 /// Loads the initial page of data into the list.
 ///
@@ -15,6 +17,13 @@ class BlocxCollectionEventLoadInitialPage<T extends BlocxBaseEntity, P>
   final P? payload;
 
   BlocxCollectionEventLoadInitialPage({required this.payload});
+}
+
+/// Retries the most recent initial, filtered, or search load using the last
+/// known payload while preserving active filters and search queries.
+class BlocxCollectionEventRetryLastLoad<T extends BlocxBaseEntity>
+    extends BlocxCollectionEvent<T> {
+  const BlocxCollectionEventRetryLastLoad();
 }
 
 class BlocxCollectionEventUpdateItem<T extends BlocxBaseEntity>
